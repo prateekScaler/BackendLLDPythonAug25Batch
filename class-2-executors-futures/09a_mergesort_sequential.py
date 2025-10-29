@@ -5,7 +5,6 @@ Basic implementation for comparison
 import time
 import random
 
-
 def merge(left, right):
     """Merge two sorted arrays into one sorted array"""
     result = []
@@ -23,7 +22,6 @@ def merge(left, right):
     result.extend(left[i:])
     result.extend(right[j:])
     return result
-
 
 def merge_sort(arr):
     """Recursively sort array using merge sort"""
@@ -43,11 +41,10 @@ def merge_sort(arr):
     # Merge the sorted halves
     return merge(left_sorted, right_sorted)
 
-
 if __name__ == "__main__":
     # Create random array
     size = 100_000
-    arr = [random.randint(1, 1000) for _ in range(size)]
+    arr = random.sample(range(1, size + 1), 100_000)
 
     print("=" * 60)
     print(f"Sorting {size:,} elements using Sequential Merge Sort")
