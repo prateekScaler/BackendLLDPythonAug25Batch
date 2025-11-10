@@ -1,6 +1,7 @@
 """
 Exception Security Risks - Concise Demo
 Shows what attackers can learn from unhandled exceptions
+NOTE: All keys/passwords are fake examples for demonstration only
 """
 
 import os
@@ -36,27 +37,27 @@ print(f"   {result}")
 print("   Leaked: Nothing")
 
 # Demo 2: Database Credentials
-print("\n--- Demo 2: Database Credentials ---")
+print("\n--- Demo 2: Database Info ---")
 
 class FakeDB:
-    def __init__(self, host, user, password):
-        self.conn_str = f"{user}:{password}@{host}"
+    def __init__(self, host, user):
+        self.conn_str = f"{user}@{host}"
         if "fail" in host:
             raise ConnectionError(
                 f"Connection to {host} failed\n"
-                f"User: {user}, Password: {password}"
+                f"User: {user}, Host: {host}"
             )
 
 try:
-    db = FakeDB("db.fail.internal", "admin", "Secret123")
+    db = FakeDB("db.fail.internal", "admin")
 except ConnectionError as e:
     print("❌ INSECURE - User sees:")
     print(f"   {e}")
-    print("   Leaked: Host, username, password")
+    print("   Leaked: Host, username")
 
 def connect_secure():
     try:
-        return FakeDB("db.fail.internal", "admin", "Secret123")
+        return FakeDB("db.fail.internal", "admin")
     except ConnectionError:
         raise ConnectionError("Database unavailable")
 
@@ -104,7 +105,8 @@ print("   Leaked: Nothing")
 print("\n--- Demo 4: API Keys ---")
 
 def send_email_insecure(email):
-    api_key = "sk_live_51H8xKJ89sd7f6sd8f76"
+    # FAKE API KEY for demo - not a real key
+    api_key = "demo_key_1234567890abcdef"
     if "@" not in email:
         raise ValueError(
             f"Invalid: {email}\n"
@@ -116,7 +118,7 @@ try:
 except ValueError as e:
     print("❌ INSECURE - User sees:")
     print(f"   {e}")
-    print("   Leaked: API key")
+    print("   Leaked: API key exposed")
 
 def send_email_secure(email):
     try:
@@ -134,17 +136,18 @@ print("   Leaked: Nothing")
 # Demo 5: Environment Variables
 print("\n--- Demo 5: Environment Variables ---")
 
-os.environ["DB_URL"] = "postgres://admin:pass@db.internal:5432/prod"
-os.environ["SECRET_KEY"] = "django-secret-abc123"
+# FAKE credentials for demo only
+os.environ["DB_URL"] = "postgres://appuser@localhost:5432/mydb"
+os.environ["APP_SECRET"] = "fake-secret-for-demo-only"
 
 def load_config_insecure():
     try:
         db = os.environ["DB_URL"]
-        key = os.environ["SECRET_KEY"]
+        key = os.environ["APP_SECRET"]
     except KeyError as e:
         print(f"Missing: {e}")
         print(f"DB_URL: {os.environ['DB_URL']}")
-        print(f"SECRET_KEY: {os.environ['SECRET_KEY']}")
+        print(f"APP_SECRET: {os.environ['APP_SECRET']}")
         raise
 
 try:
@@ -152,12 +155,12 @@ try:
     load_config_insecure()
 except:
     print("❌ INSECURE - Shows all env vars")
-    print("   Leaked: DB credentials, secret keys")
+    print("   Leaked: DB connection, secrets")
 
 def load_config_secure():
     try:
         db = os.environ["DB_URL"]
-        key = os.environ["SECRET_KEY"]
+        key = os.environ["APP_SECRET"]
         return True
     except KeyError:
         return {"error": "Configuration error"}
@@ -174,10 +177,11 @@ print("=" * 60)
 print("""
 🚨 UNHANDLED EXCEPTIONS LEAK:
    • File paths & directory structure
-   • Database credentials & queries
-   • API keys & secrets
-   • Business logic & pricing
-   • Internal IPs & architecture
+   • Database hosts & usernames
+   • SQL queries & table structure
+   • API keys & tokens
+   • Environment variables
+   • Code structure & logic
 
 🔒 PROPER HANDLING PROTECTS:
    • Credentials & keys
