@@ -1,0 +1,212 @@
+# Pre-LSP Concept Check - MCQ Questions
+
+## Question 1: Runtime Method Resolution
+
+```python
+class Animal:
+    def sound(self):
+        return "Some sound"
+
+class Dog(Animal):
+    def sound(self):
+        return "Bark"
+
+pet: Animal = Dog()
+print(pet.sound())
+```
+
+**What's the output?**
+- A) `Some sound`
+- B) `Bark`
+- C) `Error: Type mismatch`
+- D) Both methods are called
+
+---
+
+<details>
+<summary>Answer</summary>
+
+**B) `Bark`**
+
+**Explanation:**
+- Variable `pet` has **reference type** `Animal`
+- But actual **object type** is `Dog`
+- At **runtime**, Python looks at the actual object (`Dog`)
+- Therefore `Dog.sound()` is called, not `Animal.sound()`
+
+**Key Concept:** Method calls are resolved at **runtime** based on the **actual object type**, not the reference/variable type.
+
+**This is called:** Dynamic binding or runtime polymorphism.
+
+</details>
+
+---
+
+## Question 2: Method Resolution Order (MRO)
+
+```python
+class Parent:
+    def display(self):
+        return "Parent"
+
+class Child(Parent):
+    pass
+
+obj = Child()
+print(obj.display())
+```
+
+**What's the output?**
+- A) `Parent`
+- B) `Error: Method not found in Child`
+- C) `None`
+- D) `Child`
+
+---
+
+<details>
+<summary>Answer</summary>
+
+**A) `Parent`**
+
+**Explanation:**
+- `Child` class doesn't define `display()` method
+- Python searches for method using MRO: `Child` → `Parent`
+- Method not found in `Child`, so goes to `Parent`
+- Finds `display()` in `Parent` and executes it
+- Returns `"Parent"`
+
+**Key Concept:** If a child class doesn't override a method, Python automatically uses the parent's implementation (method inheritance).
+
+**MRO Rule:** Python searches: Current class → Parent class → Grandparent class → ... → object
+
+</details>
+
+---
+
+## Question 3: Method Not in Parent
+
+```python
+class Vehicle:
+    def start(self):
+        return "Vehicle starting"
+
+class Car(Vehicle):
+    def honk(self):
+        return "Beep beep!"
+
+v: Vehicle = Car()
+print(v.honk())
+```
+
+**What happens?**
+- A) Prints `Beep beep!`
+- B) `AttributeError: 'Vehicle' object has no attribute 'honk'`
+- C) Compile-time error
+- D) Returns `None`
+
+---
+
+<details>
+<summary>Answer</summary>
+
+**A) Prints `Beep beep!`**
+
+**Explanation:**
+- Python is **dynamically typed** - no compile-time type checking
+- Variable `v` has reference type `Vehicle`
+- Actual object is `Car`, which has `honk()` method
+- At **runtime**, Python checks the actual object (`Car`)
+- `Car` has `honk()`, so it executes successfully
+
+**Important Notes:**
+- In **statically typed** languages (Java, C++), this would be a compile error
+- In Python, type hints (`v: Vehicle`) are just hints - not enforced at runtime
+- The code runs because the actual object has the method
+
+**Type Checker Warning:** Tools like `mypy` would flag this as a type error, but Python runtime allows it.
+
+</details>
+
+---
+
+## Question 4: Unexpected Exception
+
+```python
+class Calculator:
+    def divide(self, a, b):
+        if b == 0:
+            raise ValueError("Cannot divide by zero")
+        return a / b
+
+class StrictCalculator(Calculator):
+    def divide(self, a, b):
+        if b == 0:
+            raise ZeroDivisionError("Division by zero")
+        return a / b
+
+def compute(calc: Calculator):
+    try:
+        result = calc.divide(10, 0)
+    except ValueError:
+        print("Handled")
+
+compute(StrictCalculator())
+```
+
+**What happens?**
+- A) Prints `Handled`
+- B) Returns `None`
+- C) Uncaught `ZeroDivisionError` - Program crashes!
+- D) Prints nothing
+
+---
+
+<details>
+<summary>Answer</summary>
+
+**C) Uncaught `ZeroDivisionError` - Program crashes!**
+
+**Why:**
+- Parent throws: `ValueError`
+- Child throws: `ZeroDivisionError` (different!)
+- Client catches only `ValueError`
+- Child's exception is not caught → Crash
+
+**LSP Violation:** Child changed the exception contract. Clients expect `ValueError` but get surprised.
+
+**Fix:** Child should throw same exception as parent:
+```python
+class StrictCalculator(Calculator):
+    def divide(self, a, b):
+        if b == 0:
+            raise ValueError("Division by zero")  # Same as parent
+        return a / b
+```
+
+</details>
+
+---
+
+## Summary: Journey to LSP
+
+These 4 questions build understanding step-by-step:
+
+1. **Q1:** Runtime method resolution - "Which method gets called?"
+2. **Q2:** MRO and inheritance - "Child uses parent method if not overridden"
+3. **Q3:** Python's dynamic nature - "Runtime allows things type hints don't"
+4. **Q4:** **The LSP Problem** - "Substitution is allowed, but breaks expectations!"
+
+**Key Insight from Q4:**
+- We **can** substitute child for parent (syntactically)
+- But **should we**? (semantically)
+- LSP says: Only if child honors parent's contract!
+
+**Contracts include:**
+- Return types
+- **Exceptions thrown** ← Q4 violation
+- Preconditions (input requirements)
+- Postconditions (guarantees about output)
+- Invariants (things that stay true)
+
+---
