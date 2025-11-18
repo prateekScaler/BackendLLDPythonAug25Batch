@@ -1,0 +1,529 @@
+"""
+Builder Pattern Demo
+Run this file to see Builder Pattern in action!
+"""
+
+# ============================================================================
+# Example 1: HTTP Request Builder
+# ============================================================================
+
+print("=" * 60)
+print("Example 1: HTTP Request Builder")
+print("=" * 60)
+
+class HttpRequest:
+    """The product - an HTTP request"""
+
+    def __init__(self, url, method="GET", headers=None, body=None, timeout=30):
+        self.url = url
+        self.method = method
+        self.headers = headers or {}
+        self.body = body
+        self.timeout = timeout
+
+    def execute(self):
+        print(f"\n🚀 Executing Request:")
+        print(f"   Method: {self.method}")
+        print(f"   URL: {self.url}")
+        print(f"   Headers: {self.headers}")
+        print(f"   Body: {self.body}")
+        print(f"   Timeout: {self.timeout}s")
+
+
+class HttpRequestBuilder:
+    """Builder for HttpRequest"""
+
+    def __init__(self):
+        self._url = None
+        self._method = "GET"
+        self._headers = {}
+        self._body = None
+        self._timeout = 30
+
+    def url(self, url):
+        self._url = url
+        return self
+
+    def method(self, method):
+        self._method = method.upper()
+        return self
+
+    def add_header(self, key, value):
+        self._headers[key] = value
+        return self
+
+    def body(self, body):
+        self._body = body
+        return self
+
+    def timeout(self, timeout):
+        self._timeout = timeout
+        return self
+
+    def build(self):
+        if not self._url:
+            raise ValueError("URL is required")
+        return HttpRequest(
+            url=self._url,
+            method=self._method,
+            headers=self._headers,
+            body=self._body,
+            timeout=self._timeout
+        )
+
+
+# Demo: Simple GET request
+print("\n📋 Creating simple GET request:")
+simple_request = HttpRequestBuilder()
+    .url("https://api.github.com/users")
+    .build()
+
+simple_request.execute()
+
+# Demo: Complex POST request
+print("\n📋 Creating complex POST request:")
+complex_request = HttpRequestBuilder()
+    .url("https://api.example.com/users")
+    .method("POST")
+    .add_header("Content-Type", "application/json")
+    .add_header("Authorization", "Bearer abc123xyz")
+    .body({"name": "Alice", "email": "alice@example.com"})
+    .timeout(60)
+    .build()
+
+complex_request.execute()
+
+
+# ============================================================================
+# Example 2: Pizza Builder (Classic Example)
+# ============================================================================
+
+print("\n" + "=" * 60)
+print("Example 2: Pizza Builder")
+print("=" * 60)
+
+class Pizza:
+    """The product - a delicious pizza"""
+
+    def __init__(self, size, crust, cheese, toppings):
+        self.size = size
+        self.crust = crust
+        self.cheese = cheese
+        self.toppings = toppings
+
+    def __str__(self):
+        toppings_str = ", ".join(self.toppings) if self.toppings else "none"
+        return f"🍕 {self.size.capitalize()} pizza | {self.crust} crust | {self.cheese} cheese | Toppings: {toppings_str}"
+
+
+class PizzaBuilder:
+    """Builder for Pizza"""
+
+    def __init__(self):
+        self._size = "medium"
+        self._crust = "regular"
+        self._cheese = "mozzarella"
+        self._toppings = []
+
+    def size(self, size):
+        if size not in ["small", "medium", "large", "extra-large"]:
+            raise ValueError(f"Invalid size: {size}")
+        self._size = size
+        return self
+
+    def crust(self, crust):
+        self._crust = crust
+        return self
+
+    def cheese(self, cheese):
+        self._cheese = cheese
+        return self
+
+    def add_topping(self, topping):
+        self._toppings.append(topping)
+        return self
+
+    def build(self):
+        return Pizza(self._size, self._crust, self._cheese, self._toppings)
+
+
+# Demo: Different pizzas
+print("\n📋 Creating Margherita:")
+margherita = PizzaBuilder()
+    .size("large")
+    .crust("thin")
+    .add_topping("basil")
+    .add_topping("fresh tomatoes")
+    .build()
+print(margherita)
+
+print("\n📋 Creating Meat Lovers:")
+meat_lovers = PizzaBuilder()
+    .size("extra-large")
+    .crust("stuffed")
+    .add_topping("pepperoni")
+    .add_topping("sausage")
+    .add_topping("bacon")
+    .add_topping("ham")
+    .add_topping("ground beef")
+    .build()
+print(meat_lovers)
+
+print("\n📋 Creating Veggie Pizza:")
+veggie = PizzaBuilder()
+    .size("medium")
+    .add_topping("mushrooms")
+    .add_topping("bell peppers")
+    .add_topping("onions")
+    .add_topping("olives")
+    .add_topping("spinach")
+    .build()
+print(veggie)
+
+
+# ============================================================================
+# Example 4: Email Builder
+# ============================================================================
+
+print("\n" + "=" * 60)
+print("Example 4: Email Builder")
+print("=" * 60)
+
+class Email:
+    """The product - an email"""
+
+    def __init__(self, to, subject, body, cc=None, bcc=None, attachments=None):
+        self.to = to
+        self.subject = subject
+        self.body = body
+        self.cc = cc or []
+        self.bcc = bcc or []
+        self.attachments = attachments or []
+
+    def send(self):
+        print(f"\n📧 Sending Email:")
+        print(f"   To: {', '.join(self.to)}")
+        if self.cc:
+            print(f"   CC: {', '.join(self.cc)}")
+        if self.bcc:
+            print(f"   BCC: {', '.join(self.bcc)}")
+        print(f"   Subject: {self.subject}")
+        print(f"   Body: {self.body[:50]}..." if len(self.body) > 50 else f"   Body: {self.body}")
+        if self.attachments:
+            print(f"   Attachments: {', '.join(self.attachments)}")
+        print("   ✅ Email sent!")
+
+
+class EmailBuilder:
+    """Builder for Email"""
+
+    def __init__(self):
+        self._to = []
+        self._subject = ""
+        self._body = ""
+        self._cc = []
+        self._bcc = []
+        self._attachments = []
+
+    def to(self, *recipients):
+        self._to.extend(recipients)
+        return self
+
+    def subject(self, subject):
+        self._subject = subject
+        return self
+
+    def body(self, body):
+        self._body = body
+        return self
+
+    def cc(self, *recipients):
+        self._cc.extend(recipients)
+        return self
+
+    def bcc(self, *recipients):
+        self._bcc.extend(recipients)
+        return self
+
+    def attach(self, filename):
+        self._attachments.append(filename)
+        return self
+
+    def build(self):
+        if not self._to:
+            raise ValueError("At least one recipient required")
+        if not self._subject:
+            raise ValueError("Subject required")
+
+        return Email(
+            to=self._to,
+            subject=self._subject,
+            body=self._body,
+            cc=self._cc,
+            bcc=self._bcc,
+            attachments=self._attachments
+        )
+
+
+# Demo: Simple email
+print("\n📋 Simple email:")
+simple_email = EmailBuilder()
+    .to("alice@example.com")
+    .subject("Hello!")
+    .body("Hi Alice, how are you?")
+    .build()
+
+simple_email.send()
+
+# Demo: Complex email with attachments
+print("\n📋 Business email with attachments:")
+business_email = EmailBuilder()
+    .to("team@example.com", "manager@example.com")
+    .cc("hr@example.com")
+    .subject("Q4 Report - Urgent")
+    .body("Please find attached the Q4 financial report and performance metrics.")
+    .attach("Q4_Report.pdf")
+    .attach("Metrics_2024.xlsx")
+    .attach("Presentation.pptx")
+    .build()
+
+business_email.send()
+
+
+# ============================================================================
+# Example 5: User Builder with Validation
+# ============================================================================
+
+print("\n" + "=" * 60)
+print("Example 5: User Builder with Validation")
+print("=" * 60)
+
+class User:
+    """Immutable user object"""
+
+    def __init__(self, username, email, age, role):
+        self._username = username
+        self._email = email
+        self._age = age
+        self._role = role
+
+    @property
+    def username(self):
+        return self._username
+
+    @property
+    def email(self):
+        return self._email
+
+    @property
+    def age(self):
+        return self._age
+
+    @property
+    def role(self):
+        return self._role
+
+    def __str__(self):
+        return f"👤 User(username={self._username}, email={self._email}, age={self._age}, role={self._role})"
+
+
+class UserBuilder:
+    """Builder for User with validation"""
+
+    def __init__(self):
+        self._username = None
+        self._email = None
+        self._age = None
+        self._role = "user"
+
+    def username(self, username):
+        if len(username) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        self._username = username
+        return self
+
+    def email(self, email):
+        if "@" not in email or "." not in email:
+            raise ValueError("Invalid email format")
+        self._email = email
+        return self
+
+    def age(self, age):
+        if age < 0 or age > 150:
+            raise ValueError("Invalid age")
+        self._age = age
+        return self
+
+    def role(self, role):
+        valid_roles = ["user", "admin", "moderator", "premium"]
+        if role not in valid_roles:
+            raise ValueError(f"Invalid role. Must be one of: {valid_roles}")
+        self._role = role
+        return self
+
+    def build(self):
+        if not self._username:
+            raise ValueError("Username is required")
+        if not self._email:
+            raise ValueError("Email is required")
+        if self._age is None:
+            raise ValueError("Age is required")
+
+        return User(
+            username=self._username,
+            email=self._email,
+            age=self._age,
+            role=self._role
+        )
+
+
+# Demo: Valid users
+print("\n📋 Creating valid users:")
+
+regular_user = UserBuilder()
+    .username("alice_wonderland")
+    .email("alice@example.com")
+    .age(28)
+    .build()
+
+print(regular_user)
+
+admin_user = UserBuilder()
+    .username("admin_bob")
+    .email("bob@example.com")
+    .age(35)
+    .role("admin")
+    .build()
+
+print(admin_user)
+
+# Demo: Validation catches errors
+print("\n📋 Testing validation:")
+
+try:
+    invalid_user = UserBuilder()
+        .username("ab")  # Too short!
+        .email("alice@example.com")
+        .age(25)
+        .build()
+except ValueError as e:
+    print(f"❌ Caught error: {e}")
+
+try:
+    invalid_email = UserBuilder()
+        .username("charlie")
+        .email("invalid-email")  # No @ or .
+        .age(25)
+        .build()
+except ValueError as e:
+    print(f"❌ Caught error: {e}")
+
+try:
+    missing_required = UserBuilder()
+        .username("dave")
+        .age(25)
+        # Missing email!
+        .build()
+except ValueError as e:
+    print(f"❌ Caught error: {e}")
+
+
+# ============================================================================
+# Example 6: Director Pattern (Pizza Presets)
+# ============================================================================
+
+print("\n" + "=" * 60)
+print("Example 6: Director Pattern - Pizza Presets")
+print("=" * 60)
+
+class PizzaDirector:
+    """Director with predefined pizza recipes"""
+
+    @staticmethod
+    def make_margherita():
+        """Classic Margherita pizza"""
+        return PizzaBuilder()
+            .size("large")
+            .crust("thin")
+            .add_topping("basil")
+            .add_topping("fresh mozzarella")
+            .add_topping("tomato sauce")
+            .build()
+
+    @staticmethod
+    def make_pepperoni():
+        """Classic Pepperoni pizza"""
+        return PizzaBuilder()
+            .size("large")
+            .crust("regular")
+            .add_topping("pepperoni")
+            .build()
+
+    @staticmethod
+    def make_hawaiian():
+        """Hawaiian pizza (pineapple lovers unite!)"""
+        return PizzaBuilder()
+            .size("medium")
+            .crust("stuffed")
+            .add_topping("ham")
+            .add_topping("pineapple")
+            .build()
+
+    @staticmethod
+    def make_veggie_supreme():
+        """Ultimate veggie pizza"""
+        return PizzaBuilder()
+            .size("large")
+            .crust("whole wheat")
+            .cheese("vegan mozzarella")
+            .add_topping("mushrooms")
+            .add_topping("bell peppers")
+            .add_topping("onions")
+            .add_topping("olives")
+            .add_topping("spinach")
+            .add_topping("tomatoes")
+            .build()
+
+
+# Demo: Using director presets
+print("\n📋 Using director presets:")
+
+pizza1 = PizzaDirector.make_margherita()
+print(pizza1)
+
+pizza2 = PizzaDirector.make_pepperoni()
+print(pizza2)
+
+pizza3 = PizzaDirector.make_hawaiian()
+print(pizza3)
+
+pizza4 = PizzaDirector.make_veggie_supreme()
+print(pizza4)
+
+# Can still customize
+print("\n📋 Custom pizza (not using director):")
+custom = PizzaBuilder()
+    .size("small")
+    .crust("gluten-free")
+    .cheese("extra cheese")
+    .add_topping("jalapeños")
+    .add_topping("hot sauce")
+    .build()
+print(custom)
+
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+print("\n" + "=" * 60)
+print("✅ Builder Pattern Demo Complete!")
+print("=" * 60)
+print("\nKey Takeaways:")
+print("1. Builder separates complex object construction from representation")
+print("2. Method chaining (return self) makes code readable")
+print("3. Validation happens in build() method")
+print("4. Great for objects with many optional parameters")
+print("5. Director pattern provides convenient presets")
+print("\nTry modifying the examples above to create your own builders!")
+print("=" * 60)
