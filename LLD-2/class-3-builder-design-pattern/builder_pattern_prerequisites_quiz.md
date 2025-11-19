@@ -614,6 +614,7 @@ database = builder.build()  # NOW we have a database!
 | **Instance method** | ✅ Yes | ❌ No | Need instance data |
 | **Class method** | ❌ No | ✅ Yes | Factory methods, inheritance |
 | **Static method** | ❌ No | ❌ No | Utility, doesn't need class/instance |
+---
 
 ### Why Not @classmethod?
 
@@ -632,7 +633,7 @@ class Database:
 # @staticmethod is clearer about intent:
 # "This method is just a utility that returns a Builder"
 ```
-
+---
 ### Key Takeaways:
 
 1. **`@staticmethod`** is used for `builder()` because:
@@ -707,7 +708,7 @@ student = Student("Alice").set_age(20).set_grade("A")
 # 2. student.set_age(20)        → returns self (same student)
 # 3. student.set_grade("A")     → returns self (same student)
 ```
-
+---
 ### The pattern:
 
 ```python
@@ -727,7 +728,7 @@ class FluentAPI:
 # Now you can chain
 obj = FluentAPI().method1().method2().method3()
 ```
-
+---
 ### Benefits:
 - **Readability:** Reads like natural language
 - **Concise:** No intermediate variables
@@ -743,7 +744,7 @@ pizza = PizzaBuilder()
     .add_pepperoni()
     .build()
 ```
-
+---
 ### Real-world parallel:
 
 Think of ordering at Subway:
@@ -770,5 +771,3 @@ After these questions, you should see these problems:
 8. **Need for static factory method** → Better encapsulation and API design
 
 **Builder Pattern solves all of these!**
-
-Ready to learn how? Let's dive into the Builder Pattern implementation! 🚀
