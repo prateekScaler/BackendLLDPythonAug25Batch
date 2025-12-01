@@ -1,0 +1,1110 @@
+@startuml Tic-Tac-Toe-Complete-Design-Python
+title Tic-Tac-Toe: Complete System Design (Python)
+
+' ============================================
+' USE CASE DIAGRAM
+' ============================================
+@startuml use-case-core
+title Core Game Flow - Use Case Diagram
+left to right direction
+skinparam actorStyle awesome
+
+actor "Human Player" as Human
+actor "Bot Player" as Bot
+
+rectangle "Tic-Tac-Toe Game" {
+  usecase "Register Player" as UC1
+  usecase "Start Game" as UC2
+  usecase "Make Move" as UC3
+  usecase "Validate Move" as UC4
+  usecase "Check Winner" as UC5
+  usecase "Declare Result" as UC6
+  usecase "Update Board" as UC7
+
+  Human --> UC1
+  Human --> UC2
+  Human --> UC3
+  Bot --> UC3
+
+  UC3 ..> UC4 : <<include>>
+  UC3 ..> UC7 : <<include>>
+  UC3 ..> UC5 : <<include>>
+  UC5 ..> UC6 : <<extends>>
+}
+@enduml
+
+' ============================================
+@startuml use-case-extended
+title Extended Features - Use Case Diagram
+left to right direction
+skinparam actorStyle awesome
+
+actor "Player" as Player
+actor "Spectator" as Spectator
+
+rectangle "Game Features" {
+  usecase "Play Game" as UC1
+  usecase "Undo Move" as UC2
+  usecase "Save Game" as UC3
+  usecase "Load Game" as UC4
+  usecase "View Game" as UC5
+  usecase "View Statistics" as UC6
+  usecase "Choose Difficulty" as UC7
+
+  Player --> UC1
+  Player --> UC2
+  Player --> UC3
+  Player --> UC4
+  Player --> UC6
+
+  Spectator --> UC5
+
+  UC1 ..> UC7 : <<extends>>\n[Bot Player]
+  UC2 ..> UC1 : <<extends>>
+}
+@enduml
+
+' ============================================
+@startuml use-case-tournament
+title Tournament Mode - Use Case Diagram
+left to right direction
+skinparam actorStyle awesome
+
+actor "Tournament Organizer" as Organizer
+actor "Player" as Player
+
+rectangle "Tournament System" {
+  usecase "Create Tournament" as UC1
+  usecase "Register for Tournament" as UC2
+  usecase "Start Match" as UC3
+  usecase "Play Match" as UC4
+  usecase "Record Result" as UC5
+  usecase "Update Leaderboard" as UC6
+  usecase "Declare Winner" as UC7
+
+  Organizer --> UC1
+  Organizer --> UC3
+  Player --> UC2
+  Player --> UC4
+
+  UC3 ..> UC4 : <<include>>
+  UC4 ..> UC5 : <<include>>
+  UC5 ..> UC6 : <<include>>
+  UC1 ..> UC7 : <<extends>>\n[Tournament Complete]
+}
+@enduml
+
+' ============================================
+' CLASS DIAGRAMS (PYTHON STYLE)
+' ============================================
+@startuml class-diagram-complete
+title Complete Class Diagram (Python Style)
+
+class Game {
+  - _board: Board
+  - _players: list[Player]
+  - _current_player_index: int
+  - _game_state: GameState
+  - _winning_strategy: WinningStrategy
+  - _move_history: list[Move]
+  --
+  + __init__(players: list[Player], board_size: int, strategy: WinningStrategy)
+  + start_game() -> None
+  + make_move(player: Player, row: int, col: int) -> None
+  + check_winner() -> Player | None
+  + undo_move() -> None
+  + is_valid_move(row: int, col: int) -> bool
+  + {property} game_state: GameState
+  + {property} current_player: Player
+}
+
+class Board {
+  - _size: int
+  - _cells: list[list[Cell]]
+  --
+  + __init__(size: int)
+  + get_cell(row: int, col: int) -> Cell
+  + is_full() -> bool
+  + is_empty(row: int, col: int) -> bool
+  + place_symbol(row: int, col: int, symbol: Symbol) -> None
+  + display() -> None
+  + get_empty_cells() -> list[tuple[int, int]]
+  + {property} size: int
+}
+
+class Cell {
+  - _row: int
+  - _column: int
+  - _symbol: Symbol
+  --
+  + __init__(row: int, col: int)
+  + is_empty() -> bool
+  + {property} symbol: Symbol
+  + {property} row: int
+  + {property} column: int
+}
+
+enum Symbol {
+  X
+  O
+  EMPTY
+  --
+  + __str__() -> str
+}
+
+enum GameState {
+  IN_PROGRESS
+  FINISHED
+  DRAW
+  --
+  + __str__() -> str
+}
+
+abstract class Player {
+  # _symbol: Symbol
+  # _name: str
+  --
+  + __init__(symbol: Symbol, name: str)
+  + {abstract} make_move(board: Board) -> Move
+  + {property} symbol: Symbol
+  + {property} name: str
+}
+
+class HumanPlayer {
+  - _user: User
+  --
+  + __init__(symbol: Symbol, user: User)
+  + make_move(board: Board) -> Move
+  + {property} user: User
+}
+
+class BotPlayer {
+  - _difficulty_level: DifficultyLevel
+  - _move_strategy: MoveStrategy
+  --
+  + __init__(symbol: Symbol, name: str, difficulty: DifficultyLevel)
+  + make_move(board: Board) -> Move
+  + set_strategy(strategy: MoveStrategy) -> None
+  + {property} difficulty_level: DifficultyLevel
+}
+
+class User {
+  - _user_id: str
+  - _name: str
+  - _email: str
+  - _profile_image: bytes
+  --
+  + __init__(user_id: str, name: str, email: str)
+  + get_details() -> dict
+  + {property} name: str
+  + {property} email: str
+}
+
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+}
+
+class MoveStrategy <<ABC>> {
+  + {abstract} calculate_move(board: Board, symbol: Symbol) -> Move
+}
+
+class RandomMoveStrategy {
+  + calculate_move(board: Board, symbol: Symbol) -> Move
+}
+
+class MinimaxMoveStrategy {
+  - _max_depth: int
+  --
+  + __init__(max_depth: int = 9)
+  + calculate_move(board: Board, symbol: Symbol) -> Move
+  - _minimax(board: Board, depth: int, is_maximizing: bool, alpha: int, beta: int) -> int
+  - _evaluate_board(board: Board) -> int
+}
+
+class ClusteringMoveStrategy {
+  + calculate_move(board: Board, symbol: Symbol) -> Move
+  - _get_clustering_score(board: Board, row: int, col: int) -> int
+}
+
+class WinningStrategy <<ABC>> {
+  + {abstract} check_winner(board: Board, players: list[Player]) -> Player | None
+}
+
+class RowWinningStrategy {
+  + check_winner(board: Board, players: list[Player]) -> Player | None
+}
+
+class ColumnWinningStrategy {
+  + check_winner(board: Board, players: list[Player]) -> Player | None
+}
+
+class DiagonalWinningStrategy {
+  + check_winner(board: Board, players: list[Player]) -> Player | None
+}
+
+class CompositeWinningStrategy {
+  - _strategies: list[WinningStrategy]
+  --
+  + __init__(strategies: list[WinningStrategy])
+  + check_winner(board: Board, players: list[Player]) -> Player | None
+  + add_strategy(strategy: WinningStrategy) -> None
+}
+
+class Move {
+  - _row: int
+  - _column: int
+  - _player: Player
+  - _previous_symbol: Symbol
+  --
+  + __init__(row: int, col: int, player: Player, prev_symbol: Symbol = Symbol.EMPTY)
+  + undo(board: Board) -> None
+  + {property} row: int
+  + {property} column: int
+  + {property} player: Player
+}
+
+class GameController {
+  - _game: Game | None
+  - _player_registry: dict[str, User]
+  --
+  + register_player(name: str, email: str) -> User
+  + start_game(players: list[Player], board_size: int) -> None
+  + make_move(player: Player, row: int, col: int) -> None
+  + undo_move() -> None
+  + get_game_state() -> GameState
+  + display_board() -> None
+}
+
+class InvalidMoveException <<Exception>> {
+  + __init__(message: str)
+}
+
+class GameOverException <<Exception>> {
+  + __init__(message: str)
+}
+
+class PlayerNotFoundException <<Exception>> {
+  + __init__(message: str)
+}
+
+' Relationships
+Game "1" *-- "1" Board : contains
+Game "1" *-- "2..*" Player : has
+Game "1" o-- "1" WinningStrategy : uses
+Game "1" *-- "*" Move : records
+
+Board "1" *-- "*" Cell : contains
+Cell "1" -- "1" Symbol : has
+
+Player <|-- HumanPlayer : extends
+Player <|-- BotPlayer : extends
+
+HumanPlayer "*" o-- "1" User : references
+BotPlayer "1" o-- "1" MoveStrategy : uses
+BotPlayer "1" -- "1" DifficultyLevel : has
+
+MoveStrategy <|-- RandomMoveStrategy : implements
+MoveStrategy <|-- MinimaxMoveStrategy : implements
+MoveStrategy <|-- ClusteringMoveStrategy : implements
+
+WinningStrategy <|-- RowWinningStrategy : implements
+WinningStrategy <|-- ColumnWinningStrategy : implements
+WinningStrategy <|-- DiagonalWinningStrategy : implements
+WinningStrategy <|-- CompositeWinningStrategy : implements
+
+GameController "1" o-- "0..1" Game : manages
+Game "1" -- "1" GameState : has
+
+Move "*" -- "1" Player : made by
+
+GameController ..> InvalidMoveException : throws
+GameController ..> GameOverException : throws
+GameController ..> PlayerNotFoundException : throws
+
+@enduml
+
+' ============================================
+' SEQUENCE DIAGRAMS
+' ============================================
+@startuml sequence-game-flow
+title Game Flow - Sequence Diagram
+
+actor "Player 1" as P1
+actor "Player 2" as P2
+participant "GameController" as GC
+participant "Game" as G
+participant "Board" as B
+participant "WinningStrategy" as WS
+
+P1 -> GC: start_game(players, board_size)
+activate GC
+GC -> G: __init__(players, board, strategy)
+activate G
+G -> B: __init__(size)
+activate B
+B --> G: board
+deactivate B
+G --> GC: game
+deactivate G
+GC --> P1: "Game Started"
+deactivate GC
+
+loop Until Winner or Draw
+    P1 -> GC: make_move(row, col)
+    activate GC
+    GC -> G: make_move(player, row, col)
+    activate G
+
+    G -> G: is_valid_move(row, col)
+
+    alt Valid Move
+        G -> B: place_symbol(row, col, symbol)
+        activate B
+        B -> B: cells[row][col].symbol = symbol
+        B --> G: None
+        deactivate B
+
+        G -> WS: check_winner(board, players)
+        activate WS
+
+        alt Winner Found
+            WS --> G: winner
+            deactivate WS
+            G -> G: _game_state = GameState.FINISHED
+            G --> GC: winner
+            deactivate G
+            GC --> P1: "Player X Wins!"
+            deactivate GC
+        else No Winner Yet
+            WS --> G: None
+            deactivate WS
+
+            G -> B: is_full()
+            activate B
+            alt Board Full
+                B --> G: True
+                deactivate B
+                G -> G: _game_state = GameState.DRAW
+                G --> GC: None
+                deactivate G
+                GC --> P1: "It's a Draw!"
+                deactivate GC
+            else Continue Game
+                B --> G: False
+                deactivate B
+                G --> GC: None
+                deactivate G
+                GC --> P1: "Move successful"
+                GC -> P2: "Your turn"
+                deactivate GC
+            end
+        end
+    else Invalid Move
+        G --> GC: InvalidMoveException
+        deactivate G
+        GC --> P1: "Invalid move, try again"
+        deactivate GC
+    end
+end
+@enduml
+
+' ============================================
+@startuml sequence-bot-move
+title Bot Move Calculation - Sequence Diagram
+
+participant "Game" as G
+participant "BotPlayer" as BP
+participant "MoveStrategy" as MS
+participant "Board" as B
+
+G -> BP: make_move(board)
+activate BP
+
+BP -> MS: calculate_move(board, symbol)
+activate MS
+
+alt Strategy: Random
+    MS -> B: get_empty_cells()
+    activate B
+    B --> MS: empty_cells: list[tuple]
+    deactivate B
+    MS -> MS: random_cell = random.choice(empty_cells)
+    MS --> BP: Move(row, col, player)
+    deactivate MS
+else Strategy: Minimax
+    MS -> MS: _minimax(board, depth, is_max, alpha, beta)
+    loop For each empty cell
+        MS -> B: place_symbol(row, col, symbol)
+        activate B
+        B --> MS: None
+        deactivate B
+        MS -> MS: score = _minimax(...)
+        MS -> B: place_symbol(row, col, Symbol.EMPTY)
+        activate B
+        B --> MS: None
+        deactivate B
+    end
+    MS --> BP: Move(best_row, best_col, player)
+    deactivate MS
+else Strategy: Clustering
+    MS -> B: get_empty_cells()
+    activate B
+    B --> MS: empty_cells
+    deactivate B
+    loop For each empty cell
+        MS -> MS: score = _get_clustering_score(board, row, col)
+    end
+    MS --> BP: Move(best_row, best_col, player)
+    deactivate MS
+end
+
+BP --> G: Move(row, col, player)
+deactivate BP
+@enduml
+
+' ============================================
+@startuml sequence-undo-move
+title Undo Move - Sequence Diagram
+
+actor "Player" as P
+participant "GameController" as GC
+participant "Game" as G
+participant "Board" as B
+participant "Move" as M
+
+P -> GC: undo_move()
+activate GC
+
+GC -> G: undo_move()
+activate G
+
+alt Move history not empty
+    G -> G: last_move = _move_history.pop()
+
+    G -> M: undo(board)
+    activate M
+    M -> B: place_symbol(row, col, previous_symbol)
+    activate B
+    B -> B: cells[row][col].symbol = previous_symbol
+    B --> M: None
+    deactivate B
+    M --> G: None
+    deactivate M
+
+    G -> G: _current_player_index = (_current_player_index - 1) % len(_players)
+    G -> G: _game_state = GameState.IN_PROGRESS
+
+    G --> GC: None
+    deactivate G
+
+    GC --> P: "Move undone successfully"
+    deactivate GC
+else Move history empty
+    G --> GC: InvalidMoveException("No moves to undo")
+    deactivate G
+    GC --> P: "No moves to undo"
+    deactivate GC
+end
+@enduml
+
+' ============================================
+@startuml sequence-register-player
+title Player Registration - Sequence Diagram
+
+actor "Player" as P
+participant "GameController" as GC
+participant "User" as U
+
+P -> GC: register_player(name, email)
+activate GC
+
+GC -> GC: Check if player exists
+
+alt Player not found
+    GC -> U: __init__(user_id, name, email)
+    activate U
+    U --> GC: user
+    deactivate U
+
+    GC -> GC: _player_registry[user_id] = user
+    GC --> P: "Player registered: {user_id}"
+    deactivate GC
+else Player already exists
+    GC --> P: "Player already registered"
+    deactivate GC
+end
+@enduml
+
+' ============================================
+' ACTIVITY DIAGRAMS
+' ============================================
+@startuml activity-game-flow
+title Game Flow - Activity Diagram
+
+start
+:Initialize Game\n(players, board_size, strategy);
+:Set Player 1 as current_player;
+
+repeat
+  :Display Board;
+
+  if (Current player is Bot?) then (yes)
+    :Bot calculates move\nusing strategy;
+  else (no)
+    :Human enters move\n(row, col);
+  endif
+
+  :Validate move;
+
+  if (Move valid?) then (yes)
+    :Update board with symbol;
+    :Add move to history;
+
+    :Check winner;
+    if (Winner found?) then (yes)
+      :Set game_state = FINISHED;
+      :Display winner;
+      stop
+    endif
+
+    if (Board full?) then (yes)
+      :Set game_state = DRAW;
+      :Display draw message;
+      stop
+    endif
+
+    :Switch to next player;
+  else (no)
+    :Display error message;
+  endif
+repeat while (game_state == IN_PROGRESS?)
+
+stop
+@enduml
+
+' ============================================
+@startuml activity-undo-flow
+title Undo Move - Activity Diagram
+
+start
+:Player requests undo;
+
+if (Move history empty?) then (yes)
+  :Display "No moves to undo";
+  stop
+else (no)
+  :Pop last move from history;
+  :Get move details\n(row, col, previous_symbol);
+  :Restore cell to previous state;
+  :Switch to previous player;
+  :Set game_state = IN_PROGRESS;
+  :Display "Move undone";
+  stop
+endif
+@enduml
+
+' ============================================
+' COMPONENT DIAGRAM
+' ============================================
+@startuml component-diagram
+title System Architecture - Component Diagram
+
+package "Presentation Layer" {
+  component [CLI Interface] as CLI
+  component [REST API] as API
+  component [Web UI] as WEB
+}
+
+package "Controller Layer" {
+  component [GameController] as GC
+  component [PlayerController] as PC
+}
+
+package "Service Layer" {
+  component [GameService] as GS
+  component [PlayerService] as PS
+  component [StrategyFactory] as SF
+}
+
+package "Domain Layer" {
+  package "Models" {
+    component [Game] as Game
+    component [Board] as Board
+    component [Player] as Player
+    component [Move] as Move
+  }
+
+  package "Strategies" {
+    component [MoveStrategies] as MS
+    component [WinningStrategies] as WS
+  }
+}
+
+package "Data Layer" {
+  component [GameRepository] as GR
+  component [PlayerRepository] as PR
+  component [CacheService] as Cache
+}
+
+database "Storage" {
+  [PostgreSQL] as DB
+  [Redis] as Redis
+}
+
+CLI --> GC
+API --> GC
+WEB --> API
+GC --> GS
+PC --> PS
+GS --> Game
+GS --> SF
+SF --> MS
+SF --> WS
+Game --> Board
+Game --> Player
+Game --> Move
+Game --> MS
+Game --> WS
+GS --> GR
+PS --> PR
+GR --> DB
+PR --> DB
+GS --> Cache
+Cache --> Redis
+
+@enduml
+
+' ============================================
+' DEPLOYMENT DIAGRAM
+' ============================================
+@startuml deployment-diagram
+title Deployment Architecture
+
+cloud "Client Tier" {
+  node "User Device" {
+    [CLI Application\n(Python)]
+    [Web Browser]
+  }
+}
+
+node "Application Tier" {
+  node "Web Server" {
+    [FastAPI/Flask\nApplication]
+  }
+
+  node "Application Server" {
+    [Game Controller]
+    [Game Service]
+    [Strategy Engine]
+  }
+}
+
+node "Data Tier" {
+  database "PostgreSQL\nServer" {
+    [games]
+    [players]
+    [statistics]
+    [move_history]
+  }
+
+  database "Redis\nCache" {
+    [active_games]
+    [player_sessions]
+    [leaderboard]
+  }
+}
+
+[CLI Application\n(Python)] --> [FastAPI/Flask\nApplication] : HTTP/REST
+[Web Browser] --> [FastAPI/Flask\nApplication] : HTTP/REST
+[FastAPI/Flask\nApplication] --> [Game Controller] : Internal API
+[Game Controller] --> [Game Service]
+[Game Service] --> [Strategy Engine]
+[Game Service] --> [PostgreSQL\nServer]
+[Game Service] --> [Redis\nCache]
+
+@enduml
+
+' ============================================
+' STATE DIAGRAM
+' ============================================
+@startuml state-diagram
+title Game State Machine
+
+[*] --> NotStarted : Game object created
+
+state NotStarted {
+  [*] --> WaitingForPlayers
+  WaitingForPlayers --> Ready : All players registered
+}
+
+NotStarted --> InProgress : start_game()
+
+state InProgress {
+  [*] --> WaitingForMove
+  WaitingForMove --> ValidatingMove : make_move()
+  ValidatingMove --> WaitingForMove : Invalid move
+  ValidatingMove --> UpdatingBoard : Valid move
+  UpdatingBoard --> CheckingWinner : Board updated
+  CheckingWinner --> WaitingForMove : No winner, continue
+  CheckingWinner --> [*] : Winner found
+  CheckingWinner --> [*] : Board full (draw)
+
+  WaitingForMove --> WaitingForMove : undo_move()
+}
+
+InProgress --> Finished : check_winner()\n[winner found]
+InProgress --> Draw : check_winner()\n[board full, no winner]
+
+Finished --> [*]
+Draw --> [*]
+
+note right of InProgress
+  Game loop:
+  1. Display board
+  2. Get current player
+  3. Make move
+  4. Validate
+  5. Check winner
+  6. Switch player
+end note
+
+@enduml
+
+' ============================================
+@startuml state-diagram-player-turn
+title Player Turn State Machine
+
+[*] --> Idle
+
+Idle --> MyTurn : Game started / It's my turn
+
+state MyTurn {
+  [*] --> ThinkingMove
+  ThinkingMove --> ExecutingMove : Move decided
+  ExecutingMove --> WaitingValidation : Move sent
+  WaitingValidation --> ThinkingMove : Invalid move
+  WaitingValidation --> [*] : Valid move
+}
+
+MyTurn --> Idle : Move accepted /\nSwitch to opponent
+MyTurn --> GameOver : Winner declared
+
+Idle --> GameOver : Opponent won
+Idle --> GameOver : Draw
+
+GameOver --> [*]
+
+@enduml
+
+' ============================================
+' PACKAGE DIAGRAM
+' ============================================
+@startuml package-diagram
+title Package Structure (Python Project)
+
+package "tictactoe" {
+
+  package "models" {
+    class Game
+    class Board
+    class Cell
+    class Move
+  }
+
+  package "players" {
+    abstract Player
+    class HumanPlayer
+    class BotPlayer
+    class User
+  }
+
+  package "strategies" {
+    package "move_strategies" {
+      abstract MoveStrategy
+      class RandomMoveStrategy
+      class MinimaxMoveStrategy
+      class ClusteringMoveStrategy
+    }
+
+    package "winning_strategies" {
+      abstract WinningStrategy
+      class RowWinningStrategy
+      class ColumnWinningStrategy
+      class DiagonalWinningStrategy
+      class CompositeWinningStrategy
+    }
+  }
+
+  package "controllers" {
+    class GameController
+    class PlayerController
+  }
+
+  package "exceptions" {
+    class InvalidMoveException
+    class GameOverException
+    class PlayerNotFoundException
+  }
+
+  package "enums" {
+    enum Symbol
+    enum GameState
+    enum DifficultyLevel
+  }
+
+  package "utils" {
+    class StrategyFactory
+    class InputValidator
+    class BoardDisplay
+  }
+
+  package "repositories" {
+    class GameRepository
+    class PlayerRepository
+  }
+}
+
+models ..> enums : uses
+players --|> models : extends
+players ..> enums : uses
+strategies ..> models : uses
+strategies ..> enums : uses
+controllers ..> models : uses
+controllers ..> players : uses
+controllers ..> strategies : uses
+controllers ..> exceptions : throws
+controllers ..> utils : uses
+utils ..> strategies : creates
+repositories ..> models : stores
+
+@enduml
+
+' ============================================
+@startuml package-diagram-file-structure
+title File Structure
+
+package "tictactoe/" {
+  package "models/" {
+    file "game.py"
+    file "board.py"
+    file "cell.py"
+    file "move.py"
+    file "__init__.py"
+  }
+
+  package "players/" {
+    file "player.py"
+    file "human_player.py"
+    file "bot_player.py"
+    file "user.py"
+    file "__init__.py"
+  }
+
+  package "strategies/" {
+    package "move_strategies/" {
+      file "move_strategy.py"
+      file "random_move.py"
+      file "minimax_move.py"
+      file "clustering_move.py"
+      file "__init__.py"
+    }
+    package "winning_strategies/" {
+      file "winning_strategy.py"
+      file "row_winning.py"
+      file "column_winning.py"
+      file "diagonal_winning.py"
+      file "composite_winning.py"
+      file "__init__.py"
+    }
+    file "__init__.py"
+  }
+
+  package "controllers/" {
+    file "game_controller.py"
+    file "player_controller.py"
+    file "__init__.py"
+  }
+
+  package "exceptions/" {
+    file "game_exceptions.py"
+    file "__init__.py"
+  }
+
+  package "enums/" {
+    file "symbol.py"
+    file "game_state.py"
+    file "difficulty_level.py"
+    file "__init__.py"
+  }
+
+  package "utils/" {
+    file "strategy_factory.py"
+    file "input_validator.py"
+    file "board_display.py"
+    file "__init__.py"
+  }
+
+  package "repositories/" {
+    file "game_repository.py"
+    file "player_repository.py"
+    file "__init__.py"
+  }
+
+  package "tests/" {
+    file "test_game.py"
+    file "test_board.py"
+    file "test_strategies.py"
+    file "test_players.py"
+  }
+
+  file "main.py"
+  file "config.py"
+  file "requirements.txt"
+  file "README.md"
+  file "__init__.py"
+}
+
+@enduml
+
+' ============================================
+' OBJECT DIAGRAM
+' ============================================
+@startuml object-diagram-game-instance
+title Game Instance - Object Diagram
+
+object "game: Game" as game {
+  _current_player_index = 1
+  _game_state = GameState.IN_PROGRESS
+}
+
+object "board: Board" as board {
+  _size = 3
+}
+
+object "cell_0_0: Cell" as c00 {
+  _row = 0
+  _column = 0
+  _symbol = Symbol.X
+}
+
+object "cell_1_1: Cell" as c11 {
+  _row = 1
+  _column = 1
+  _symbol = Symbol.O
+}
+
+object "cell_2_2: Cell" as c22 {
+  _row = 2
+  _column = 2
+  _symbol = Symbol.EMPTY
+}
+
+object "player1: HumanPlayer" as p1 {
+  _symbol = Symbol.X
+  _name = "Alice"
+}
+
+object "player2: BotPlayer" as p2 {
+  _symbol = Symbol.O
+  _name = "Bot Easy"
+  _difficulty_level = DifficultyLevel.EASY
+}
+
+object "user1: User" as u1 {
+  _user_id = "u123"
+  _name = "Alice"
+  _email = "alice@example.com"
+}
+
+object "strategy: RandomMoveStrategy" as strat
+
+object "winning: CompositeWinningStrategy" as win
+
+game --> board
+board --> c00
+board --> c11
+board --> c22
+game --> p1
+game --> p2
+p1 --> u1
+p2 --> strat
+game --> win
+
+@enduml
+
+
+---
+
+## Python Project Structure
+```
+tictactoe/
+├── __init__.py
+├── main.py
+├── config.py
+├── requirements.txt
+├── README.md
+│
+├── models/
+│   ├── __init__.py
+│   ├── game.py
+│   ├── board.py
+│   ├── cell.py
+│   └── move.py
+│
+├── players/
+│   ├── __init__.py
+│   ├── player.py (ABC)
+│   ├── human_player.py
+│   ├── bot_player.py
+│   └── user.py
+│
+├── strategies/
+│   ├── __init__.py
+│   ├── move_strategies/
+│   │   ├── __init__.py
+│   │   ├── move_strategy.py (ABC)
+│   │   ├── random_move.py
+│   │   ├── minimax_move.py
+│   │   └── clustering_move.py
+│   └── winning_strategies/
+│       ├── __init__.py
+│       ├── winning_strategy.py (ABC)
+│       ├── row_winning.py
+│       ├── column_winning.py
+│       ├── diagonal_winning.py
+│       └── composite_winning.py
+│
+├── controllers/
+│   ├── __init__.py
+│   ├── game_controller.py
+│   └── player_controller.py
+│
+├── exceptions/
+│   ├── __init__.py
+│   └── game_exceptions.py
+│
+├── enums/
+│   ├── __init__.py
+│   ├── symbol.py
+│   ├── game_state.py
+│   └── difficulty_level.py
+│
+├── utils/
+│   ├── __init__.py
+│   ├── strategy_factory.py
+│   ├── input_validator.py
+│   └── board_display.py
+│
+├── repositories/
+│   ├── __init__.py
+│   ├── game_repository.py
+│   └── player_repository.py
+│
+└── tests/
+    ├── __init__.py
+    ├── test_game.py
+    ├── test_board.py
+    ├── test_strategies.py
+    └── test_players.py
