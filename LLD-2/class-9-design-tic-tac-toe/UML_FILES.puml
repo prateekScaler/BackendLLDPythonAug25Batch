@@ -676,55 +676,6 @@ Cache --> Redis
 
 @enduml
 
-' ============================================
-' DEPLOYMENT DIAGRAM
-' ============================================
-@startuml deployment-diagram
-title Deployment Architecture
-
-cloud "Client Tier" {
-  node "User Device" {
-    [CLI Application\n(Python)]
-    [Web Browser]
-  }
-}
-
-node "Application Tier" {
-  node "Web Server" {
-    [FastAPI/Flask\nApplication]
-  }
-
-  node "Application Server" {
-    [Game Controller]
-    [Game Service]
-    [Strategy Engine]
-  }
-}
-
-node "Data Tier" {
-  database "PostgreSQL\nServer" {
-    [games]
-    [players]
-    [statistics]
-    [move_history]
-  }
-
-  database "Redis\nCache" {
-    [active_games]
-    [player_sessions]
-    [leaderboard]
-  }
-}
-
-[CLI Application\n(Python)] --> [FastAPI/Flask\nApplication] : HTTP/REST
-[Web Browser] --> [FastAPI/Flask\nApplication] : HTTP/REST
-[FastAPI/Flask\nApplication] --> [Game Controller] : Internal API
-[Game Controller] --> [Game Service]
-[Game Service] --> [Strategy Engine]
-[Game Service] --> [PostgreSQL\nServer]
-[Game Service] --> [Redis\nCache]
-
-@enduml
 
 ' ============================================
 ' STATE DIAGRAM
