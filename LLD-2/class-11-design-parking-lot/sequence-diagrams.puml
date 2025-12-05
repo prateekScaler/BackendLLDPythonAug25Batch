@@ -1,0 +1,345 @@
+@startuml Issue Ticket Flow
+title Issue Ticket (Vehicle Entry)
+
+actor "Parking Attendant" as Attendant
+participant "TicketController" as Controller
+participant "TicketService" as Service
+participant "SpotAllocationStrategy" as Strategy
+participant "ParkingSpotRepository" as SpotRepo
+participant "VehicleRepository" as VehicleRepo
+participant "TicketRepository" as TicketRepo
+database "Database" as DB
+
+Attendant -> Controller: POST /ticket\n{license_plate, vehicle_type}
+activate Controller
+
+Controller -> Service: issue_ticket(license_plate, vehicle_type, gate_id)
+activate Service
+
+' Find or create vehicle
+Service -> VehicleRepo: find_by_license_plate(license_plate)
+activate VehicleRepo
+VehicleRepo -> DB: SELECT * FROM vehicle WHERE license_plate = ?
+VehicleRepo --> Service: vehicle or None
+deactivate VehicleRepo
+
+alt vehicle not found
+    Service -> VehicleRepo: create_vehicle(license_plate, vehicle_type)
+    activate VehicleRepo
+    VehicleRepo -> DB: INSERT INTO vehicle
+    VehicleRepo --> Service: vehicle
+    deactivate VehicleRepo
+end
+
+' Find available spot
+Service -> Strategy: find_available_spot(vehicle_type)
+activate Strategy
+Strategy -> SpotRepo: find_available_spots(vehicle_type, status=FREE)
+activate SpotRepo
+SpotRepo -> DB: SELECT * FROM parking_spot\nWHERE spot_type = ? AND status = 'FREE'
+SpotRepo --> Strategy: list[ParkingSpot]
+deactivate SpotRepo
+
+Strategy --> Service: selected_spot
+deactivate Strategy
+
+alt no spot available
+    Service --> Controller: raise NoSpotAvailableException
+    Controller --> Attendant: 404 - No spots available
+else spot found
+    ' Update spot status
+    Service -> SpotRepo: update_spot_status(spot_id, OCCUPIED)
+    activate SpotRepo
+    SpotRepo -> DB: UPDATE parking_spot\nSET status = 'OCCUPIED'
+    deactivate SpotRepo
+
+    ' Create ticket
+    Service -> TicketRepo: create_ticket(spot, vehicle, gate, attendant, entry_time)
+    activate TicketRepo
+    TicketRepo -> DB: INSERT INTO parking_ticket
+    TicketRepo --> Service: ticket
+    deactivate TicketRepo
+
+    Service --> Controller: ticket
+    deactivate Service
+    Controller --> Attendant: 201 - Ticket created\n{ticket_id, spot_number, entry_time}
+    deactivate Controller
+end
+
+@enduml
+
+@startuml Make Payment Flow
+title Make Payment
+
+actor "Customer" as Customer
+participant "PaymentController" as Controller
+participant "PaymentService" as Service
+participant "PricingStrategy" as Pricing
+participant "TicketRepository" as TicketRepo
+participant "PaymentRepository" as PaymentRepo
+participant "PaymentGateway" as Gateway
+database "Database" as DB
+
+Customer -> Controller: POST /payment\n{ticket_id, payment_type}
+activate Controller
+
+Controller -> Service: process_payment(ticket_id, payment_type)
+activate Service
+
+' Get ticket
+Service -> TicketRepo: find_by_ticket_id(ticket_id)
+activate TicketRepo
+TicketRepo -> DB: SELECT * FROM parking_ticket WHERE ticket_id = ?
+TicketRepo --> Service: ticket
+deactivate TicketRepo
+
+alt ticket not found
+    Service --> Controller: raise TicketNotFoundException
+    Controller --> Customer: 404 - Ticket not found
+else ticket found
+    ' Check if already paid
+    Service -> PaymentRepo: find_by_ticket_id(ticket_id)
+    activate PaymentRepo
+    PaymentRepo -> DB: SELECT * FROM payment WHERE ticket_id = ?
+    PaymentRepo --> Service: existing_payment or None
+    deactivate PaymentRepo
+
+    alt already paid
+        Service --> Controller: raise AlreadyPaidException
+        Controller --> Customer: 400 - Payment already done
+    else not paid
+        ' Calculate amount
+        Service -> Pricing: calculate_fee(ticket.entry_time, current_time, spot_type)
+        activate Pricing
+        Pricing --> Service: amount
+        deactivate Pricing
+
+        ' Process payment based on type
+        alt payment_type == CASH
+            Service -> Service: mark_as_cash_payment()
+        else payment_type == CREDIT_CARD or UPI
+            Service -> Gateway: process_payment(amount, payment_type)
+            activate Gateway
+            Gateway --> Service: payment_status
+            deactivate Gateway
+        end
+
+        ' Create payment record
+        Service -> PaymentRepo: create_payment(ticket, amount, payment_type, DONE)
+        activate PaymentRepo
+        PaymentRepo -> DB: INSERT INTO payment
+        PaymentRepo --> Service: payment
+        deactivate PaymentRepo
+
+        Service --> Controller: payment
+        deactivate Service
+        Controller --> Customer: 200 - Payment successful\n{payment_id, amount, status}
+        deactivate Controller
+    end
+end
+
+@enduml
+
+@startuml Checkout Flow
+title Checkout (Vehicle Exit)
+
+actor "Parking Attendant" as Attendant
+participant "CheckoutController" as Controller
+participant "CheckoutService" as Service
+participant "TicketRepository" as TicketRepo
+participant "PaymentRepository" as PaymentRepo
+participant "InvoiceRepository" as InvoiceRepo
+participant "SpotRepository" as SpotRepo
+database "Database" as DB
+
+Attendant -> Controller: POST /checkout\n{ticket_id, exit_gate_id}
+activate Controller
+
+Controller -> Service: checkout(ticket_id, exit_gate_id, exit_time)
+activate Service
+
+' Get ticket
+Service -> TicketRepo: find_by_ticket_id(ticket_id)
+activate TicketRepo
+TicketRepo -> DB: SELECT * FROM parking_ticket WHERE ticket_id = ?
+TicketRepo --> Service: ticket
+deactivate TicketRepo
+
+alt ticket not found
+    Service --> Controller: raise TicketNotFoundException
+    Controller --> Attendant: 404 - Ticket not found
+else ticket found
+    ' Check payment status
+    Service -> PaymentRepo: find_by_ticket_id(ticket_id)
+    activate PaymentRepo
+    PaymentRepo -> DB: SELECT * FROM payment WHERE ticket_id = ?
+    PaymentRepo --> Service: payment or None
+    deactivate PaymentRepo
+
+    alt payment not found or status != DONE
+        Service --> Controller: raise PaymentNotDoneException
+        Controller --> Attendant: 400 - Payment not completed
+    else payment done
+        ' Create invoice
+        Service -> InvoiceRepo: create_invoice(ticket, payment, exit_time)
+        activate InvoiceRepo
+        InvoiceRepo -> DB: INSERT INTO invoice
+        InvoiceRepo --> Service: invoice
+        deactivate InvoiceRepo
+
+        ' Free the parking spot
+        Service -> SpotRepo: update_spot_status(ticket.spot_id, FREE)
+        activate SpotRepo
+        SpotRepo -> DB: UPDATE parking_spot SET status = 'FREE'
+        deactivate SpotRepo
+
+        Service --> Controller: invoice
+        deactivate Service
+        Controller --> Attendant: 200 - Checkout successful\n{invoice_id, amount, duration}
+        deactivate Controller
+    end
+end
+
+@enduml
+
+@startuml Check Available Spots Flow
+title Check Available Spots
+
+actor "Parking Attendant" as Attendant
+participant "SpotController" as Controller
+participant "SpotService" as Service
+participant "SpotRepository" as SpotRepo
+database "Database" as DB
+
+Attendant -> Controller: GET /parking-spot?status=AVAILABLE&floor_id=2
+activate Controller
+
+Controller -> Service: get_available_spots(floor_id, status)
+activate Service
+
+Service -> SpotRepo: find_spots(floor_id, status)
+activate SpotRepo
+SpotRepo -> DB: SELECT * FROM parking_spot\nWHERE floor_id = ? AND status = ?
+SpotRepo --> Service: list[ParkingSpot]
+deactivate SpotRepo
+
+Service --> Controller: spots_list
+deactivate Service
+
+Controller --> Attendant: 200 - Available spots\n[{spot_id, spot_number, spot_type}]
+deactivate Controller
+
+@enduml
+
+@startuml Spot Allocation Strategy
+title Spot Allocation Strategy Pattern
+
+participant "TicketService" as Service
+participant "SpotAllocationStrategy" as Strategy
+participant "NearestSpotStrategy" as Nearest
+participant "RandomSpotStrategy" as Random
+participant "ParkingSpotRepository" as Repo
+
+note over Service, Repo
+    Different strategies can be used to allocate spots:
+    - NearestSpotStrategy: Find spot nearest to entry gate
+    - RandomSpotStrategy: Randomly select from available spots
+    - CheapestSpotStrategy: Find spot with lowest rate
+end note
+
+Service -> Strategy: find_available_spot(vehicle_type)
+activate Strategy
+
+alt Strategy is NearestSpotStrategy
+    Strategy -> Nearest: find_available_spot(vehicle_type)
+    activate Nearest
+    Nearest -> Repo: find_available_spots(vehicle_type)
+    Repo --> Nearest: list[spots]
+    Nearest -> Nearest: sort_by_distance_to_gate()
+    Nearest --> Strategy: nearest_spot
+    deactivate Nearest
+else Strategy is RandomSpotStrategy
+    Strategy -> Random: find_available_spot(vehicle_type)
+    activate Random
+    Random -> Repo: find_available_spots(vehicle_type)
+    Repo --> Random: list[spots]
+    Random -> Random: randomly_select()
+    Random --> Strategy: random_spot
+    deactivate Random
+end
+
+Strategy --> Service: selected_spot
+deactivate Strategy
+
+@enduml
+
+@startuml Pricing Calculation
+title Pricing Calculation Strategy
+
+participant "PaymentService" as Service
+participant "PricingStrategy" as Pricing
+participant "HourlyPricingStrategy" as Hourly
+
+Service -> Pricing: calculate_fee(entry_time, exit_time, spot_type)
+activate Pricing
+
+Pricing -> Hourly: calculate_fee(entry_time, exit_time, spot_type)
+activate Hourly
+
+Hourly -> Hourly: duration = exit_time - entry_time
+Hourly -> Hourly: hours = ceil(duration.hours)
+
+alt spot_type == SMALL
+    Hourly -> Hourly: first_hour = 50\nextra_hour = 80
+else spot_type == MEDIUM
+    Hourly -> Hourly: first_hour = 80\nextra_hour = 100
+else spot_type == LARGE
+    Hourly -> Hourly: first_hour = 100\nextra_hour = 120
+end
+
+Hourly -> Hourly: total = first_hour + (hours - 1) * extra_hour
+
+Hourly --> Pricing: total_amount
+deactivate Hourly
+
+Pricing --> Service: total_amount
+deactivate Pricing
+
+@enduml
+
+@startuml Complete Entry to Exit Flow
+title Complete Flow: Entry to Exit
+
+actor "Attendant" as Entry
+actor "Customer" as Customer
+actor "ExitAttendant" as Exit
+participant "System" as System
+
+== Entry ==
+Entry -> System: Issue ticket for vehicle
+System --> Entry: Ticket with spot assigned
+
+== Parking ==
+note over Customer
+    Vehicle parks in assigned spot
+end note
+
+== Payment ==
+Customer -> System: Make payment (online/counter)
+System -> System: Calculate fees based on duration
+System --> Customer: Payment confirmation
+
+== Exit ==
+Exit -> System: Checkout with ticket_id
+System -> System: Verify payment status
+alt Payment not done
+    System --> Exit: Error - Payment required
+    Exit --> Customer: Please complete payment
+else Payment done
+    System -> System: Generate invoice
+    System -> System: Free parking spot
+    System --> Exit: Invoice & gate opens
+    Exit --> Customer: Thank you, gate opens
+end
+
+@enduml
