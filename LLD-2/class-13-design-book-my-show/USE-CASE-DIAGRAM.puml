@@ -1,0 +1,17 @@
+@startuml
+left to right direction
+actor User
+actor Admin
+
+rectangle BookYourShow {
+    User --> (Search for a movie)
+    User --> (Book a ticket)
+    User --> (Pay for a ticket)
+    User --> (Cancel a ticket)
+
+    Admin --> (Add a new movie)
+    Admin --> (Add a new cinema hall)
+    Admin --> (Add a new show)
+}
+
+@enduml
