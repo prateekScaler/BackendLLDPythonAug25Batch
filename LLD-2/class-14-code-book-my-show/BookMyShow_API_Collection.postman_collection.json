@@ -1,0 +1,574 @@
+{
+  "info": {
+    "name": "BookMyShow API",
+    "description": "Complete API collection for BookMyShow Django application with concurrency control demos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"9876543210\",\n    \"password\": \"password123\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register/",
+              "host": ["{{base_url}}"],
+              "path": ["register", ""]
+            },
+            "description": "Register a new user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"auth_token\", jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"john_doe\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            },
+            "description": "Login and get authentication token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cities",
+      "item": [
+        {
+          "name": "List Cities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cities/",
+              "host": ["{{base_url}}"],
+              "path": ["cities", ""]
+            },
+            "description": "Get all cities where BookMyShow is available"
+          },
+          "response": []
+        },
+        {
+          "name": "Get City Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cities/mumbai/",
+              "host": ["{{base_url}}"],
+              "path": ["cities", "mumbai", ""]
+            },
+            "description": "Get details of a specific city"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Theaters",
+      "item": [
+        {
+          "name": "List Theaters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/theaters/",
+              "host": ["{{base_url}}"],
+              "path": ["theaters", ""]
+            },
+            "description": "Get all theaters"
+          },
+          "response": []
+        },
+        {
+          "name": "List Theaters by City",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/theaters/?city=mumbai",
+              "host": ["{{base_url}}"],
+              "path": ["theaters", ""],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "mumbai"
+                }
+              ]
+            },
+            "description": "Get all theaters in a specific city"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Theaters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/theaters/?search=PVR",
+              "host": ["{{base_url}}"],
+              "path": ["theaters", ""],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "PVR"
+                }
+              ]
+            },
+            "description": "Search theaters by name"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Theater Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/theaters/pvr-mumbai-1/",
+              "host": ["{{base_url}}"],
+              "path": ["theaters", "pvr-mumbai-1", ""]
+            },
+            "description": "Get theater details with screens"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Movies",
+      "item": [
+        {
+          "name": "List Movies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/movies/",
+              "host": ["{{base_url}}"],
+              "path": ["movies", ""]
+            },
+            "description": "Get all movies"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Movies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/movies/search/?query=avengers&city=mumbai&category=Action&language=English&min_rating=7",
+              "host": ["{{base_url}}"],
+              "path": ["movies", "search", ""],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "avengers",
+                  "description": "Search in name/description"
+                },
+                {
+                  "key": "city",
+                  "value": "mumbai",
+                  "description": "Filter by city"
+                },
+                {
+                  "key": "category",
+                  "value": "Action",
+                  "description": "Filter by category"
+                },
+                {
+                  "key": "language",
+                  "value": "English",
+                  "description": "Filter by language"
+                },
+                {
+                  "key": "min_rating",
+                  "value": "7",
+                  "description": "Minimum rating"
+                }
+              ]
+            },
+            "description": "Advanced movie search with filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Movie Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/movies/movie-1/",
+              "host": ["{{base_url}}"],
+              "path": ["movies", "movie-1", ""]
+            },
+            "description": "Get movie details"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Movie Shows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/movies/movie-1/shows/?city=mumbai&date=2024-12-15",
+              "host": ["{{base_url}}"],
+              "path": ["movies", "movie-1", "shows", ""],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "mumbai"
+                },
+                {
+                  "key": "date",
+                  "value": "2024-12-15",
+                  "description": "Format: YYYY-MM-DD"
+                }
+              ]
+            },
+            "description": "Get all shows for a movie"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shows",
+      "item": [
+        {
+          "name": "List Shows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shows/",
+              "host": ["{{base_url}}"],
+              "path": ["shows", ""]
+            },
+            "description": "Get all shows"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Shows by Movie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shows/?movie=movie-1",
+              "host": ["{{base_url}}"],
+              "path": ["shows", ""],
+              "query": [
+                {
+                  "key": "movie",
+                  "value": "movie-1"
+                }
+              ]
+            },
+            "description": "Get shows for a specific movie"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Shows by Theater",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shows/?theater=pvr-mumbai-1",
+              "host": ["{{base_url}}"],
+              "path": ["shows", ""],
+              "query": [
+                {
+                  "key": "theater",
+                  "value": "pvr-mumbai-1"
+                }
+              ]
+            },
+            "description": "Get shows in a specific theater"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Show Details with Seats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shows/show-1/",
+              "host": ["{{base_url}}"],
+              "path": ["shows", "show-1", ""]
+            },
+            "description": "Get show details including seat layout and availability"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Seats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/shows/show-1/available_seats/",
+              "host": ["{{base_url}}"],
+              "path": ["shows", "show-1", "available_seats", ""]
+            },
+            "description": "Get only available seats for a show"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Book Tickets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"show_id\": \"show-1\",\n    \"seat_ids\": [\n        \"show-1-pvr-mumbai-1-screen-1-A1\",\n        \"show-1-pvr-mumbai-1-screen-1-A2\"\n    ],\n    \"payment_mode\": \"UPI\",\n    \"coupon_code\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/book/",
+              "host": ["{{base_url}}"],
+              "path": ["book", ""]
+            },
+            "description": "Book tickets for a show. Demonstrates concurrency control!"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"payment_success\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tickets/TKT-123/confirm-payment/",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "TKT-123", "confirm-payment", ""]
+            },
+            "description": "Confirm payment for a booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Coupon",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"coupon_code\": \"DISCOUNT50\",\n    \"booking_amount\": \"600.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/validate-coupon/",
+              "host": ["{{base_url}}"],
+              "path": ["validate-coupon", ""]
+            },
+            "description": "Validate a coupon code before booking"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "My Tickets",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets/",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", ""]
+            },
+            "description": "Get all tickets for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ticket Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets/TKT-123/",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "TKT-123", ""]
+            },
+            "description": "Get details of a specific ticket"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Ticket",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tickets/TKT-123/cancel/",
+              "host": ["{{base_url}}"],
+              "path": ["tickets", "TKT-123", "cancel", ""]
+            },
+            "description": "Cancel a ticket (only allowed before cutoff time)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health/",
+          "host": ["{{base_url}}"],
+          "path": ["health", ""]
+        },
+        "description": "Check API health and which booking service is active"
+      },
+      "response": []
+    }
+  ]
+}
