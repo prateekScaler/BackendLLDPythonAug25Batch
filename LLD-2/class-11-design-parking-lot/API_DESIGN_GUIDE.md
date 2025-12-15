@@ -903,8 +903,8 @@ Many developers use PUT and PATCH interchangeably, but they have very different 
 ```json
 {
   "id": 123,
-  "name": "John Doe",
-  "email": "john@example.com",
+  "name": "Gokula Krishnan",
+  "email": "Gokula@example.com",
   "phone": "+91-9876543210",
   "address": "123 Main St",
   "status": "active"
@@ -917,8 +917,8 @@ PUT /users/123
 Content-Type: application/json
 
 {
-  "name": "John Doe",
-  "email": "john.doe@example.com",
+  "name": "Gokula Krishnan",
+  "email": "Gokula.Krishnan@example.com",
   "phone": "+91-9876543210",
   "address": "123 Main St",
   "status": "active"
@@ -929,7 +929,7 @@ Content-Type: application/json
 ```http
 PUT /users/123
 {
-  "email": "john.doe@example.com"
+  "email": "Gokula.Krishnan@example.com"
 }
 ```
 **Result**: All other fields (name, phone, address, status) will be set to null/default!
@@ -940,7 +940,7 @@ PATCH /users/123
 Content-Type: application/json
 
 {
-  "email": "john.doe@example.com"
+  "email": "Gokula.Krishnan@example.com"
 }
 ```
 ✅ **Correct**: Only email is updated, all other fields remain unchanged.

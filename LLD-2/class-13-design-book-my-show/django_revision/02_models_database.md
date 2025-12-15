@@ -159,16 +159,16 @@ python manage.py showmigrations
 ### Creating Objects
 ```python
 # Method 1: Create and save
-user = User(name='John', email='john@example.com')
+user = User(name='Jawahar', email='Jawahar@example.com')
 user.save()
 
 # Method 2: Create in one step
-user = User.objects.create(name='John', email='john@example.com')
+user = User.objects.create(name='Rithick', email='Rithick@example.com')
 
 # Bulk create
 User.objects.bulk_create([
-    User(name='Alice', email='alice@example.com'),
-    User(name='Bob', email='bob@example.com'),
+    User(name='Praveen', email='praveen@scaler.com'),
+    User(name='Sumit', email='Sumit@example.com'),
 ])
 ```
 
@@ -182,17 +182,17 @@ user = User.objects.get(id=1)
 
 # Filter objects
 active_users = User.objects.filter(is_active=True)
-johns = User.objects.filter(name__icontains='john')
+jas = User.objects.filter(name__icontains='ja')
 
 # Exclude objects
-not_johns = User.objects.exclude(name='John')
+not_jawahars = User.objects.exclude(name='Jawahar')
 
 # Get first/last
 first_user = User.objects.first()
 last_user = User.objects.last()
 
 # Check existence
-exists = User.objects.filter(email='john@example.com').exists()
+exists = User.objects.filter(email='Jawahar@example.com').exists()
 
 # Count
 count = User.objects.count()
@@ -201,11 +201,11 @@ count = User.objects.count()
 ### Field Lookups
 ```python
 # Exact match
-User.objects.filter(name__exact='John')
-User.objects.filter(name='John')  # Same as above
+User.objects.filter(name__exact='Praveen')
+User.objects.filter(name='Praveen')  # Same as above
 
 # Case-insensitive
-User.objects.filter(name__iexact='john')
+User.objects.filter(name__iexact='Praveen')
 
 # Contains
 User.objects.filter(name__contains='oh')
@@ -249,8 +249,8 @@ User.objects.filter(is_active=False).update(is_active=True)
 
 # Update or create
 user, created = User.objects.update_or_create(
-    email='john@example.com',
-    defaults={'name': 'John Doe', 'age': 30}
+    email='Debina@example.com',
+    defaults={'name': 'Debina', 'age': 30}
 )
 ```
 

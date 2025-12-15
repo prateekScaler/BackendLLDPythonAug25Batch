@@ -170,9 +170,9 @@ if __name__ == "__main__":
 
     # Create observers
     dashboard = DashboardDisplay()
-    mobile = MobileApp("trader_john")
+    mobile = MobileApp("trader_Mudit")
     bot = TradingBot(buy_threshold=145, sell_threshold=165)
-    email = EmailAlert("john@trader.com", threshold=160)
+    email = EmailAlert("Mudit@trader.com", threshold=160)
     logger = PriceLogger()
 
     # Subscribe observers

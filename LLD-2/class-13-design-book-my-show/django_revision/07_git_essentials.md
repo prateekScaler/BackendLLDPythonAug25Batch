@@ -117,7 +117,7 @@ git log --graph --oneline --all
 git log --grep="authentication"
 
 # Commits by author
-git log --author="John"
+git log --author="Aravinda"
 
 # Commits in date range
 git log --since="2024-01-01" --until="2024-12-31"

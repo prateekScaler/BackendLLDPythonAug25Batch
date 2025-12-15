@@ -167,7 +167,7 @@ class APIEndpoint(ABC):
 # Concrete Component
 class UserAPI(APIEndpoint):
     def handle_request(self, request):
-        return {"status": 200, "user": "John Doe"}
+        return {"status": 200, "user": "Saurabh Palhade"}
 
 # Decorator
 class LoggingDecorator(APIEndpoint):
@@ -563,14 +563,14 @@ logger2 = Logger.get_instance()
 └──────────────────┘
 Usage:
 # Create prototype once (expensive API call)
-prototype_user = User("John", "john@example.com")
+prototype_user = User("Surya", "Surya@example.com")
 
 # Clone for tests (fast, no API calls)
 user1 = prototype_user.clone()
 user1.set_name("Alice")
 
 user2 = prototype_user.clone()
-user2.set_name("Bob")
+user2.set_name("Vijay")
 
 # Much faster than creating from scratch!
 ```

@@ -838,8 +838,8 @@ A user wants to change only their phone number, keeping email and name unchanged
 ```json
 {
   "id": 123,
-  "name": "John Doe",
-  "email": "john@example.com",
+  "name": "Sumit Mishra",
+  "email": "Sumit@example.com",
   "phone": "9876543210"
 }
 ```
@@ -886,8 +886,8 @@ PATCH /api/users/123
 ```json
 {
   "id": 123,
-  "name": "John Doe",           // ✅ Unchanged
-  "email": "john@example.com",  // ✅ Unchanged
+  "name": "Sumit Mishra",           // ✅ Unchanged
+  "email": "Sumit@example.com",  // ✅ Unchanged
   "phone": "9999999999"          // ✅ Updated
 }
 ```
@@ -914,8 +914,8 @@ PUT /api/users/123
 ```http
 PUT /api/users/123
 {
-  "name": "John Doe",           // Must send all fields
-  "email": "john@example.com",
+  "name": "Sumit Mishra",           // Must send all fields
+  "email": "Sumit@example.com",
   "phone": "9999999999"
 }
 ```

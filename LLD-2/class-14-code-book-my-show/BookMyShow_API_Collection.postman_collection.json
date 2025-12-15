@@ -33,7 +33,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"9876543210\",\n    \"password\": \"password123\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\"\n}"
+              "raw": "{\n    \"username\": \"eshwar_m\",\n    \"email\": \"eshwar@example.com\",\n    \"phone\": \"9876543210\",\n    \"password\": \"password123\",\n    \"first_name\": \"Eshwar\",\n    \"last_name\": \"M\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/register/",
@@ -70,7 +70,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"john_doe\",\n    \"password\": \"password123\"\n}"
+              "raw": "{\n    \"username\": \"eshwar_m\",\n    \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/login/",

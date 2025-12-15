@@ -276,7 +276,7 @@ style2 = factory.get_style("Arial", 12, "black")
 # Modify style1 affects all users!
 
 # PROTOTYPE - Cloned instances
-prototype = User("John", "john@example.com")
+prototype = User("Surya", "Surya@example.com")
 user1 = prototype.clone()
 user2 = prototype.clone()
 # user1 is user2 → False (DIFFERENT objects)

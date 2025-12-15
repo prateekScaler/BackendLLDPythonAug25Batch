@@ -24,7 +24,7 @@ Answer: Modern apps run on multiple servers (horizontal scaling).
 Thread locks only work within a single Python process.
 User A on Server 1 and User B on Server 2 won't share the lock!
 
-When to teach/use:
+When to use:
 - Educational purposes
 - Understanding concurrency basics
 - Small single-server applications

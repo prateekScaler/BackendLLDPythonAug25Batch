@@ -539,7 +539,7 @@ import urllib.parse
 import json
 
 url = "https://api.example.com/users"
-data = json.dumps({"name": "John"}).encode('utf-8')
+data = json.dumps({"name": "Aravinda"}).encode('utf-8')
 headers = {'Content-Type': 'application/json'}
 req = urllib.request.Request(url, data=data, headers=headers, method='POST')
 response = urllib.request.urlopen(req)
@@ -550,7 +550,7 @@ import requests
 
 result = requests.post(
     "https://api.example.com/users",
-    json={"name": "John"}
+    json={"name": "Aravinda"}
 ).json()
 
 # requests is a FACADE over urllib!

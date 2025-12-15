@@ -528,7 +528,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # Search
     search_fields = ['name', 'email']
-    # GET /users/?search=john
+    # GET /users/?search=Aravinda
 
     # Ordering
     ordering_fields = ['name', 'created_at']
@@ -645,14 +645,14 @@ from rest_framework import status
 class UserAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create(name='John', email='john@example.com')
+        self.user = User.objects.create(name='jagnesh', email='jagnesh@example.com')
 
     def test_get_user_list(self):
         response = self.client.get('/api/users/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_user(self):
-        data = {'name': 'Jane', 'email': 'jane@example.com'}
+        data = {'name': 'Prateek', 'email': 'Prateek@example.com'}
         response = self.client.post('/api/users/', data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 2)

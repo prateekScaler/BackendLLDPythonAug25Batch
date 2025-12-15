@@ -73,7 +73,7 @@ BookMyShow API
 1. **Register a user** (one time):
    - Open `Authentication → Register User`
    - Click **Send**
-   - Creates user: `john_doe`
+   - Creates user: `eshwar_m`
 
 2. **Login**:
    - Open `Authentication → Login`

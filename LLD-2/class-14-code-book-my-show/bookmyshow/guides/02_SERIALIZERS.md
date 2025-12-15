@@ -420,10 +420,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'password', 'full_name']
 
 # Input (can include password):
-# {'username': 'john', 'password': 'secret123'}
+# {'username': 'Rithick', 'password': 'secret123'}
 
 # Output (includes full_name, excludes password):
-# {'id': 1, 'username': 'john', 'full_name': 'John Doe'}
+# {'id': 1, 'username': 'Rithick', 'full_name': 'Rithick Kumar'}
 ```
 
 ### 2. many=True

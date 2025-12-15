@@ -30,7 +30,7 @@ POST /api/auth/login/
 Content-Type: application/json
 
 {
-    "username": "john_doe",
+    "username": "amit_kumar",
     "password": "password123"
 }
 ```
@@ -41,8 +41,8 @@ Content-Type: application/json
     "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
     "user": {
         "id": 1,
-        "username": "john_doe",
-        "email": "john@example.com"
+        "username": "amit_kumar",
+        "email": "amit@example.com"
     }
 }
 ```
@@ -63,12 +63,12 @@ POST /api/register/
 Content-Type: application/json
 
 {
-    "username": "john_doe",
-    "email": "john@example.com",
+    "username": "amit_kumar",
+    "email": "amit@example.com",
     "phone": "+1234567890",
     "password": "SecurePass123",
-    "first_name": "John",
-    "last_name": "Doe"
+    "first_name": "Amit",
+    "last_name": "Kumar"
 }
 ```
 
@@ -76,11 +76,11 @@ Content-Type: application/json
 ```json
 {
     "id": 1,
-    "username": "john_doe",
-    "email": "john@example.com",
+    "username": "amit_kumar",
+    "email": "amit@example.com",
     "phone": "+1234567890",
-    "first_name": "John",
-    "last_name": "Doe"
+    "first_name": "Amit",
+    "last_name": "Kumar"
 }
 ```
 
@@ -445,7 +445,7 @@ Content-Type: application/json
 {
     "ticket": {
         "id": "TKT-ABC123XYZ",
-        "user_name": "john_doe",
+        "user_name": "praveen_kumar",
         "movie_name": "Avengers: Endgame",
         "theater_name": "PVR Juhu",
         "screen_name": "Audi 1",
@@ -549,7 +549,7 @@ Authorization: Bearer <token>
 ```json
 {
     "id": "TKT-ABC123XYZ",
-    "user_name": "john_doe",
+    "user_name": "praveen_kumar",
     "movie_name": "Avengers: Endgame",
     "theater_name": "PVR Juhu",
     "screen_name": "Audi 1",
