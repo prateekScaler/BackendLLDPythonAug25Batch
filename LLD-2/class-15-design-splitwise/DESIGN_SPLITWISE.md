@@ -174,8 +174,6 @@ classDiagram
         -Expense expense
         -Double amount
         -UserExpenseType type
-        -Double percentage
-        -Integer ratio
     }
 
     class Group {
@@ -183,14 +181,6 @@ classDiagram
         -String name
         -User createdBy
         -Date createdAt
-    }
-
-    class ExpenseType {
-        <<enumeration>>
-        EQUAL
-        PERCENT
-        RATIO
-        EXACT
     }
 
     class UserExpenseType {
@@ -214,7 +204,6 @@ classDiagram
     Expense "*" --> "0..1" Group : belongs_to
     User "1" --> "*" Expense : creates
     User "1" --> "*" Group : creates
-    Expense --> ExpenseType : type
     Expense --> Currency : currency
     UserExpense --> UserExpenseType : type
 ```
