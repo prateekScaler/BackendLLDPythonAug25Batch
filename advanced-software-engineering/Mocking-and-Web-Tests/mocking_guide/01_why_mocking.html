@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why Mocking? - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎯</div>
+            <h1>Why Do We Need Mocking?</h1>
+            <p class="subtitle">Understanding the problem mocking solves</p>
+        </header>
+
+        <div class="section">
+            <h2>The Real World Problem</h2>
+            <p>In real applications, your code doesn't work in isolation. It depends on <strong>external systems</strong>:</p>
+
+            <ul>
+                <li><strong>Databases</strong> - to store and retrieve data</li>
+                <li><strong>External APIs</strong> - payment gateways, email services, SMS providers</li>
+                <li><strong>File systems</strong> - reading config files, writing logs</li>
+                <li><strong>Network services</strong> - other microservices, third-party integrations</li>
+            </ul>
+
+            <div class="diagram">
+<pre>
+┌─────────────────┐     ┌─────────────────┐
+│   OrderService  │────▶│  PaymentGateway │  💰 Charges real money!
+│   (Your Code)   │     │  (Razorpay API) │
+└─────────────────┘     └─────────────────┘
+         │
+         │              ┌─────────────────┐
+         ├─────────────▶│   EmailService  │  📧 Sends real emails!
+         │              │  (SendGrid API) │
+         │              └─────────────────┘
+         │
+         │              ┌─────────────────┐
+         └─────────────▶│    Database     │  💾 Modifies real data!
+                        │   (PostgreSQL)  │
+                        └─────────────────┘
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What Happens When You Test With Real Dependencies?</h2>
+
+            <div class="danger-box">
+                <strong>⚠️ Problems with testing real dependencies:</strong>
+                <ul>
+                    <li><strong>Cost</strong> - Payment APIs charge real money per transaction</li>
+                    <li><strong>Side Effects</strong> - Emails sent to real customers, SMS charges</li>
+                    <li><strong>Speed</strong> - Network calls are slow (100-500ms each)</li>
+                    <li><strong>Flakiness</strong> - Tests fail when external services are down</li>
+                    <li><strong>Data Pollution</strong> - Test data ends up in production database</li>
+                    <li><strong>Rate Limits</strong> - APIs may block you for too many requests</li>
+                </ul>
+            </div>
+
+            <h3>Example: Testing Without Mocks</h3>
+<pre><code class="language-python"># This code is DANGEROUS to test directly!
+class OrderService:
+    def place_order(self, order):
+        # Calls real payment gateway - charges real money!
+        payment_result = PaymentGateway().charge(
+            card=order.card_number,
+            amount=order.total
+        )
+
+        # Sends real email to customer!
+        EmailService().send(
+            to=order.customer_email,
+            subject="Order Confirmed!",
+            body=f"Your order #{order.id} is confirmed."
+        )
+
+        # Saves to real database!
+        Database().save(order)
+
+        return payment_result</code></pre>
+
+            <p>If you run tests on this code:</p>
+            <ul>
+                <li>Each test run charges the credit card 💸</li>
+                <li>Customer receives dozens of test emails 📧</li>
+                <li>Database fills up with test orders 💾</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>The Solution: Mocking</h2>
+
+            <p><strong>Mocking</strong> = Replacing real objects with <span class="highlight">fake objects we control</span>.</p>
+
+            <div class="diagram">
+<pre>
+┌─────────────────┐     ┌─────────────────┐
+│   OrderService  │────▶│   Mock Gateway  │  ✅ Returns {"status": "success"}
+│   (Your Code)   │     │     (Fake)      │     No real charges!
+└─────────────────┘     └─────────────────┘
+         │
+         │              ┌─────────────────┐
+         ├─────────────▶│   Mock Email    │  ✅ Records the call
+         │              │     (Fake)      │     No emails sent!
+         │              └─────────────────┘
+         │
+         │              ┌─────────────────┐
+         └─────────────▶│   Mock Database │  ✅ In-memory only
+                        │     (Fake)      │     No data pollution!
+                        └─────────────────┘
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>✅ Benefits of Mocking:</strong>
+                <ul>
+                    <li><strong>Fast</strong> - Tests run in milliseconds, not seconds</li>
+                    <li><strong>Free</strong> - No API charges, no resources consumed</li>
+                    <li><strong>Reliable</strong> - Tests pass regardless of network/service status</li>
+                    <li><strong>Safe</strong> - No real side effects (emails, payments, data changes)</li>
+                    <li><strong>Controllable</strong> - You decide what the mock returns</li>
+                    <li><strong>Testable Errors</strong> - Easy to simulate failures and edge cases</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Preview: Testing With Mocks</h2>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+def test_place_order():
+    # Create fake dependencies
+    mock_payment = Mock()
+    mock_email = Mock()
+    mock_db = Mock()
+
+    # Configure fake payment to return success
+    mock_payment.charge.return_value = {"status": "success", "txn_id": "123"}
+
+    # Inject fakes into our service
+    service = OrderService(
+        payment_gateway=mock_payment,
+        email_service=mock_email,
+        database=mock_db
+    )
+
+    # Test!
+    result = service.place_order(sample_order)
+
+    # Verify behavior
+    assert result["status"] == "success"
+    mock_payment.charge.assert_called_once()  # Payment was attempted
+    mock_email.send.assert_called_once()      # Email was sent
+    mock_db.save.assert_called_once()         # Order was saved</code></pre>
+
+            <p>Notice: <strong>No real payment, no real email, no real database</strong> - yet we fully tested our code's logic!</p>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">When should you use mocking in your tests?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) When testing pure functions with no dependencies
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) When your code calls external services like APIs or databases
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Only in production environments
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) When you want slower, more thorough tests
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="index.html" class="disabled">← Previous</a>
+            <a href="02_what_is_mock.html">Next: What is a Mock? →</a>
+        </div>
+
+        <footer>
+            <p>Page 1 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Mocking is essential when your code depends on external services.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Mocking is used when your code calls external services to avoid real side effects during testing.';
+            }
+        }
+    </script>
+</body>
+</html>

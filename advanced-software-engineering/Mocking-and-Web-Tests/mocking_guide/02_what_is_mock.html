@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What is a Mock? - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎭</div>
+            <h1>What is a Mock?</h1>
+            <p class="subtitle">Creating and configuring mock objects</p>
+        </header>
+
+        <div class="section">
+            <h2>Creating a Basic Mock</h2>
+            <p>A <strong>Mock</strong> is a flexible fake object from Python's <code>unittest.mock</code> module:</p>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+# Create a mock object
+mock = Mock()
+
+# That's it! You now have a fake object you can use anywhere.</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Mocks Accept Anything</h2>
+            <p>The magic of Mock is that it <strong>accepts any attribute or method call</strong> without complaining:</p>
+
+<pre><code class="language-python">mock = Mock()
+
+# All of these work - Mock doesn't care!
+mock.foo                      # Returns another Mock
+mock.bar.baz                  # Returns another Mock
+mock.any_method()             # Returns another Mock
+mock.calculate(1, 2, 3)       # Returns another Mock
+mock.deeply.nested.attribute  # Returns another Mock
+
+# Even calling it like a function works
+result = mock()               # Returns another Mock</code></pre>
+
+            <div class="info-box">
+                <strong>💡 Why is this useful?</strong>
+                <p>You can use a Mock to stand in for ANY object without defining its structure upfront. Need to mock a database? A payment gateway? An HTTP client? Just use <code>Mock()</code>!</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Configuring Return Values</h2>
+            <p>Use <code>return_value</code> to control what a mock returns:</p>
+
+<pre><code class="language-python">mock = Mock()
+
+# Configure what get_user() should return
+mock.get_user.return_value = {"id": 1, "name": "John", "email": "john@test.com"}
+
+# Now when you call it, you get the configured value
+result = mock.get_user(user_id=1)
+print(result)
+# Output: {"id": 1, "name": "John", "email": "john@test.com"}
+
+# It returns the same value every time
+print(mock.get_user())  # Same dict
+print(mock.get_user())  # Same dict again</code></pre>
+
+            <h3>Nested Return Values</h3>
+<pre><code class="language-python">mock = Mock()
+
+# Configure deeply nested return
+mock.db.query.execute.return_value = [
+    {"id": 1, "name": "Alice"},
+    {"id": 2, "name": "Bob"}
+]
+
+# Access the nested mock
+result = mock.db.query.execute()
+print(result)
+# Output: [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Verifying Mock Calls (Assertions)</h2>
+            <p>Mocks <strong>record how they were called</strong>, so you can verify your code interacted with them correctly:</p>
+
+<pre><code class="language-python">mock = Mock()
+
+# Call the mock
+mock.save_user("john", email="john@test.com", age=25)
+
+# Verify it was called
+mock.save_user.assert_called()                    # ✅ Was called at least once
+mock.save_user.assert_called_once()               # ✅ Was called exactly once
+
+# Verify it was called with specific arguments
+mock.save_user.assert_called_with("john", email="john@test.com", age=25)  # ✅
+mock.save_user.assert_called_once_with("john", email="john@test.com", age=25)  # ✅
+
+# Verify it was NOT called (useful for error paths)
+mock.delete_user.assert_not_called()  # ✅ delete_user was never called</code></pre>
+
+            <h3>Checking Call Count and Arguments</h3>
+<pre><code class="language-python">mock = Mock()
+
+mock.log("message 1")
+mock.log("message 2")
+mock.log("message 3")
+
+# Check how many times it was called
+print(mock.log.call_count)  # Output: 3
+
+# Get arguments of the LAST call
+print(mock.log.call_args)
+# Output: call('message 3')
+
+# Get arguments as tuple
+args, kwargs = mock.log.call_args
+print(args)    # ('message 3',)
+print(kwargs)  # {}
+
+# Get ALL calls as a list
+print(mock.log.call_args_list)
+# Output: [call('message 1'), call('message 2'), call('message 3')]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Common Assertion Methods</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>What it checks</th>
+                    </tr>
+                    <tr>
+                        <td><code>assert_called()</code></td>
+                        <td>Was called at least once</td>
+                    </tr>
+                    <tr>
+                        <td><code>assert_called_once()</code></td>
+                        <td>Was called exactly one time</td>
+                    </tr>
+                    <tr>
+                        <td><code>assert_called_with(...)</code></td>
+                        <td>Last call had these arguments</td>
+                    </tr>
+                    <tr>
+                        <td><code>assert_called_once_with(...)</code></td>
+                        <td>Called once AND with these arguments</td>
+                    </tr>
+                    <tr>
+                        <td><code>assert_any_call(...)</code></td>
+                        <td>At least one call had these arguments</td>
+                    </tr>
+                    <tr>
+                        <td><code>assert_not_called()</code></td>
+                        <td>Was never called</td>
+                    </tr>
+                    <tr>
+                        <td><code>call_count</code></td>
+                        <td>Number of times called (property)</td>
+                    </tr>
+                    <tr>
+                        <td><code>call_args</code></td>
+                        <td>Arguments of last call (property)</td>
+                    </tr>
+                    <tr>
+                        <td><code>call_args_list</code></td>
+                        <td>List of all calls (property)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Complete Example</h2>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+def test_order_service():
+    # Arrange: Create mock dependencies
+    mock_payment = Mock()
+    mock_email = Mock()
+
+    # Configure mock behavior
+    mock_payment.charge.return_value = {
+        "status": "success",
+        "transaction_id": "txn_12345"
+    }
+    mock_email.send.return_value = True
+
+    # Create service with mock dependencies
+    service = OrderService(
+        payment_gateway=mock_payment,
+        email_service=mock_email
+    )
+
+    # Act: Call the method we're testing
+    order = Order(amount=100, customer_email="test@test.com")
+    result = service.place_order(order)
+
+    # Assert: Check the result
+    assert result["status"] == "success"
+    assert result["transaction_id"] == "txn_12345"
+
+    # Assert: Verify mocks were called correctly
+    mock_payment.charge.assert_called_once_with(amount=100)
+    mock_email.send.assert_called_once()
+
+    # Check what email was sent
+    email_call_args = mock_email.send.call_args
+    assert email_call_args.kwargs["to"] == "test@test.com"</code></pre>
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Important Limitation</strong>
+            <p>Regular <code>Mock</code> doesn't support Python's magic methods like <code>__len__</code>, <code>__iter__</code>, etc. For those, you need <code>MagicMock</code> (next page)!</p>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">What does <code>mock.method.return_value = 42</code> do?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Makes mock.method equal to 42
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Makes mock.method() return 42 when called
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Raises an error because 42 is not a function
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Returns 42 only on the first call
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="01_why_mocking.html">← Previous: Why Mocking?</a>
+            <a href="03_magic_mock.html">Next: MagicMock →</a>
+        </div>
+
+        <footer>
+            <p>Page 2 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! return_value configures what the mock returns when called as a function.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. return_value makes mock.method() return that value every time it\'s called.';
+            }
+        }
+    </script>
+</body>
+</html>

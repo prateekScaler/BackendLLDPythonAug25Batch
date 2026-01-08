@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>spec & autospec - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🛡️</div>
+            <h1>spec & autospec</h1>
+            <p class="subtitle">Catching mock typos and signature errors</p>
+        </header>
+
+        <div class="section">
+            <h2>The Silent Bug Problem</h2>
+            <p>Regular mocks accept <strong>any attribute or method</strong> - even typos! This can hide bugs:</p>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+# Real class
+class PaymentGateway:
+    def charge(self, amount):
+        pass
+
+# Test with a typo - SILENTLY PASSES!
+mock = Mock()
+mock.chrage(100)  # Typo: "chrage" instead of "charge"
+mock.chrage.assert_called_once()  # ✅ Test passes! Bug hidden!</code></pre>
+
+            <div class="danger-box">
+                <strong>The Problem:</strong> Your test passes, but you're testing the wrong method name! When real code calls <code>charge()</code>, your mock configuration for <code>chrage()</code> is useless.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Solution: spec Parameter</h2>
+            <p><code>spec</code> tells the mock to only allow attributes/methods that exist on the real class:</p>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+class PaymentGateway:
+    def charge(self, amount):
+        pass
+
+    def refund(self, transaction_id):
+        pass
+
+# Mock WITH spec
+mock = Mock(spec=PaymentGateway)
+
+# Valid methods work
+mock.charge(100)     # ✅ Works
+mock.refund("tx123") # ✅ Works
+
+# Typos are caught!
+mock.chrage(100)     # ❌ AttributeError: Mock object has no attribute 'chrage'
+mock.process(100)    # ❌ AttributeError: Mock object has no attribute 'process'</code></pre>
+
+            <div class="success-box">
+                <strong>✅ Now typos are caught immediately!</strong> Your tests fail fast with a clear error message instead of silently passing.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>autospec: Even Better Protection</h2>
+            <p><code>autospec</code> not only checks attribute names, but also <strong>validates method signatures</strong>:</p>
+
+<pre><code class="language-python">from unittest.mock import create_autospec
+
+class PaymentGateway:
+    def charge(self, amount, currency="USD"):
+        pass
+
+# Create autospec mock
+mock = create_autospec(PaymentGateway)
+
+# Correct signature works
+mock.charge(100)              # ✅ Works
+mock.charge(100, "EUR")       # ✅ Works
+mock.charge(amount=100)       # ✅ Works
+
+# Wrong signatures are caught!
+mock.charge()                 # ❌ TypeError: missing required argument 'amount'
+mock.charge(100, 200, 300)    # ❌ TypeError: too many positional arguments
+mock.charge(invalid_arg=50)   # ❌ TypeError: got unexpected keyword argument</code></pre>
+
+            <h3>autospec with patch</h3>
+<pre><code class="language-python">from unittest.mock import patch
+
+@patch('mymodule.PaymentGateway', autospec=True)
+def test_checkout(mock_gateway_class):
+    # Instance mock also has autospec!
+    mock_instance = mock_gateway_class.return_value
+
+    # This would catch signature errors too
+    mock_instance.charge(100)  # ✅ Works
+    mock_instance.charge()     # ❌ TypeError!</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>spec vs autospec Comparison</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>No spec</th>
+                        <th>spec</th>
+                        <th>autospec</th>
+                    </tr>
+                    <tr>
+                        <td>Catches attribute typos</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Validates method signatures</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Recursive (nested objects)</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Performance</td>
+                        <td>Fast</td>
+                        <td>Fast</td>
+                        <td>Slightly slower</td>
+                    </tr>
+                    <tr>
+                        <td>Setup complexity</td>
+                        <td>Simple</td>
+                        <td>Simple</td>
+                        <td>Simple</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Example</h2>
+            <p>Imagine you refactor a class and change a method name:</p>
+
+<pre><code class="language-python"># BEFORE: payment.py
+class PaymentGateway:
+    def process_payment(self, amount):  # Old name
+        pass
+
+# AFTER: payment.py (refactored)
+class PaymentGateway:
+    def charge(self, amount):  # New name
+        pass</code></pre>
+
+            <h3>Without autospec - Tests Still Pass (BAD!)</h3>
+<pre><code class="language-python">def test_checkout():
+    mock = Mock()
+    mock.process_payment.return_value = {"status": "ok"}
+
+    # Your code calls charge() but mock has process_payment configured
+    # Test passes but real code will fail!
+    result = checkout_with_mock(mock)  # Uses mock.charge() internally
+    # ✅ Test passes (mock.charge returns another Mock)
+    # ❌ But assertion on process_payment is meaningless!</code></pre>
+
+            <h3>With autospec - Test Fails Fast (GOOD!)</h3>
+<pre><code class="language-python">def test_checkout():
+    mock = create_autospec(PaymentGateway)
+    mock.process_payment.return_value = {"status": "ok"}
+    # ❌ AttributeError: 'process_payment' is not valid!
+    # Test fails immediately, telling you to update to 'charge'</code></pre>
+
+            <div class="info-box">
+                <strong>💡 Best Practice:</strong> Use <code>autospec=True</code> by default in your patches. It catches more bugs and ensures your mocks stay in sync with real classes.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How to Use</h2>
+
+            <h3>Option 1: create_autospec()</h3>
+<pre><code class="language-python">from unittest.mock import create_autospec
+
+class EmailService:
+    def send(self, to, subject, body):
+        pass
+
+# Create autospec mock
+mock_email = create_autospec(EmailService)
+mock_email.send.return_value = True
+
+# Use in test
+mock_email.send("user@test.com", "Hello", "Body")  # ✅
+mock_email.send("user@test.com")  # ❌ Missing arguments!</code></pre>
+
+            <h3>Option 2: patch with autospec=True</h3>
+<pre><code class="language-python">from unittest.mock import patch
+
+@patch('mymodule.EmailService', autospec=True)
+def test_send_welcome_email(mock_email_class):
+    mock_instance = mock_email_class.return_value
+    mock_instance.send.return_value = True
+
+    # Test your code
+    send_welcome("user@test.com")
+
+    # Verify with correct signature
+    mock_instance.send.assert_called_once()</code></pre>
+
+            <h3>Option 3: Mock with spec parameter</h3>
+<pre><code class="language-python">from unittest.mock import Mock
+
+class Database:
+    def query(self, sql):
+        pass
+    def execute(self, sql):
+        pass
+
+# Quick spec (no signature checking)
+mock_db = Mock(spec=Database)
+mock_db.query("SELECT * FROM users")  # ✅
+mock_db.invalid_method()  # ❌ AttributeError</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Caveats and Limitations</h2>
+
+            <div class="warning-box">
+                <strong>⚠️ Things to Watch Out For:</strong>
+                <ul>
+                    <li><strong>Dynamic attributes:</strong> autospec won't include attributes set in <code>__init__</code></li>
+                    <li><strong>Properties:</strong> May need special handling</li>
+                    <li><strong>Performance:</strong> autospec inspects the real class, slightly slower for complex classes</li>
+                </ul>
+            </div>
+
+<pre><code class="language-python"># Dynamic attribute limitation
+class User:
+    def __init__(self, name):
+        self.name = name  # Set in __init__
+
+mock = create_autospec(User)
+mock.name  # ❌ AttributeError! (name is set in __init__)
+
+# Solution: set it manually
+mock.name = "Test User"</code></pre>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">What's the main advantage of autospec over regular spec?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) It's faster
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    B) It catches attribute typos
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    C) It validates method signatures (argument count and names)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) It works with pytest only
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="07_unittest_vs_pytest.html">← Previous: unittest vs pytest</a>
+            <a href="09_cheatsheet.html">Next: Cheat Sheet →</a>
+        </div>
+
+        <footer>
+            <p>Page 8 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! autospec validates method signatures, catching wrong argument counts and names. spec only catches attribute typos.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Both spec and autospec catch typos, but only autospec validates that you\'re calling methods with the correct arguments.';
+            }
+        }
+    </script>
+</body>
+</html>

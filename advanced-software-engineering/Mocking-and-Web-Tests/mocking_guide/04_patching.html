@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patching - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔧</div>
+            <h1>Patching</h1>
+            <p class="subtitle">Replacing real objects at runtime</p>
+        </header>
+
+        <div class="section">
+            <h2>What is Patching?</h2>
+            <p><strong>Patching</strong> = Temporarily replacing a real object with a mock during a test, then automatically restoring it after.</p>
+
+<pre><code class="language-python"># During test: PaymentGateway is replaced with our mock
+# After test: PaymentGateway is restored to the real class
+
+# Real code somewhere
+from payment import PaymentGateway
+gateway = PaymentGateway()  # This becomes your mock during test!</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Three Ways to Patch</h2>
+
+            <h3>Method 1: Decorator (Most Common)</h3>
+<pre><code class="language-python">from unittest.mock import patch
+
+@patch('mymodule.PaymentGateway')
+def test_checkout(mock_gateway_class):
+    # mock_gateway_class is the MOCKED PaymentGateway CLASS
+    # When code does PaymentGateway(), it creates mock_gateway_class.return_value
+
+    mock_instance = mock_gateway_class.return_value
+    mock_instance.charge.return_value = {"status": "success"}
+
+    # Test your code
+    result = checkout(amount=100)
+
+    assert result["status"] == "success"
+    mock_instance.charge.assert_called_once()</code></pre>
+
+            <h3>Method 2: Context Manager</h3>
+<pre><code class="language-python">from unittest.mock import patch
+
+def test_checkout():
+    with patch('mymodule.PaymentGateway') as mock_gateway_class:
+        mock_gateway_class.return_value.charge.return_value = {"status": "success"}
+
+        result = checkout(amount=100)
+
+        assert result["status"] == "success"
+
+    # After 'with' block, PaymentGateway is restored to real class</code></pre>
+
+            <h3>Method 3: pytest-mock Fixture (pytest only)</h3>
+<pre><code class="language-python"># pip install pytest-mock
+
+def test_checkout(mocker):  # mocker fixture auto-injected
+    mock_gateway = mocker.patch('mymodule.PaymentGateway')
+    mock_gateway.return_value.charge.return_value = {"status": "success"}
+
+    result = checkout(amount=100)
+
+    assert result["status"] == "success"
+    # Cleanup is automatic!</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>⚠️ Critical Rule: Patch Where USED, Not Where DEFINED</h2>
+
+            <div class="danger-box">
+                <strong>This is the #1 mistake in mocking!</strong>
+                <p>You must patch the object in the module that <em>uses</em> it, not where it's <em>defined</em>.</p>
+            </div>
+
+            <h3>Example Setup</h3>
+<pre><code class="language-python"># payment.py - where PaymentGateway is DEFINED
+class PaymentGateway:
+    def charge(self, amount):
+        # Real implementation that calls Razorpay/Stripe
+        pass
+
+# order_service.py - where PaymentGateway is USED
+from payment import PaymentGateway  # Creates a reference in this module!
+
+class OrderService:
+    def checkout(self, amount):
+        gateway = PaymentGateway()  # Uses the local reference
+        return gateway.charge(amount)</code></pre>
+
+            <h3>Wrong vs Correct Patching</h3>
+<pre><code class="language-python"># ❌ WRONG - Patches where it's DEFINED
+@patch('payment.PaymentGateway')
+def test_checkout(mock):
+    # This won't work!
+    # order_service.py already has its own reference to PaymentGateway
+    pass
+
+# ✅ CORRECT - Patches where it's USED
+@patch('order_service.PaymentGateway')
+def test_checkout(mock):
+    # This works!
+    # We're patching the reference that order_service actually uses
+    mock.return_value.charge.return_value = {"status": "success"}
+    service = OrderService()
+    result = service.checkout(100)
+    assert result["status"] == "success"</code></pre>
+
+            <div class="diagram">
+<pre>
+                    WRONG                                 CORRECT
+
+  ┌──────────────┐                           ┌──────────────┐
+  │  payment.py  │                           │  payment.py  │
+  │  (DEFINED)   │                           │  (DEFINED)   │
+  │              │                           │              │
+  │ PaymentGateway ◄── You patch here        │ PaymentGateway
+  └──────────────┘     but it doesn't        └──────────────┘
+                       affect order_service
+  ┌──────────────┐                           ┌──────────────┐
+  │order_service │                           │order_service │
+  │   (USED)     │                           │   (USED)     │
+  │              │                           │              │
+  │ PaymentGateway ◄── Has its own copy      │ PaymentGateway ◄── Patch HERE!
+  └──────────────┘                           └──────────────┘
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 Why does this happen?</strong>
+                <p>When Python executes <code>from payment import PaymentGateway</code>, it creates a <strong>new reference</strong> to the class in <code>order_service</code>'s namespace. Patching the original doesn't affect this copy!</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Complete Example</h2>
+
+<pre><code class="language-python"># services.py
+import requests
+
+class WeatherService:
+    def get_temperature(self, city):
+        response = requests.get(f"https://api.weather.com/{city}")
+        data = response.json()
+        return data["temperature"]
+
+# test_services.py
+from unittest.mock import patch, Mock
+from services import WeatherService
+
+@patch('services.requests.get')  # Patch where USED (in services module)
+def test_get_temperature(mock_get):
+    # Configure mock response
+    mock_response = Mock()
+    mock_response.json.return_value = {"temperature": 25, "unit": "celsius"}
+    mock_get.return_value = mock_response
+
+    # Test
+    service = WeatherService()
+    temp = service.get_temperature("Mumbai")
+
+    # Assertions
+    assert temp == 25
+    mock_get.assert_called_once_with("https://api.weather.com/Mumbai")</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Patching Multiple Objects</h2>
+
+<pre><code class="language-python"># Stack decorators (bottom one = first parameter)
+@patch('mymodule.EmailService')
+@patch('mymodule.PaymentGateway')
+def test_checkout(mock_payment, mock_email):  # Note: reverse order!
+    mock_payment.return_value.charge.return_value = {"status": "success"}
+    mock_email.return_value.send.return_value = True
+
+    result = checkout(100)
+
+    assert result["status"] == "success"
+    mock_payment.return_value.charge.assert_called_once()
+    mock_email.return_value.send.assert_called_once()</code></pre>
+
+            <div class="warning-box">
+                <strong>⚠️ Parameter Order Warning:</strong>
+                <p>With stacked decorators, parameters are passed in <strong>reverse order</strong>. The bottom decorator's mock is the first parameter.</p>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">Your code is in <code>order.py</code> and imports <code>PaymentGateway</code> from <code>payment.py</code>. What's the correct patch target?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) @patch('payment.PaymentGateway')
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) @patch('order.PaymentGateway')
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) @patch('PaymentGateway')
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) @patch('order.payment.PaymentGateway')
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="03_magic_mock.html">← Previous: MagicMock</a>
+            <a href="05_mock_vs_patch.html">Next: Mock vs Patch →</a>
+        </div>
+
+        <footer>
+            <p>Page 4 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Patch where the object is USED (order.py), not where it\'s defined (payment.py).';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Remember: Patch where USED, not where DEFINED. Since order.py uses it, patch order.PaymentGateway.';
+            }
+        }
+    </script>
+</body>
+</html>

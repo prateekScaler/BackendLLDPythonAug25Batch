@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>unittest vs pytest - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔄</div>
+            <h1>unittest.mock vs pytest-mock</h1>
+            <p class="subtitle">Comparing two approaches to mocking</p>
+        </header>
+
+        <div class="section">
+            <h2>Overview</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>unittest.mock</th>
+                        <th>pytest-mock</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Installation</strong></td>
+                        <td>Built-in (Python 3.3+)</td>
+                        <td><code>pip install pytest-mock</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Syntax</strong></td>
+                        <td>Decorators or context managers</td>
+                        <td><code>mocker</code> fixture</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auto cleanup</strong></td>
+                        <td>Manual with context manager</td>
+                        <td>Automatic after each test</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Integration</strong></td>
+                        <td>Works with any framework</td>
+                        <td>pytest only</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Underlying mocks</strong></td>
+                        <td>Mock, MagicMock, patch</td>
+                        <td>Same! (wraps unittest.mock)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 Key Point:</strong> pytest-mock is just a thin wrapper around <code>unittest.mock</code>. The mock objects are exactly the same - only the syntax differs!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Same Test - Two Styles</h2>
+
+            <h3>unittest.mock Style (Decorator)</h3>
+<pre><code class="language-python">from unittest.mock import patch, Mock
+
+@patch('mymodule.requests.get')
+def test_fetch_data(mock_get):
+    # Configure mock
+    mock_response = Mock()
+    mock_response.json.return_value = {"data": "test"}
+    mock_get.return_value = mock_response
+
+    # Test
+    result = fetch_data("https://api.example.com")
+
+    # Assert
+    assert result == {"data": "test"}
+    mock_get.assert_called_once_with("https://api.example.com")</code></pre>
+
+            <h3>unittest.mock Style (Context Manager)</h3>
+<pre><code class="language-python">from unittest.mock import patch, Mock
+
+def test_fetch_data():
+    with patch('mymodule.requests.get') as mock_get:
+        mock_response = Mock()
+        mock_response.json.return_value = {"data": "test"}
+        mock_get.return_value = mock_response
+
+        result = fetch_data("https://api.example.com")
+
+        assert result == {"data": "test"}
+    # mock is automatically restored after 'with' block</code></pre>
+
+            <h3>pytest-mock Style (Fixture)</h3>
+<pre><code class="language-python"># pip install pytest-mock
+
+def test_fetch_data(mocker):  # mocker is auto-injected by pytest
+    mock_get = mocker.patch('mymodule.requests.get')
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {"data": "test"}
+    mock_get.return_value = mock_response
+
+    result = fetch_data("https://api.example.com")
+
+    assert result == {"data": "test"}
+    mock_get.assert_called_once_with("https://api.example.com")
+    # Cleanup is automatic!</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>The mocker Fixture</h2>
+            <p>pytest-mock provides a <code>mocker</code> fixture with these methods:</p>
+
+<pre><code class="language-python">def test_example(mocker):
+    # Same as unittest.mock.patch()
+    mock_class = mocker.patch('module.ClassName')
+
+    # Same as unittest.mock.patch.object()
+    mocker.patch.object(obj, 'method')
+
+    # Same as unittest.mock.Mock()
+    mock = mocker.Mock()
+
+    # Same as unittest.mock.MagicMock()
+    magic = mocker.MagicMock()
+
+    # Spy on real objects (calls real method but records calls)
+    spy = mocker.spy(obj, 'method')
+
+    # Stop a specific patch early
+    mocker.stopall()</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Pros and Cons</h2>
+
+            <div class="pros-cons">
+                <div class="pros">
+                    <h4>✅ unittest.mock</h4>
+                    <ul>
+                        <li>No extra dependency</li>
+                        <li>Works with any test framework</li>
+                        <li>Standard library = stable API</li>
+                        <li>Lots of documentation</li>
+                        <li>Portable across projects</li>
+                    </ul>
+                </div>
+                <div class="cons">
+                    <h4>✅ pytest-mock</h4>
+                    <ul>
+                        <li>Cleaner syntax (no decorators)</li>
+                        <li>Automatic cleanup</li>
+                        <li>Better pytest integration</li>
+                        <li>Spy functionality built-in</li>
+                        <li>Easier to read</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Multiple Patches</h2>
+
+            <h3>unittest.mock - Stacked Decorators</h3>
+<pre><code class="language-python">@patch('mymodule.EmailService')
+@patch('mymodule.PaymentGateway')
+@patch('mymodule.Database')
+def test_checkout(mock_db, mock_payment, mock_email):
+    # Note: Parameters are in REVERSE order of decorators!
+    mock_payment.return_value.charge.return_value = {"status": "ok"}
+    # ... test code</code></pre>
+
+            <h3>pytest-mock - Multiple Calls</h3>
+<pre><code class="language-python">def test_checkout(mocker):
+    # Order doesn't matter - assign to variables
+    mock_db = mocker.patch('mymodule.Database')
+    mock_payment = mocker.patch('mymodule.PaymentGateway')
+    mock_email = mocker.patch('mymodule.EmailService')
+
+    mock_payment.return_value.charge.return_value = {"status": "ok"}
+    # ... test code</code></pre>
+
+            <div class="success-box">
+                <strong>✅ Advantage of pytest-mock:</strong> No confusing reverse parameter order - you name your mocks explicitly.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Recommendation</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Situation</th>
+                        <th>Recommendation</th>
+                    </tr>
+                    <tr>
+                        <td>Using pytest as test runner</td>
+                        <td>✅ pytest-mock (cleaner syntax)</td>
+                    </tr>
+                    <tr>
+                        <td>Using unittest as test runner</td>
+                        <td>✅ unittest.mock (built-in)</td>
+                    </tr>
+                    <tr>
+                        <td>Need framework-agnostic code</td>
+                        <td>✅ unittest.mock (works everywhere)</td>
+                    </tr>
+                    <tr>
+                        <td>Learning mocking for first time</td>
+                        <td>Either - concepts are the same!</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 Both use the same Mock objects!</strong>
+                <p>Whether you use <code>unittest.mock</code> or <code>pytest-mock</code>, the mock objects behave identically. The concepts you learn apply to both.</p>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">What's the main advantage of pytest-mock over unittest.mock?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) It can mock more types of objects
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    B) It's faster at runtime
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    C) Cleaner syntax with automatic cleanup via fixtures
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) It's built into Python
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="06_side_effect.html">← Previous: side_effect</a>
+            <a href="08_spec_autospec.html">Next: spec & autospec →</a>
+        </div>
+
+        <footer>
+            <p>Page 7 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! pytest-mock provides cleaner fixture-based syntax with automatic cleanup after each test.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. The main advantage is cleaner syntax and automatic cleanup - the mocking capabilities are identical.';
+            }
+        }
+    </script>
+</body>
+</html>

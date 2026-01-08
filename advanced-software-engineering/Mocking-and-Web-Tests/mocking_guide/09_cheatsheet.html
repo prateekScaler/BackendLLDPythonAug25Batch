@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .cheatsheet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .cheat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .cheat-card h3 {
+            margin-top: 0;
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+        .cheat-card pre {
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .quick-ref {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .quick-ref h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+        }
+        .import-block {
+            background: #0d1117;
+            border-left: 4px solid var(--success-color);
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        @media (max-width: 768px) {
+            .cheatsheet-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn nav-btn-active">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>Mocking Cheat Sheet</h1>
+            <p class="subtitle">Quick reference for all mocking patterns</p>
+        </header>
+
+        <!-- Quick Import Reference -->
+        <div class="quick-ref">
+            <h3>🚀 Quick Imports</h3>
+            <div class="import-block">
+<pre><code class="language-python"># Standard library (always available)
+from unittest.mock import Mock, MagicMock, patch, create_autospec
+
+# pytest-mock (install: pip install pytest-mock)
+# Just add 'mocker' as a test parameter - it's auto-injected!</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Creating Mocks</h2>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <h3>Basic Mock</h3>
+<pre><code class="language-python">mock = Mock()
+mock.method.return_value = 42
+mock.attr = "value"
+
+result = mock.method()  # Returns 42</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>MagicMock (for len, iter, with)</h3>
+<pre><code class="language-python">mock = MagicMock()
+mock.__len__.return_value = 5
+mock.__iter__.return_value = iter([1, 2, 3])
+
+len(mock)   # Returns 5
+list(mock)  # Returns [1, 2, 3]</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Mock with spec (catches typos)</h3>
+<pre><code class="language-python">mock = Mock(spec=RealClass)
+mock.real_method()    # ✅ Works
+mock.typo_method()    # ❌ AttributeError</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>autospec (validates signatures)</h3>
+<pre><code class="language-python">mock = create_autospec(RealClass)
+mock.method(arg1)        # ✅ Works
+mock.method()            # ❌ TypeError
+mock.method(a, b, c, d)  # ❌ TypeError</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Configuring Return Values</h2>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <h3>Simple return_value</h3>
+<pre><code class="language-python">mock.method.return_value = {"status": "ok"}
+
+mock.method()  # Always returns {"status": "ok"}</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Chained calls</h3>
+<pre><code class="language-python"># For: obj.method().another().value
+mock.method.return_value.another.return_value.value = 42
+
+# Or shorter:
+mock.method().another().value = 42</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>side_effect: Raise exception</h3>
+<pre><code class="language-python">mock.method.side_effect = ValueError("Error!")
+
+mock.method()  # Raises ValueError</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>side_effect: Sequential values</h3>
+<pre><code class="language-python">mock.method.side_effect = [1, 2, 3]
+
+mock.method()  # Returns 1
+mock.method()  # Returns 2
+mock.method()  # Returns 3</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>side_effect: Mixed values/exceptions</h3>
+<pre><code class="language-python">mock.method.side_effect = [
+    TimeoutError(),
+    TimeoutError(),
+    {"status": "ok"}
+]
+# First 2 calls raise, 3rd returns dict</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>side_effect: Dynamic (lambda)</h3>
+<pre><code class="language-python">mock.calculate.side_effect = lambda x: x * 2
+
+mock.calculate(5)   # Returns 10
+mock.calculate(100) # Returns 200</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Patching</h2>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <h3>Decorator style</h3>
+<pre><code class="language-python">@patch('mymodule.ClassName')
+def test_something(mock_class):
+    mock_class.return_value.method.return_value = 42
+    # Test code here</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Context manager style</h3>
+<pre><code class="language-python">def test_something():
+    with patch('mymodule.ClassName') as mock_class:
+        mock_class.return_value.method.return_value = 42
+        # Test code here
+    # Automatically restored after 'with'</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>pytest-mock style</h3>
+<pre><code class="language-python">def test_something(mocker):
+    mock_class = mocker.patch('mymodule.ClassName')
+    mock_class.return_value.method.return_value = 42
+    # Test code here
+    # Automatically cleaned up!</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Multiple patches (decorator)</h3>
+<pre><code class="language-python">@patch('mymodule.ClassA')
+@patch('mymodule.ClassB')
+def test_something(mock_b, mock_a):  # Reverse order!
+    pass</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>patch.object (specific instance)</h3>
+<pre><code class="language-python">obj = MyClass()
+with patch.object(obj, 'method', return_value=42):
+    obj.method()  # Returns 42</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>patch with autospec</h3>
+<pre><code class="language-python">@patch('mymodule.ClassName', autospec=True)
+def test_something(mock_class):
+    # Catches typos AND wrong signatures!</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Assertions</h2>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <h3>Was it called?</h3>
+<pre><code class="language-python">mock.method.assert_called()
+mock.method.assert_called_once()
+mock.method.assert_not_called()</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Called with specific args?</h3>
+<pre><code class="language-python">mock.method.assert_called_with(42, name="test")
+mock.method.assert_called_once_with(42, name="test")</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>How many times called?</h3>
+<pre><code class="language-python">assert mock.method.call_count == 3</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Check all calls</h3>
+<pre><code class="language-python">from unittest.mock import call
+
+mock.method.assert_has_calls([
+    call(1),
+    call(2),
+    call(3)
+])</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Any call matches?</h3>
+<pre><code class="language-python">mock.method.assert_any_call(42)
+# Passes if ANY call had arg 42</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Get actual call args</h3>
+<pre><code class="language-python"># Last call
+args, kwargs = mock.method.call_args
+
+# All calls
+all_calls = mock.method.call_args_list</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Patterns</h2>
+            <div class="cheatsheet-grid">
+                <div class="cheat-card">
+                    <h3>Mock a class instance</h3>
+<pre><code class="language-python">@patch('mymodule.PaymentGateway')
+def test_checkout(mock_class):
+    # Configure the INSTANCE
+    mock_instance = mock_class.return_value
+    mock_instance.charge.return_value = {"ok": True}
+
+    # When code does PaymentGateway(),
+    # it gets mock_instance</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Mock requests.get</h3>
+<pre><code class="language-python">@patch('mymodule.requests.get')
+def test_api(mock_get):
+    mock_response = Mock()
+    mock_response.json.return_value = {"data": 123}
+    mock_response.status_code = 200
+    mock_get.return_value = mock_response
+
+    # Your code that calls requests.get</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Mock file open</h3>
+<pre><code class="language-python">from unittest.mock import mock_open, patch
+
+mock_data = "file contents here"
+with patch('builtins.open', mock_open(read_data=mock_data)):
+    with open('any_file.txt') as f:
+        content = f.read()  # Returns mock_data</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Mock datetime.now()</h3>
+<pre><code class="language-python">from datetime import datetime
+
+@patch('mymodule.datetime')
+def test_timestamp(mock_dt):
+    mock_dt.now.return_value = datetime(2024, 1, 1, 12, 0)
+    # Code that calls datetime.now()
+    # gets your fixed time</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Mock environment variables</h3>
+<pre><code class="language-python">@patch.dict('os.environ', {'API_KEY': 'test123'})
+def test_with_env():
+    import os
+    assert os.environ['API_KEY'] == 'test123'</code></pre>
+                </div>
+
+                <div class="cheat-card">
+                    <h3>Reset mock between tests</h3>
+<pre><code class="language-python">mock.reset_mock()  # Clears call history
+# call_count goes back to 0
+# call_args_list is cleared</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Decision Guide</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Situation</th>
+                        <th>Use This</th>
+                    </tr>
+                    <tr>
+                        <td>Dependency is injected</td>
+                        <td><code>Mock()</code> - pass it directly</td>
+                    </tr>
+                    <tr>
+                        <td>Dependency is hardcoded</td>
+                        <td><code>patch()</code> - intercept it</td>
+                    </tr>
+                    <tr>
+                        <td>Need <code>len()</code>, <code>for</code>, <code>with</code></td>
+                        <td><code>MagicMock()</code></td>
+                    </tr>
+                    <tr>
+                        <td>Want to catch typos</td>
+                        <td><code>Mock(spec=RealClass)</code></td>
+                    </tr>
+                    <tr>
+                        <td>Want to catch wrong signatures too</td>
+                        <td><code>create_autospec()</code> or <code>autospec=True</code></td>
+                    </tr>
+                    <tr>
+                        <td>Need different return values per call</td>
+                        <td><code>side_effect=[val1, val2, val3]</code></td>
+                    </tr>
+                    <tr>
+                        <td>Need to raise an exception</td>
+                        <td><code>side_effect=Exception()</code></td>
+                    </tr>
+                    <tr>
+                        <td>Need dynamic return based on input</td>
+                        <td><code>side_effect=lambda x: x*2</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Golden Rules</h2>
+
+            <div class="success-box">
+                <strong>✅ Remember These:</strong>
+                <ol style="margin: 1rem 0; padding-left: 1.5rem;">
+                    <li><strong>Patch where USED, not where DEFINED</strong> - The #1 mistake!</li>
+                    <li><strong>Prefer Mock over patch</strong> when you can inject dependencies</li>
+                    <li><strong>Use autospec</strong> to catch typos and signature errors</li>
+                    <li><strong>Use MagicMock</strong> for files, iterables, context managers</li>
+                    <li><strong>side_effect beats return_value</strong> for dynamic behavior</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="08_spec_autospec.html">← Previous: spec & autospec</a>
+            <a href="index.html">Back to Home →</a>
+        </div>
+
+        <footer>
+            <p>Page 9 of 9 • Mocking in Python Guide</p>
+            <p style="margin-top: 0.5rem; opacity: 0.7;">Happy Testing! 🎭</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>

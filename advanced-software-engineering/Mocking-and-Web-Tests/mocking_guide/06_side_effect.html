@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>side_effect - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎬</div>
+            <h1>side_effect</h1>
+            <p class="subtitle">Dynamic mock behavior beyond simple returns</p>
+        </header>
+
+        <div class="section">
+            <h2>What is side_effect?</h2>
+            <p>While <code>return_value</code> returns the same thing every time, <code>side_effect</code> gives you <strong>dynamic control</strong> over mock behavior:</p>
+
+            <ul>
+                <li>Raise exceptions</li>
+                <li>Return different values on successive calls</li>
+                <li>Compute return value based on arguments</li>
+                <li>Mix values and exceptions</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>1. Raise an Exception</h2>
+            <p>Simulate errors to test error handling:</p>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+mock = Mock()
+mock.connect.side_effect = ConnectionError("Database unavailable")
+
+# Now calling connect() raises the exception
+try:
+    mock.connect()
+except ConnectionError as e:
+    print(f"Caught: {e}")  # Output: Caught: Database unavailable</code></pre>
+
+            <h3>Real Use Case: Test Error Handling</h3>
+<pre><code class="language-python">def test_handles_payment_failure():
+    mock_gateway = Mock()
+    mock_gateway.charge.side_effect = TimeoutError("Gateway timeout")
+
+    service = OrderService(payment_gateway=mock_gateway)
+
+    # Verify our code handles the error gracefully
+    with pytest.raises(TimeoutError):
+        service.checkout(100)
+
+    # Verify cleanup happened
+    mock_gateway.rollback.assert_called_once()</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>2. Return Different Values on Each Call</h2>
+            <p>Use a list to return different values sequentially:</p>
+
+<pre><code class="language-python">mock = Mock()
+mock.get_next.side_effect = [1, 2, 3]
+
+print(mock.get_next())  # 1
+print(mock.get_next())  # 2
+print(mock.get_next())  # 3
+# mock.get_next()       # StopIteration! (list exhausted)</code></pre>
+
+            <h3>Real Use Case: Test Pagination</h3>
+<pre><code class="language-python">def test_pagination():
+    mock_api = Mock()
+    mock_api.fetch_page.side_effect = [
+        {"data": [1, 2, 3], "has_more": True},
+        {"data": [4, 5, 6], "has_more": True},
+        {"data": [7], "has_more": False},
+    ]
+
+    result = fetch_all_pages(mock_api)
+
+    assert result == [1, 2, 3, 4, 5, 6, 7]
+    assert mock_api.fetch_page.call_count == 3</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>3. Mix Values and Exceptions</h2>
+            <p>Perfect for testing <strong>retry logic</strong>:</p>
+
+<pre><code class="language-python">mock = Mock()
+mock.api_call.side_effect = [
+    TimeoutError("First attempt failed"),   # 1st call: fails
+    TimeoutError("Second attempt failed"),  # 2nd call: fails
+    {"status": "success"},                  # 3rd call: succeeds!
+]
+
+# Test retry mechanism
+result = retry_with_backoff(mock.api_call, max_retries=3)
+
+assert result["status"] == "success"
+assert mock.api_call.call_count == 3</code></pre>
+
+            <h3>Real Use Case: Test Circuit Breaker</h3>
+<pre><code class="language-python">def test_circuit_breaker():
+    mock_service = Mock()
+    mock_service.call.side_effect = [
+        ConnectionError(),  # Failure 1
+        ConnectionError(),  # Failure 2
+        ConnectionError(),  # Failure 3 - circuit opens
+        {"status": "ok"},   # This won't be reached
+    ]
+
+    breaker = CircuitBreaker(mock_service, threshold=3)
+
+    # First 3 calls fail
+    for _ in range(3):
+        with pytest.raises(ConnectionError):
+            breaker.execute()
+
+    # Circuit is now open - doesn't even try
+    with pytest.raises(CircuitOpenError):
+        breaker.execute()
+
+    # Service was called only 3 times (not 4)
+    assert mock_service.call.call_count == 3</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>4. Compute Return Value from Arguments</h2>
+            <p>Use a function/lambda to dynamically compute returns:</p>
+
+<pre><code class="language-python">mock = Mock()
+
+# Lambda that doubles the input
+mock.calculate.side_effect = lambda x: x * 2
+
+print(mock.calculate(5))    # 10
+print(mock.calculate(100))  # 200
+print(mock.calculate(7))    # 14</code></pre>
+
+            <h3>More Complex Function</h3>
+<pre><code class="language-python">def mock_database_lookup(user_id):
+    fake_db = {
+        1: {"name": "Alice", "role": "admin"},
+        2: {"name": "Bob", "role": "user"},
+        3: {"name": "Charlie", "role": "user"},
+    }
+    if user_id not in fake_db:
+        raise KeyError(f"User {user_id} not found")
+    return fake_db[user_id]
+
+mock = Mock()
+mock.get_user.side_effect = mock_database_lookup
+
+print(mock.get_user(1))  # {"name": "Alice", "role": "admin"}
+print(mock.get_user(2))  # {"name": "Bob", "role": "user"}
+mock.get_user(99)        # Raises KeyError!</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Summary: side_effect Options</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>side_effect Value</th>
+                        <th>Behavior</th>
+                        <th>Use Case</th>
+                    </tr>
+                    <tr>
+                        <td><code>Exception("msg")</code></td>
+                        <td>Always raises exception</td>
+                        <td>Test error handling</td>
+                    </tr>
+                    <tr>
+                        <td><code>[val1, val2, val3]</code></td>
+                        <td>Returns values in sequence</td>
+                        <td>Pagination, state changes</td>
+                    </tr>
+                    <tr>
+                        <td><code>[val, Exception(), val]</code></td>
+                        <td>Mixed values and exceptions</td>
+                        <td>Retry logic, intermittent failures</td>
+                    </tr>
+                    <tr>
+                        <td><code>lambda x: x * 2</code></td>
+                        <td>Computes from arguments</td>
+                        <td>Dynamic responses</td>
+                    </tr>
+                    <tr>
+                        <td><code>custom_function</code></td>
+                        <td>Full control via function</td>
+                        <td>Complex mock behavior</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>side_effect vs return_value</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>return_value</th>
+                        <th>side_effect</th>
+                    </tr>
+                    <tr>
+                        <td>Returns same value</td>
+                        <td>✅ Always</td>
+                        <td>❌ Can vary</td>
+                    </tr>
+                    <tr>
+                        <td>Can raise exceptions</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Can use sequences</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Can compute from args</td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td>Simplicity</td>
+                        <td>✅ Simple</td>
+                        <td>More complex</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 Tip:</strong> If <code>side_effect</code> is set, it takes precedence over <code>return_value</code>.
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">What does <code>mock.fetch.side_effect = [1, 2, ValueError()]</code> do?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Returns [1, 2, ValueError()] every time
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Returns 1, then 2, then raises ValueError on third call
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Randomly returns one of the three values
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Raises ValueError immediately
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="05_mock_vs_patch.html">← Previous: Mock vs Patch</a>
+            <a href="07_unittest_vs_pytest.html">Next: unittest vs pytest →</a>
+        </div>
+
+        <footer>
+            <p>Page 6 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! The list is consumed sequentially - returns 1, then 2, then raises ValueError.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. side_effect with a list returns values in order, and exceptions in the list are raised when reached.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MagicMock - Mocking Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🎭 Mocking Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">✨</div>
+            <h1>MagicMock</h1>
+            <p class="subtitle">When you need magic methods to work</p>
+        </header>
+
+        <div class="section">
+            <h2>The Problem with Regular Mock</h2>
+            <p>Python has <strong>magic methods</strong> (also called dunder methods) like <code>__len__</code>, <code>__iter__</code>, <code>__getitem__</code>. Regular <code>Mock</code> doesn't support them:</p>
+
+<pre><code class="language-python">from unittest.mock import Mock
+
+mock = Mock()
+
+# These will FAIL with regular Mock!
+len(mock)       # ❌ TypeError: object of type 'Mock' has no len()
+list(mock)      # ❌ TypeError: 'Mock' object is not iterable
+mock["key"]     # ❌ TypeError: 'Mock' object is not subscriptable
+
+# Even context managers fail
+with mock:      # ❌ AttributeError
+    pass</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>MagicMock to the Rescue</h2>
+            <p><code>MagicMock</code> is a subclass of <code>Mock</code> that pre-configures all magic methods:</p>
+
+<pre><code class="language-python">from unittest.mock import MagicMock
+
+magic = MagicMock()
+
+# These all work now!
+len(magic)      # ✅ Returns 0 (default)
+list(magic)     # ✅ Returns [] (default)
+magic["key"]    # ✅ Returns a MagicMock
+
+# Context managers work too
+with magic:     # ✅ Works!
+    pass</code></pre>
+
+            <h3>Configuring Magic Methods</h3>
+<pre><code class="language-python">magic = MagicMock()
+
+# Configure __len__ to return 5
+magic.__len__.return_value = 5
+print(len(magic))  # Output: 5
+
+# Configure __iter__ to return specific items
+magic.__iter__.return_value = iter(["a", "b", "c"])
+print(list(magic))  # Output: ['a', 'b', 'c']
+
+# Configure __getitem__ for dictionary-like access
+magic.__getitem__.return_value = "value"
+print(magic["any_key"])  # Output: 'value'</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Use Case 1: Mocking a File</h2>
+            <p>When your code uses <code>with open(...)</code>, you need MagicMock because files use context managers (<code>__enter__</code> and <code>__exit__</code>):</p>
+
+<pre><code class="language-python"># Code under test
+def read_config(filepath):
+    with open(filepath, 'r') as f:
+        return f.read()
+
+# Test
+from unittest.mock import MagicMock, patch
+
+def test_read_config():
+    # Create a mock file object
+    mock_file = MagicMock()
+    mock_file.read.return_value = '{"database": "localhost"}'
+
+    # patch open() to return our mock
+    with patch('builtins.open', return_value=mock_file):
+        result = read_config("config.json")
+
+    assert result == '{"database": "localhost"}'
+    mock_file.read.assert_called_once()</code></pre>
+
+            <div class="info-box">
+                <strong>💡 Simpler way with mock_open:</strong>
+<pre><code class="language-python">from unittest.mock import patch, mock_open
+
+def test_read_config_simpler():
+    mock_data = '{"database": "localhost"}'
+
+    with patch('builtins.open', mock_open(read_data=mock_data)):
+        result = read_config("config.json")
+
+    assert result == '{"database": "localhost"}'</code></pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Use Case 2: Mocking a Database Cursor</h2>
+            <p>Database cursors are often <strong>iterated over</strong>. You need MagicMock to support <code>__iter__</code>:</p>
+
+<pre><code class="language-python"># Code under test
+def get_all_users(db_connection):
+    cursor = db_connection.cursor()
+    cursor.execute("SELECT id, name FROM users")
+    return [{"id": row[0], "name": row[1]} for row in cursor]  # Iterates!
+
+# Test
+def test_get_all_users():
+    # Create mock connection and cursor
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+
+    # Configure cursor to be iterable
+    mock_cursor.__iter__.return_value = iter([
+        (1, "Alice"),
+        (2, "Bob"),
+        (3, "Charlie")
+    ])
+
+    mock_conn.cursor.return_value = mock_cursor
+
+    # Test
+    result = get_all_users(mock_conn)
+
+    # Verify
+    assert result == [
+        {"id": 1, "name": "Alice"},
+        {"id": 2, "name": "Bob"},
+        {"id": 3, "name": "Charlie"}
+    ]
+    mock_cursor.execute.assert_called_once_with("SELECT id, name FROM users")</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Use Case 3: Mocking a Collection</h2>
+            <p>When code checks length or iterates over a dependency:</p>
+
+<pre><code class="language-python"># Code under test
+def process_items(item_repository):
+    items = item_repository.get_all()
+
+    if len(items) == 0:  # Needs __len__!
+        return "No items to process"
+
+    results = []
+    for item in items:   # Needs __iter__!
+        results.append(item.upper())
+
+    return results
+
+# Test
+def test_process_items():
+    mock_repo = MagicMock()
+
+    # Mock the returned collection
+    mock_items = MagicMock()
+    mock_items.__len__.return_value = 3
+    mock_items.__iter__.return_value = iter(["apple", "banana", "cherry"])
+
+    mock_repo.get_all.return_value = mock_items
+
+    result = process_items(mock_repo)
+
+    assert result == ["APPLE", "BANANA", "CHERRY"]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Mock vs MagicMock Comparison</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Mock</th>
+                        <th>MagicMock</th>
+                    </tr>
+                    <tr>
+                        <td>Basic attributes & methods</td>
+                        <td>✅ Yes</td>
+                        <td>✅ Yes</td>
+                    </tr>
+                    <tr>
+                        <td><code>len(mock)</code></td>
+                        <td>❌ TypeError</td>
+                        <td>✅ Works (default: 0)</td>
+                    </tr>
+                    <tr>
+                        <td><code>for x in mock</code></td>
+                        <td>❌ TypeError</td>
+                        <td>✅ Works (default: empty)</td>
+                    </tr>
+                    <tr>
+                        <td><code>mock[key]</code></td>
+                        <td>❌ TypeError</td>
+                        <td>✅ Works</td>
+                    </tr>
+                    <tr>
+                        <td><code>with mock:</code></td>
+                        <td>❌ AttributeError</td>
+                        <td>✅ Works</td>
+                    </tr>
+                    <tr>
+                        <td><code>str(mock)</code></td>
+                        <td>Returns mock repr</td>
+                        <td>✅ Configurable</td>
+                    </tr>
+                    <tr>
+                        <td><strong>When to use</strong></td>
+                        <td>Simple mocking</td>
+                        <td>Files, DB cursors, collections, context managers</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="success-box">
+                <strong>✅ Rule of Thumb:</strong>
+                <ul>
+                    <li>Use <code>Mock</code> for simple method calls and attributes</li>
+                    <li>Use <code>MagicMock</code> when your code uses <code>len()</code>, <code>for</code> loops, <code>with</code> statements, or <code>[]</code> access on the mocked object</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Test Your Understanding</div>
+            <p style="margin-bottom: 1rem;">When should you use MagicMock instead of Mock?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) When you want faster tests
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    B) When mocking simple function calls
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    C) When mocking objects used with len(), iteration, or context managers
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Always - MagicMock should replace Mock entirely
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="page-nav">
+            <a href="02_what_is_mock.html">← Previous: What is a Mock?</a>
+            <a href="04_patching.html">Next: Patching →</a>
+        </div>
+
+        <footer>
+            <p>Page 3 of 9 • Mocking in Python Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! MagicMock is needed when your code uses magic methods like __len__, __iter__, __enter__, etc.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. MagicMock is specifically for when you need magic methods to work (len, iteration, context managers).';
+            }
+        }
+    </script>
+</body>
+</html>
