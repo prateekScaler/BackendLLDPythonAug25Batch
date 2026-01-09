@@ -76,15 +76,54 @@ response = mock_gateway.charge(card, amount)
 
 ---
 
+## Interactive Mocking Guide (Recommended)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📚 VISUAL LEARNING: Interactive HTML Guide                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  📁 mocking_guide/index.html                                │
+│                                                             │
+│  Open in your browser for an interactive learning           │
+│  experience with:                                           │
+│                                                             │
+│  • 9 pages covering all mocking concepts                    │
+│  • Syntax-highlighted code examples                         │
+│  • Interactive quizzes on each topic                        │
+│  • Visual diagrams and comparisons                          │
+│  • Comprehensive cheat sheet                                │
+│                                                             │
+│  Topics covered:                                            │
+│  1. Why Mocking? (The problem it solves)                    │
+│  2. What is a Mock? (Mock basics & return_value)            │
+│  3. MagicMock (For len, iter, context managers)             │
+│  4. Patching (Decorator, context manager, pytest-mock)      │
+│  5. Mock vs Patch (When to use which)                       │
+│  6. side_effect (Dynamic behavior, exceptions)              │
+│  7. unittest vs pytest (Comparing approaches)               │
+│  8. spec & autospec (Catching typos & signature errors)     │
+│  9. Cheat Sheet (Quick reference for all patterns)          │
+│                                                             │
+│  How to use:                                                │
+│  Open mocking_guide/index.html in any browser               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Files in This Module
 
 | File | Description |
 |------|-------------|
+| `mocking_guide/` | **Interactive HTML guide** - Open `index.html` in browser |
 | `mocking_basics.py` | Core mocking concepts with examples |
 | `test_mocking_basics.py` | Tests demonstrating mocking patterns |
 | `web_api_testing.py` | Flask/FastAPI testing examples |
+| `MOCKING_CONCEPTS.md` | Detailed mocking concepts & Mock vs Patch guide |
 | `IMPORTANT_POINTS.md` | Key concepts and gotchas |
-| `QUIZ_TESTING_BEST_PRACTICES.md` | Interactive quiz on testing concepts |
+| `QUIZ_CLASS_2.md` | Quiz on mocking and patching topics |
 
 ---
 
