@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth vs Auth - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔐 vs 🎫</div>
+            <h1>Authentication vs Authorization</h1>
+            <p class="subtitle">Two different questions, often confused</p>
+        </header>
+
+        <div class="section">
+            <h2>The Two Questions</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #e7f5ff; border: 2px solid #339af0;">
+                    <h4 style="color: #1971c2;">🔐 Authentication (AuthN)</h4>
+                    <p><strong>"WHO are you?"</strong></p>
+                    <ul>
+                        <li>Verifies identity</li>
+                        <li>Happens FIRST</li>
+                        <li>Uses credentials</li>
+                        <li>Returns 401 on failure</li>
+                    </ul>
+                </div>
+                <div class="comparison-item" style="background: #fff3bf; border: 2px solid #fab005;">
+                    <h4 style="color: #e67700;">🎫 Authorization (AuthZ)</h4>
+                    <p><strong>"WHAT can you do?"</strong></p>
+                    <ul>
+                        <li>Verifies permissions</li>
+                        <li>Happens AFTER authentication</li>
+                        <li>Uses roles/policies</li>
+                        <li>Returns 403 on failure</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Analogy: Scaler Platform</h2>
+
+            <p>Let's understand this with an example you're already familiar with:</p>
+
+            <div class="diagram">
+<pre>
+SCALER PLATFORM ACCESS
+══════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  PUBLIC ACCESS (No Authentication Needed)                   │
+│  ════════════════════════════════════════                   │
+│                                                             │
+│  🌐 https://www.scaler.com/topics/                         │
+│                                                             │
+│  ✓ Anyone can view free articles                           │
+│  ✓ No login required                                       │
+│  ✓ Browse tutorials, read content                          │
+│                                                             │
+│  No question asked - open to everyone!                      │
+└─────────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 1: LOGIN PAGE (Authentication)                        │
+│  ═══════════════════════════════════                        │
+│                                                             │
+│  "Enter your email and password"                            │
+│                                                             │
+│  ✓ Verifies you are a registered student                   │
+│  ✓ Checks your credentials are correct                     │
+│  ✓ Creates a session for you                               │
+│                                                             │
+│  Answer: WHO ARE YOU? → "I am student #12345"               │
+└─────────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 2: CLASS ACCESS (Authorization)                       │
+│  ════════════════════════════════════                       │
+│                                                             │
+│  "Are you enrolled in THIS specific class?"                 │
+│                                                             │
+│  ✓ Enrolled in Backend LLD → Can join Backend classes      │
+│  ✗ Not enrolled in DSA     → Cannot join DSA classes       │
+│  ✗ Subscription expired    → Cannot access any class       │
+│                                                             │
+│  Answer: WHAT CAN YOU ACCESS?                               │
+└─────────────────────────────────────────────────────────────┘
+
+Being a VALID USER ≠ Having ACCESS to everything
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>Key Insight:</strong> Just because you can log in doesn't mean you can access everything. You might be authenticated (proven who you are) but not authorized (don't have permission for specific resources).
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Software Example</h2>
+
+            <pre><code class="language-python"># AUTHENTICATION - Verify identity
+def login(username, password):
+    user = get_user(username)
+    if not user or not verify_password(password, user.password_hash):
+        return Response(status=401)  # "I don't know who you are"
+    return create_session(user)
+
+# AUTHORIZATION - Verify permissions
+def delete_user(current_user, user_id):
+    if current_user.role != 'admin':
+        return Response(status=403)  # "I know you, but you can't do this"
+    return actually_delete_user(user_id)</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>HTTP Status Codes</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Meaning</th>
+                        <th>Action</th>
+                    </tr>
+                    <tr>
+                        <td><code>401</code></td>
+                        <td>Unauthorized*</td>
+                        <td>"I don't know who you are"</td>
+                        <td>Show login page</td>
+                    </tr>
+                    <tr>
+                        <td><code>403</code></td>
+                        <td>Forbidden</td>
+                        <td>"I know you, but you can't do this"</td>
+                        <td>Show access denied</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <strong>Note:</strong> HTTP 401 is confusingly named "Unauthorized" but actually means "Unauthenticated". The naming is a historical mistake in the HTTP spec!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Three A's of Security</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Authentication</h3>
+                    <p>"Who are you?"<br>Verify identity</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🎫</div>
+                    <h3>Authorization</h3>
+                    <p>"What can you do?"<br>Check permissions</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📝</div>
+                    <h3>Accounting</h3>
+                    <p>"What did you do?"<br>Audit trail</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Mistakes</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Wrong</h4>
+                    <pre><code class="language-python"># Using 401 for authorization failure
+if not user.is_admin:
+    return Response(status=401)
+# Wrong! User IS authenticated</code></pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ Correct</h4>
+                    <pre><code class="language-python"># Using 403 for authorization failure
+if not user.is_admin:
+    return Response(status=403)
+# Correct! User is authenticated
+# but not authorized</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How Do We Manage Authorization? Enter RBAC</h2>
+
+            <p>When you have thousands of users and hundreds of permissions, how do you manage who can do what? This is where <strong>Role-Based Access Control (RBAC)</strong> comes in.</p>
+
+            <div class="diagram">
+<pre>
+RBAC: ROLE-BASED ACCESS CONTROL
+═══════════════════════════════
+
+Instead of assigning permissions to each user individually:
+
+  ❌ WITHOUT RBAC (Nightmare!)
+  ═══════════════════════════
+  User1 → can_view_class, can_submit_assignment, can_view_grades
+  User2 → can_view_class, can_submit_assignment, can_view_grades
+  User3 → can_view_class, can_submit_assignment, can_view_grades
+  ... (repeat for 10,000 users!)
+
+
+  ✅ WITH RBAC (Clean!)
+  ═════════════════════
+  ROLES:
+  ┌──────────────┐
+  │   Student    │ → can_view_class, can_submit_assignment
+  │   Teacher    │ → can_view_class, can_grade, can_create_assignment
+  │   Admin      │ → everything + manage_users
+  └──────────────┘
+
+  ASSIGNMENTS:
+  User1 → Student role
+  User2 → Student role
+  User3 → Teacher role
+</pre>
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0;">
+                    <div class="card-icon">👤</div>
+                    <h3>Users</h3>
+                    <p>Individual people who use the system</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🎭</div>
+                    <h3>Roles</h3>
+                    <p>Named collections of permissions (Student, Teacher, Admin)</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">🔑</div>
+                    <h3>Permissions</h3>
+                    <p>Specific actions (view_class, submit_assignment, grade)</p>
+                </div>
+            </div>
+
+            <div class="success-box">
+                <strong>Why RBAC?</strong>
+                <ul style="margin: 0.5rem 0 0 1rem;">
+                    <li><strong>Scalable</strong> - Add 1000 users? Just assign them a role</li>
+                    <li><strong>Auditable</strong> - Easy to see who has what access</li>
+                    <li><strong>Maintainable</strong> - Change role permissions, all users with that role are updated</li>
+                </ul>
+            </div>
+
+            <p style="margin-top: 1rem;"><em>We'll dive deeper into RBAC implementation in the <a href="08_rbac.html">RBAC Deep Dive</a> section.</em></p>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Which Status Code?</div>
+            <p style="margin-bottom: 1rem;">A logged-in regular user tries to access the admin panel. What should the server return?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) 401 Unauthorized
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) 403 Forbidden
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) 404 Not Found
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) 200 OK (but show error message)
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="01_history.html">&larr; History</a>
+            <a href="03_ways_of_auth.html">Next: Ways of Authentication &rarr;</a>
+        </div>
+
+        <footer>
+            <p>Page 2 of 8 - Authentication Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! 403 Forbidden - the user is authenticated (we know who they are) but not authorized (they don\'t have admin permissions).';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Since the user IS logged in, we use 403 (not authorized), not 401 (not authenticated).';
+            }
+        }
+    </script>
+</body>
+</html>

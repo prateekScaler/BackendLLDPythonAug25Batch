@@ -1,0 +1,3 @@
+# Dependencies for Session-Based Auth Demo
+django>=4.2
+django-cors-headers>=4.0

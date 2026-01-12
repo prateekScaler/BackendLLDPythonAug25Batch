@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ways of Authentication - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔑</div>
+            <h1>Ways of Authentication</h1>
+            <p class="subtitle">Different methods to prove "I am who I say I am"</p>
+        </header>
+
+        <div class="section">
+            <h2>The Three Authentication Factors</h2>
+            <p>All authentication methods fall into three categories:</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0; background: #e7f5ff;">
+                    <div class="card-icon">🧠</div>
+                    <h3>Something You KNOW</h3>
+                    <p>Password, PIN, Security questions</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66; background: #d3f9d8;">
+                    <div class="card-icon">📱</div>
+                    <h3>Something You HAVE</h3>
+                    <p>Phone (OTP), Hardware token, Smart card</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b; background: #ffe3e3;">
+                    <div class="card-icon">👤</div>
+                    <h3>Something You ARE</h3>
+                    <p>Fingerprint, Face, Voice, Retina</p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>Multi-Factor Authentication (MFA)</strong> combines two or more of these factors. For example: Password (know) + OTP on phone (have) = 2FA.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Authentication Methods</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Factor</th>
+                        <th>Pros</th>
+                        <th>Cons</th>
+                        <th>Used By</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Password</strong></td>
+                        <td>Know</td>
+                        <td>Simple, familiar</td>
+                        <td>Can be forgotten, stolen, weak</td>
+                        <td>Almost everywhere</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OTP (SMS/Email)</strong></td>
+                        <td>Have</td>
+                        <td>No password to remember</td>
+                        <td>Requires network, SIM swap attacks</td>
+                        <td>Banks, WhatsApp</td>
+                    </tr>
+                    <tr>
+                        <td><strong>OTP (App-based)</strong></td>
+                        <td>Have</td>
+                        <td>More secure than SMS</td>
+                        <td>Need app installed</td>
+                        <td>Google, GitHub</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Biometrics</strong></td>
+                        <td>Are</td>
+                        <td>Convenient, hard to forge</td>
+                        <td>Can't change if compromised</td>
+                        <td>Phone unlock, airports</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Magic Link</strong></td>
+                        <td>Have</td>
+                        <td>Passwordless, simple UX</td>
+                        <td>Email access required</td>
+                        <td>Slack, Notion</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hardware Key</strong></td>
+                        <td>Have</td>
+                        <td>Very secure, phishing-proof</td>
+                        <td>Can be lost, cost</td>
+                        <td>Google employees, Banks</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Password-Based vs OTP-Based Authentication</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #e7f5ff; border: 2px solid #339af0;">
+                    <h4 style="color: #1971c2;">🔑 Password-Based</h4>
+                    <div class="diagram" style="background: white; margin: 1rem 0;">
+<pre style="font-size: 0.8rem;">
+User                    Server
+  │                       │
+  │── Enter password ────►│
+  │                       │ Hash & compare
+  │◄── Access granted ────│
+</pre>
+                    </div>
+                    <p><strong>Flow:</strong></p>
+                    <ol style="font-size: 0.9rem; margin-left: 1rem;">
+                        <li>User enters username + password</li>
+                        <li>Server hashes password</li>
+                        <li>Compares with stored hash</li>
+                        <li>Grants access if match</li>
+                    </ol>
+                    <p style="margin-top: 0.5rem;"><strong>Storage:</strong> Password hash stored in DB</p>
+                </div>
+                <div class="comparison-item" style="background: #d3f9d8; border: 2px solid #51cf66;">
+                    <h4 style="color: #2f9e44;">📱 OTP-Based</h4>
+                    <div class="diagram" style="background: white; margin: 1rem 0;">
+<pre style="font-size: 0.8rem;">
+User                    Server
+  │                       │
+  │── Request OTP ───────►│
+  │                       │ Generate OTP
+  │◄── Send OTP (SMS) ────│
+  │── Enter OTP ─────────►│
+  │                       │ Verify OTP
+  │◄── Access granted ────│
+</pre>
+                    </div>
+                    <p><strong>Flow:</strong></p>
+                    <ol style="font-size: 0.9rem; margin-left: 1rem;">
+                        <li>User enters phone/email</li>
+                        <li>Server generates random OTP</li>
+                        <li>Sends OTP via SMS/Email</li>
+                        <li>User enters OTP</li>
+                        <li>Server verifies, grants access</li>
+                    </ol>
+                    <p style="margin-top: 0.5rem;"><strong>Storage:</strong> Temporary OTP (expires in 5-10 min)</p>
+                </div>
+            </div>
+
+            <div class="table-container" style="margin-top: 1.5rem;">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Password-Based</th>
+                        <th>OTP-Based</th>
+                    </tr>
+                    <tr>
+                        <td>User remembers</td>
+                        <td>Password (long-term)</td>
+                        <td>Nothing (OTP sent each time)</td>
+                    </tr>
+                    <tr>
+                        <td>Server stores</td>
+                        <td>Password hash (permanent)</td>
+                        <td>OTP (temporary, 5-10 min)</td>
+                    </tr>
+                    <tr>
+                        <td>Can be phished?</td>
+                        <td>Yes, easily</td>
+                        <td>Harder (OTP changes)</td>
+                    </tr>
+                    <tr>
+                        <td>Works offline?</td>
+                        <td>Yes</td>
+                        <td>No (needs SMS/Email)</td>
+                    </tr>
+                    <tr>
+                        <td>Password reuse risk</td>
+                        <td>High</td>
+                        <td>None</td>
+                    </tr>
+                    <tr>
+                        <td>UX friction</td>
+                        <td>Low (if remembered)</td>
+                        <td>Medium (wait for OTP)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Modern Passwordless Methods</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">✉️</div>
+                    <h3>Magic Links</h3>
+                    <p>Click a link sent to email. Used by Slack, Notion. No password needed!</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Passkeys</h3>
+                    <p>Cryptographic keys stored on device. The future of auth! Apple, Google pushing this.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🪪</div>
+                    <h3>SSO (Single Sign-On)</h3>
+                    <p>"Login with Google/GitHub". One identity, many apps.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What We'll Cover in This Course</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Topic</th>
+                        <th>This Class</th>
+                        <th>Next Classes</th>
+                    </tr>
+                    <tr>
+                        <td>Password-based authentication</td>
+                        <td style="color: var(--success-color);">✅ Yes (detailed)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Password storage & security</td>
+                        <td style="color: var(--success-color);">✅ Yes (detailed)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Session-based auth</td>
+                        <td style="color: var(--success-color);">✅ Yes (intro)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>JWT Tokens</td>
+                        <td>-</td>
+                        <td style="color: var(--warning-color);">📅 Next class</td>
+                    </tr>
+                    <tr>
+                        <td>OAuth 2.0 / SSO</td>
+                        <td>-</td>
+                        <td style="color: var(--warning-color);">📅 Upcoming</td>
+                    </tr>
+                    <tr>
+                        <td>OTP implementation</td>
+                        <td>-</td>
+                        <td style="color: var(--warning-color);">📅 Upcoming</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>This Class Focus:</strong> We'll deep-dive into <strong>password-based authentication</strong> - how passwords should be stored, why plaintext is dangerous, and how BCrypt protects us.
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Authentication Factors</div>
+            <p style="margin-bottom: 1rem;">Which authentication factor is "something you have"?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Password
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    B) Fingerprint
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    C) OTP on your phone
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Security question answer
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="02_auth_vs_auth.html">← Auth vs Auth</a>
+            <a href="04_passwords.html">Next: Password Security →</a>
+        </div>
+
+        <footer>
+            <p>Page 3 of 8 - Authentication Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! OTP on your phone is "something you have" - you must possess the physical device to receive the code.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Password and security questions are "something you know". Fingerprint is "something you are". OTP requires having your phone.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - External Origin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        .important-box {
+            background: #2d1b00;
+            border: 2px solid #ff9500;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .important-box h2 {
+            color: #ff9500;
+            margin-bottom: 1rem;
+        }
+
+        .card {
+            background: #1a2e1a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #3d5a3d;
+        }
+
+        .card h2 {
+            color: #00ff88;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            color: #00ff88;
+            margin: 1.5rem 0 1rem;
+        }
+
+        button {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin: 0.25rem;
+        }
+
+        button:hover {
+            background: #00cc6a;
+        }
+
+        button.danger {
+            background: #ff4444;
+            color: white;
+        }
+
+        button.secondary {
+            background: #3d5a3d;
+            color: #00ff88;
+        }
+
+        .result-box {
+            background: #0a1a0a;
+            border: 1px solid #3d5a3d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .origin-display {
+            background: #0a1a0a;
+            border: 2px solid #00ff88;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+        }
+
+        .origin-display .label {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .origin-display .value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .vs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .vs-box {
+            background: #0a1a0a;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .vs-arrow {
+            font-size: 2rem;
+            color: #ff6b6b;
+        }
+
+        code {
+            background: #3d5a3d;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .step {
+            background: #0a1a0a;
+            border-left: 4px solid #00ff88;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .step-number {
+            background: #00ff88;
+            color: #1a1a2e;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            border: 1px solid #3d5a3d;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background: #2d5a3d;
+            color: #00ff88;
+        }
+
+        .success { color: #00ff88; }
+        .error { color: #ff4444; }
+        .warning { color: #ff9500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 CORS Test - EXTERNAL ORIGIN</h1>
+        <p class="subtitle">This file must be opened directly in browser (file://) to test CORS</p>
+
+        <!-- Important Notice -->
+        <div class="important-box">
+            <h2>⚠️ How to Use This File</h2>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Start Django server:</strong> <code>python manage.py runserver</code>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Open THIS file directly in browser:</strong><br>
+                Double-click this file OR drag it into browser<br>
+                URL should show: <code>file:///path/to/cors_external_test.html</code>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>This creates CROSS-ORIGIN:</strong><br>
+                This page's origin: <code>file://</code> (or <code>null</code>)<br>
+                Django API origin: <code>http://localhost:8000</code><br>
+                <span class="warning">Different origins = CORS applies!</span>
+            </div>
+        </div>
+
+        <!-- Origin Comparison -->
+        <div class="card">
+            <h2>🔍 Current Origin Situation</h2>
+
+            <div class="vs">
+                <div class="vs-box">
+                    <div style="color: #888; font-size: 0.8rem;">THIS PAGE's ORIGIN</div>
+                    <div id="this-origin" style="color: #00ff88; font-size: 1.2rem; font-weight: bold;">
+                        Loading...
+                    </div>
+                </div>
+                <div class="vs-arrow">≠</div>
+                <div class="vs-box">
+                    <div style="color: #888; font-size: 0.8rem;">DJANGO API ORIGIN</div>
+                    <div style="color: #ff6b6b; font-size: 1.2rem; font-weight: bold;">
+                        http://localhost:8000
+                    </div>
+                </div>
+            </div>
+
+            <div id="origin-status" class="result-box">
+                Checking origin...
+            </div>
+        </div>
+
+        <!-- Test Buttons -->
+        <div class="card">
+            <h2>🧪 CORS Tests</h2>
+
+            <h3>Test 1: Simple GET Request (No Credentials)</h3>
+            <p>This should work - server allows all origins</p>
+            <button onclick="testSimpleGet()">Make Simple GET Request</button>
+            <div class="result-box" id="simple-get-result">Click button to test...</div>
+
+            <h3>Test 2: GET Request WITH Credentials (Cookies)</h3>
+            <p>This tests if cookies can be sent cross-origin</p>
+            <button onclick="testWithCredentials()">Make Request WITH Credentials</button>
+            <div class="result-box" id="credentials-result">Click button to test...</div>
+
+            <h3>Test 3: POST Request (Triggers Preflight)</h3>
+            <p>POST with JSON body triggers OPTIONS preflight first</p>
+            <button onclick="testPreflight()">Make POST Request (Preflight)</button>
+            <div class="result-box" id="preflight-result">Click button to test...</div>
+
+            <h3>Test 4: Request with Custom Header (Preflight)</h3>
+            <p>Custom headers always trigger preflight</p>
+            <button onclick="testCustomHeader()">Make Request with Custom Header</button>
+            <div class="result-box" id="custom-header-result">Click button to test...</div>
+        </div>
+
+        <!-- What to Look For -->
+        <div class="card">
+            <h2>👀 What to Look For in Network Tab</h2>
+
+            <table>
+                <tr>
+                    <th>Header</th>
+                    <th>Where</th>
+                    <th>What It Means</th>
+                </tr>
+                <tr>
+                    <td><code>Origin</code></td>
+                    <td>Request Headers</td>
+                    <td>Browser tells server "I'm from this origin"</td>
+                </tr>
+                <tr>
+                    <td><code>Access-Control-Allow-Origin</code></td>
+                    <td>Response Headers</td>
+                    <td>Server says "I allow this origin"</td>
+                </tr>
+                <tr>
+                    <td><code>Access-Control-Allow-Credentials</code></td>
+                    <td>Response Headers</td>
+                    <td>Server says "Cookies are OK"</td>
+                </tr>
+                <tr>
+                    <td><code>Access-Control-Allow-Methods</code></td>
+                    <td>Response Headers (Preflight)</td>
+                    <td>Server says "These methods are allowed"</td>
+                </tr>
+                <tr>
+                    <td><code>Access-Control-Allow-Headers</code></td>
+                    <td>Response Headers (Preflight)</td>
+                    <td>Server says "These headers are allowed"</td>
+                </tr>
+            </table>
+
+            <h3>How to Check in DevTools:</h3>
+            <div class="step">
+                <span class="step-number">1</span>
+                Open DevTools (F12) → Network tab
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                Click a test button above
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                Click on the request in Network tab
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                Check "Request Headers" for <code>Origin</code>
+            </div>
+            <div class="step">
+                <span class="step-number">5</span>
+                Check "Response Headers" for <code>Access-Control-*</code> headers
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="card">
+            <h2>📚 Why This Works</h2>
+
+            <h3>Same Origin (NO CORS headers)</h3>
+            <p>When you access <code>http://localhost:8000/cors-test/</code> and request <code>http://localhost:8000/api/...</code>:</p>
+            <ul style="margin: 1rem 0 1rem 2rem;">
+                <li>Both are <code>http://localhost:8000</code></li>
+                <li>SAME origin = Browser doesn't add <code>Origin</code> header</li>
+                <li>Server doesn't send CORS headers (not needed)</li>
+            </ul>
+
+            <h3>Cross Origin (CORS headers appear!)</h3>
+            <p>When you open THIS file (<code>file://...</code>) and request <code>http://localhost:8000/api/...</code>:</p>
+            <ul style="margin: 1rem 0 1rem 2rem;">
+                <li><code>file://</code> ≠ <code>http://localhost:8000</code></li>
+                <li>DIFFERENT origins = Browser adds <code>Origin</code> header</li>
+                <li>Server responds with <code>Access-Control-*</code> headers</li>
+                <li>Browser checks headers before allowing JavaScript to see response</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        // Show current origin
+        window.onload = function() {
+            const origin = window.location.origin;
+            document.getElementById('this-origin').textContent = origin || 'null (file://)';
+
+            let statusHtml = '';
+            if (origin === 'http://localhost:8000' || origin === 'http://127.0.0.1:8000') {
+                statusHtml = `
+<span class="error">❌ SAME ORIGIN DETECTED!</span>
+
+You're accessing this page from: ${origin}
+Django API is at: http://localhost:8000
+
+These are the SAME origin, so CORS won't apply!
+
+<span class="warning">To test CORS properly:</span>
+1. Save this HTML file to your computer
+2. Open it by double-clicking (file:// protocol)
+3. Or run: python -m http.server 3000 (different port)
+`;
+            } else {
+                statusHtml = `
+<span class="success">✅ CROSS ORIGIN DETECTED!</span>
+
+This page's origin: ${origin || 'null (file://)'}
+Django API origin: http://localhost:8000
+
+These are DIFFERENT origins - CORS will apply!
+You should see CORS headers in the Network tab.
+`;
+            }
+            document.getElementById('origin-status').innerHTML = statusHtml;
+        };
+
+        // Test 1: Simple GET
+        async function testSimpleGet() {
+            const resultDiv = document.getElementById('simple-get-result');
+            resultDiv.textContent = 'Making request...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/cors/`, {
+                    method: 'GET',
+                    // No credentials - simple request
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+<span class="success">✅ SUCCESS!</span>
+
+Response Status: ${response.status}
+Response Data:
+${JSON.stringify(data, null, 2)}
+
+<span class="warning">👉 Check Network Tab:</span>
+1. Click on the "cors" request
+2. Look at Response Headers
+3. Find: Access-Control-Allow-Origin
+`;
+            } catch (error) {
+                resultDiv.innerHTML = `
+<span class="error">❌ ERROR: ${error.message}</span>
+
+This could mean:
+- Django server is not running
+- CORS is blocking the request
+
+Check browser console for details.
+`;
+            }
+        }
+
+        // Test 2: With Credentials
+        async function testWithCredentials() {
+            const resultDiv = document.getElementById('credentials-result');
+            resultDiv.textContent = 'Making request with credentials...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/cors/`, {
+                    method: 'GET',
+                    credentials: 'include',  // This sends cookies!
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+<span class="success">✅ SUCCESS!</span>
+
+Response Status: ${response.status}
+Response Data:
+${JSON.stringify(data, null, 2)}
+
+<span class="warning">👉 Check Network Tab:</span>
+1. Click on the "cors" request
+2. Response Headers should show:
+   - Access-Control-Allow-Origin: <specific origin>
+   - Access-Control-Allow-Credentials: true
+
+Note: With credentials, Allow-Origin CANNOT be "*"
+`;
+            } catch (error) {
+                resultDiv.innerHTML = `
+<span class="error">❌ ERROR: ${error.message}</span>
+
+If you see a CORS error, it might be because:
+- Access-Control-Allow-Credentials is not set
+- Access-Control-Allow-Origin is "*" (not allowed with credentials)
+
+Check settings.py:
+  CORS_ALLOW_CREDENTIALS = True
+  CORS_ALLOW_ALL_ORIGINS = True  # This might cause issues!
+`;
+            }
+        }
+
+        // Test 3: POST (Preflight)
+        async function testPreflight() {
+            const resultDiv = document.getElementById('preflight-result');
+            resultDiv.textContent = 'Making POST request (will trigger preflight)...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/cors/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ test: 'data' }),
+                    credentials: 'include',
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+<span class="success">✅ SUCCESS!</span>
+
+Response Status: ${response.status}
+Response Data:
+${JSON.stringify(data, null, 2)}
+
+<span class="warning">👉 Check Network Tab for TWO requests:</span>
+1. OPTIONS request (preflight) - Check its Response Headers
+2. POST request (actual request)
+
+The OPTIONS response should have:
+- Access-Control-Allow-Methods: POST, GET, ...
+- Access-Control-Allow-Headers: content-type, ...
+`;
+            } catch (error) {
+                resultDiv.innerHTML = `
+<span class="error">❌ ERROR: ${error.message}</span>
+
+Check Network tab - do you see an OPTIONS request that failed?
+`;
+            }
+        }
+
+        // Test 4: Custom Header
+        async function testCustomHeader() {
+            const resultDiv = document.getElementById('custom-header-result');
+            resultDiv.textContent = 'Making request with custom header...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/headers/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Custom-Header': 'test-value',
+                    },
+                    credentials: 'include',
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+<span class="success">✅ SUCCESS!</span>
+
+The server received these headers:
+${JSON.stringify(data.headers, null, 2)}
+
+<span class="warning">👉 Check Network Tab:</span>
+Look for the preflight OPTIONS request.
+It should show Access-Control-Allow-Headers including your custom header.
+`;
+            } catch (error) {
+                resultDiv.innerHTML = `
+<span class="error">❌ ERROR: ${error.message}</span>
+
+Custom headers require the server to explicitly allow them.
+Check if X-Custom-Header is in CORS_ALLOW_HEADERS in settings.py
+`;
+            }
+        }
+    </script>
+</body>
+</html>

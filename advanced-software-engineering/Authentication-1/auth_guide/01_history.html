@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History of Authentication - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📜</div>
+            <h1>History of Authentication</h1>
+            <p class="subtitle">5,000 years of proving "I am who I say I am"</p>
+        </header>
+
+        <div class="section">
+            <h2>Why Study History?</h2>
+            <p>Authentication isn't a modern invention. Humans have needed to prove identity since the dawn of civilization. Understanding this history helps us appreciate why modern solutions work the way they do.</p>
+        </div>
+
+        <div class="section">
+            <h2>Timeline: Authentication Through the Ages</h2>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">3500 BCE - Mesopotamia</div>
+                    <div class="timeline-content">
+                        <h4>Cylinder Seals</h4>
+                        <p>Mesopotamian merchants rolled unique carved cylinders onto clay tablets to authenticate documents. Each seal was unique - like the world's first private key!</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">2000 BCE - Babylon</div>
+                    <div class="timeline-content">
+                        <h4>First Biometrics</h4>
+                        <p>Babylonian merchants pressed fingerprints into clay tablets to authenticate business transactions. Yes, biometrics are 4,000 years old!</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">200 BCE - Rome</div>
+                    <div class="timeline-content">
+                        <h4>The First Passwords</h4>
+                        <p>Roman military used "watchwords" (tessera) - wooden tablets with daily passwords passed through the ranks. Wrong password = potential execution as a spy.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">1000 CE - Middle Ages</div>
+                    <div class="timeline-content">
+                        <h4>Signet Rings & Wax Seals</h4>
+                        <p>Kings and nobles used unique ring impressions in wax to authenticate letters. This provided non-repudiation - you couldn't deny sending a sealed letter.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">1962 - MIT</div>
+                    <div class="timeline-content">
+                        <h4>First Computer Password (and First Hack!)</h4>
+                        <p>MIT's CTSS system introduced passwords. Within months, a PhD student printed the password file (stored in plaintext!) to steal computing time. The first password breach in history.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">1976 - Unix</div>
+                    <div class="timeline-content">
+                        <h4>Password Hashing Invented</h4>
+                        <p>Robert Morris Sr. and Ken Thompson created Unix crypt() - the first password hashing function. They intentionally made it slow (1 second on 1976 hardware).</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-date">1999 - Present</div>
+                    <div class="timeline-content">
+                        <h4>BCrypt Era</h4>
+                        <p>BCrypt introduced adaptive cost factors - as computers got faster, the hashing could be made slower. Still the standard today.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Roman Watchword System</h2>
+
+            <p>The Roman military had a sophisticated password system that modern security experts would recognize:</p>
+
+            <div class="diagram">
+<pre>
+ROMAN WATCHWORD DISTRIBUTION
+════════════════════════════
+
+  ┌─────────────┐
+  │   GENERAL   │ ◄── Creates new password each night
+  └──────┬──────┘
+         │ Wooden tablet with password
+         ▼
+  ┌─────────────┐
+  │  TRIBUNES   │ ◄── Memorize and pass down
+  └──────┬──────┘
+         │
+         ▼
+  ┌─────────────┐
+  │ CENTURIONS  │ ◄── Tell their units
+  └──────┬──────┘
+         │
+         ▼
+  ┌─────────────┐
+  │  SOLDIERS   │ ◄── Must speak password to enter camp
+  └─────────────┘
+
+  Wrong password? Treated as enemy spy.
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>Sound familiar?</strong> This is exactly how "something you know" authentication works today - just with passwords instead of watchwords!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Tessera Hospitalis: Ancient Friend Tokens</h2>
+
+            <p>Romans had an ingenious system for recognizing allies across generations:</p>
+
+            <div class="diagram">
+<pre>
+TESSERA HOSPITALIS (Friend Token)
+═════════════════════════════════
+
+  Two families become allies:
+
+  ┌─────────────────────────────────────┐
+  │         ORIGINAL TOKEN              │
+  │    ┌─────────────────────────┐      │
+  │    │ ████████████████████████│      │
+  │    │ ████████████████████████│      │
+  │    └─────────────────────────┘      │
+  └─────────────────────────────────────┘
+                   │
+          Broken in half
+                   │
+         ┌─────────┴─────────┐
+         │                   │
+         ▼                   ▼
+   ┌───────────┐       ┌───────────┐
+   │ ██████████│       │██████████ │
+   │ ██████████│       │██████████ │
+   └───────────┘       └───────────┘
+   Family A keeps      Family B keeps
+
+  Generations later: Descendants prove
+  alliance by matching the halves!
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Modern parallel:</strong> This is the concept behind secret sharing and split-key cryptography. The token is only valid when both pieces come together.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Fun Historical Facts</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">👑</div>
+                    <h3>Pharaoh's Seal</h3>
+                    <p>When an Egyptian Pharaoh died, his seal ring was immediately destroyed to prevent forgery. Like revoking a private key!</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔓</div>
+                    <h3>"Open Sesame"</h3>
+                    <p>From Ali Baba (1704) - literature's most famous password. It was stolen by eavesdropping (the original shoulder surfing!)</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🏧</div>
+                    <h3>First ATM PIN</h3>
+                    <p>The inventor chose 4 digits because his wife could only remember that many. User experience has always driven security!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Historical Knowledge</div>
+            <p style="margin-bottom: 1rem;">What happened in 1962 at MIT that taught us an important security lesson?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) The first computer virus was created
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) The first password breach - someone printed the plaintext password file
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Two-factor authentication was invented
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) BCrypt was created
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="index.html">← Home</a>
+            <a href="02_auth_vs_auth.html">Next: Auth vs Auth →</a>
+        </div>
+
+        <footer>
+            <p>Page 1 of 8 - Authentication Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! A PhD student simply requested a printout of the password file, which was stored in plaintext. This is why we NEVER store passwords in plaintext!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. The first password breach happened when someone realized passwords were stored in plaintext and just... asked for a printout.';
+            }
+        }
+    </script>
+</body>
+</html>

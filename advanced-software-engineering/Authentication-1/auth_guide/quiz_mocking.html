@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Mocking & Web API Testing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .quiz-wrapper { max-width: 900px; margin: 0 auto; }
+        .progress-container { background: var(--bg-secondary); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 2rem; border: 1px solid var(--border-color); }
+        .progress-bar-bg { background: var(--border-color); border-radius: 10px; height: 10px; margin-bottom: 0.5rem; overflow: hidden; }
+        .progress-bar-fill { background: linear-gradient(90deg, var(--accent-color), #51cf66); height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+        .progress-text { text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+        .question-card { background: var(--bg-primary); border-radius: 16px; padding: 2rem; border: 2px solid var(--border-color); display: none; animation: fadeIn 0.3s ease; }
+        .question-card.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number { display: inline-block; background: var(--accent-color); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+        .question-title { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.5rem; }
+
+        .code-block { background: #f8f9fa; border-radius: 8px; margin: 1rem 0; overflow: hidden; border: 1px solid var(--border-color); }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code { font-family: 'Fira Code', monospace; font-size: 0.85rem; }
+
+        .options-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .option-item { background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; font-family: 'Fira Code', monospace; font-size: 0.9rem; }
+
+        .answer-reveal { margin-top: 1.5rem; }
+        .reveal-btn { background: linear-gradient(135deg, #228be6, #1c7ed6); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s, box-shadow 0.2s; width: 100%; justify-content: center; }
+        .reveal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34, 139, 230, 0.4); }
+        .reveal-btn.revealed { background: linear-gradient(135deg, #51cf66, #40c057); }
+
+        .answer-content { display: none; margin-top: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%); border-radius: 12px; border: 2px solid #69db7c; animation: slideDown 0.3s ease; }
+        .answer-content.visible { display: block; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-content h3 { color: #2f9e44; margin-bottom: 1rem; }
+
+        .answer-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; background: white; border-radius: 8px; overflow: hidden; }
+        .answer-content th, .answer-content td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .answer-content th { background: #f1f3f4; font-weight: 600; }
+
+        .navigation { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+        .nav-btn { background: var(--bg-primary); border: 2px solid var(--border-color); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-btn:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .nav-btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: white; }
+        .nav-btn.primary:hover:not(:disabled) { background: #1c7ed6; border-color: #1c7ed6; color: white; }
+
+        .question-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.2s; }
+        .dot:hover { background: var(--text-muted); }
+        .dot.active { background: var(--accent-color); transform: scale(1.2); }
+        .dot.answered { background: #51cf66; }
+
+        .results-card { text-align: center; padding: 3rem; }
+        .results-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .results-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .score-display { font-size: 3rem; font-weight: 700; color: var(--accent-color); margin: 1rem 0; }
+
+        .key-takeaways { background: #fff9db; border: 2px solid #fab005; border-radius: 12px; padding: 1.5rem; margin-top: 2rem; text-align: left; }
+        .key-takeaways h3 { color: #e67700; margin-bottom: 1rem; }
+        .key-takeaways ol { margin: 0; padding-left: 1.5rem; }
+        .key-takeaways li { margin-bottom: 0.5rem; }
+
+        .restart-btn { background: var(--accent-color); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; }
+
+        .tip-box { background: #e7f5ff; border: 1px solid #74c0fc; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.9rem; }
+        .tip-box strong { color: #1971c2; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🧪</div>
+            <h1>Mocking & Web API Testing Quiz</h1>
+            <p class="subtitle">Test your understanding of mocking concepts!</p>
+        </header>
+
+        <div class="quiz-wrapper">
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar" style="width: 20%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Question 1 of 5</div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="question-card active" data-question="1">
+                <span class="question-number">Question 1</span>
+                <h2 class="question-title">The Patch Location Puzzle</h2>
+
+                <div class="code-block">
+                    <pre><code class="language-python"># payment_service.py
+class PaymentGateway:
+    def charge(self, amount):
+        # Calls external API
+        return {"status": "success"}
+
+# order_service.py
+from payment_service import PaymentGateway
+
+class OrderService:
+    def process_order(self, order):
+        gateway = PaymentGateway()
+        return gateway.charge(order.amount)</code></pre>
+                </div>
+
+                <p><strong>You're writing a test for <code>OrderService</code>. Which patch target is CORRECT?</strong></p>
+
+                <ul class="options-list">
+                    <li class="option-item">A) <code>@patch('payment_service.PaymentGateway')</code></li>
+                    <li class="option-item">B) <code>@patch('order_service.PaymentGateway')</code></li>
+                    <li class="option-item">C) <code>@patch('PaymentGateway')</code></li>
+                    <li class="option-item">D) <code>@patch('order_service.payment_service.PaymentGateway')</code></li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(1)">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-1">
+                        <h3>Answer: B) <code>@patch('order_service.PaymentGateway')</code></h3>
+
+                        <div class="tip-box">
+                            <strong>Golden Rule:</strong> Patch where the object is <strong>USED</strong>, not where it's <strong>DEFINED</strong>.
+                        </div>
+
+                        <p>When <code>order_service.py</code> does <code>from payment_service import PaymentGateway</code>, it creates a <strong>reference</strong> in its own namespace.</p>
+
+                        <div class="code-block">
+                            <pre><code class="language-python"># ❌ WRONG - patches the original, but order_service has its own reference
+@patch('payment_service.PaymentGateway')
+
+# ✅ CORRECT - patches the reference that order_service actually uses
+@patch('order_service.PaymentGateway')</code></pre>
+                        </div>
+
+                        <p><strong>Complete test:</strong></p>
+                        <div class="code-block">
+                            <pre><code class="language-python">@patch('order_service.PaymentGateway')
+def test_process_order(mock_gateway_class):
+    mock_instance = mock_gateway_class.return_value
+    mock_instance.charge.return_value = {"status": "success"}
+
+    service = OrderService()
+    result = service.process_order(order)
+
+    assert result["status"] == "success"</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question-card" data-question="2">
+                <span class="question-number">Question 2</span>
+                <h2 class="question-title">Mock vs MagicMock</h2>
+
+                <div class="code-block">
+                    <pre><code class="language-python">from unittest.mock import Mock, MagicMock
+
+mock1 = Mock()
+mock2 = MagicMock()
+
+# Which of these will work?
+len(mock1)      # Line A
+len(mock2)      # Line B
+mock1["key"]    # Line C
+mock2["key"]    # Line D</code></pre>
+                </div>
+
+                <p><strong>Which lines will raise an error?</strong></p>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(2)">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-2">
+                        <h3>Answer: Lines A and C will raise errors</h3>
+
+                        <table>
+                            <tr>
+                                <th>Line</th>
+                                <th>Mock Type</th>
+                                <th>Result</th>
+                            </tr>
+                            <tr>
+                                <td>A: <code>len(mock1)</code></td>
+                                <td>Mock</td>
+                                <td>❌ TypeError</td>
+                            </tr>
+                            <tr>
+                                <td>B: <code>len(mock2)</code></td>
+                                <td>MagicMock</td>
+                                <td>✅ Returns 0</td>
+                            </tr>
+                            <tr>
+                                <td>C: <code>mock1["key"]</code></td>
+                                <td>Mock</td>
+                                <td>❌ TypeError</td>
+                            </tr>
+                            <tr>
+                                <td>D: <code>mock2["key"]</code></td>
+                                <td>MagicMock</td>
+                                <td>✅ Returns MagicMock</td>
+                            </tr>
+                        </table>
+
+                        <div class="tip-box">
+                            <strong>Key Difference:</strong><br>
+                            • <strong>Mock</strong>: Basic mock, doesn't support magic methods<br>
+                            • <strong>MagicMock</strong>: Pre-configures all magic methods (<code>__len__</code>, <code>__getitem__</code>, etc.)
+                        </div>
+
+                        <div class="code-block">
+                            <pre><code class="language-python"># Mock requires explicit configuration for magic methods
+mock1 = Mock()
+mock1.__len__ = Mock(return_value=5)
+len(mock1)  # Now works, returns 5
+
+# MagicMock has them built-in
+mock2 = MagicMock()
+mock2.__len__.return_value = 10
+len(mock2)  # Returns 10</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 3 (was Question 4) -->
+            <div class="question-card" data-question="3">
+                <span class="question-number">Question 3</span>
+                <h2 class="question-title">Side Effects Showdown</h2>
+
+                <p><strong>Match each <code>side_effect</code> usage with its behavior:</strong></p>
+
+                <div class="code-block">
+                    <pre><code class="language-python">mock = Mock()
+
+# Setup A
+mock.fetch.side_effect = [1, 2, 3]
+
+# Setup B
+mock.fetch.side_effect = ValueError("Not found")
+
+# Setup C
+mock.fetch.side_effect = lambda x: x * 2
+
+# Setup D
+mock.fetch.side_effect = [{"status": "ok"}, ConnectionError(), {"status": "ok"}]</code></pre>
+                </div>
+
+                <table style="width: 100%; margin: 1rem 0;">
+                    <tr><th>Setup</th><th>Behavior</th></tr>
+                    <tr><td>A</td><td>1. Raises exception on every call</td></tr>
+                    <tr><td>B</td><td>2. Returns different values on successive calls</td></tr>
+                    <tr><td>C</td><td>3. Computes return value from arguments</td></tr>
+                    <tr><td>D</td><td>4. Simulates intermittent failures</td></tr>
+                </table>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(3)">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-3">
+                        <h3>Answer</h3>
+
+                        <table>
+                            <tr><th>Setup</th><th>Behavior</th></tr>
+                            <tr><td><strong>A</strong> <code>[1, 2, 3]</code></td><td><strong>2.</strong> Returns different values on successive calls</td></tr>
+                            <tr><td><strong>B</strong> <code>ValueError(...)</code></td><td><strong>1.</strong> Raises exception on every call</td></tr>
+                            <tr><td><strong>C</strong> <code>lambda x: x * 2</code></td><td><strong>3.</strong> Computes return value from arguments</td></tr>
+                            <tr><td><strong>D</strong> <code>[..., Error(), ...]</code></td><td><strong>4.</strong> Simulates intermittent failures</td></tr>
+                        </table>
+
+                        <div class="code-block">
+                            <pre><code class="language-python"># A: Sequential returns
+mock.fetch.side_effect = [1, 2, 3]
+mock.fetch()  # Returns 1
+mock.fetch()  # Returns 2
+mock.fetch()  # Returns 3
+mock.fetch()  # Raises StopIteration!
+
+# B: Always raises
+mock.fetch.side_effect = ValueError("Not found")
+mock.fetch()  # Raises ValueError
+mock.fetch()  # Raises ValueError again
+
+# C: Computed return
+mock.fetch.side_effect = lambda x: x * 2
+mock.fetch(5)   # Returns 10
+mock.fetch(100) # Returns 200
+
+# D: Mixed (great for retry testing!)
+mock.fetch.side_effect = [
+    {"status": "ok"},      # First call succeeds
+    ConnectionError(),      # Second call fails
+    {"status": "ok"}       # Third call succeeds
+]</code></pre>
+                        </div>
+
+                        <div class="tip-box">
+                            <strong>Pro tip:</strong> Use <code>side_effect</code> with mixed values to test retry logic!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 4 (was Question 7) -->
+            <div class="question-card" data-question="4">
+                <span class="question-number">Question 4</span>
+                <h2 class="question-title">The spec Advantage</h2>
+
+                <div class="code-block">
+                    <pre><code class="language-python"># Real class
+class PaymentGateway:
+    def charge(self, card_number, amount, currency="USD"):
+        pass
+
+    def refund(self, transaction_id, amount):
+        pass
+
+# Test code
+mock_gateway = Mock()  # Without spec
+mock_gateway.chrage(card="1234", amount=100)  # Typo!
+mock_gateway.chrage.assert_called()  # Passes!</code></pre>
+                </div>
+
+                <p><strong>How would using <code>spec</code> help here, and what's the syntax?</strong></p>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(4)">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-4">
+                        <h3>Answer: <code>spec</code> restricts mock to only allow real attributes</h3>
+
+                        <div class="code-block">
+                            <pre><code class="language-python"># Without spec - typos silently pass
+mock_gateway = Mock()
+mock_gateway.chrage(100)  # Creates mock.chrage, no error!
+
+# With spec - typos raise AttributeError
+mock_gateway = Mock(spec=PaymentGateway)
+mock_gateway.chrage(100)  # ❌ AttributeError: 'chrage' not in spec
+mock_gateway.charge(100)  # ✅ Works
+
+# With autospec - also validates signatures!
+from unittest.mock import create_autospec
+
+mock_gateway = create_autospec(PaymentGateway)
+mock_gateway.charge("1234", 100)  # ✅ Valid signature
+mock_gateway.charge(100)  # ❌ TypeError: missing 'card_number'</code></pre>
+                        </div>
+
+                        <table>
+                            <tr><th>Feature</th><th><code>Mock()</code></th><th><code>Mock(spec=X)</code></th><th><code>create_autospec(X)</code></th></tr>
+                            <tr><td>Catches typos</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                            <tr><td>Validates signatures</td><td>❌</td><td>❌</td><td>✅</td></tr>
+                            <tr><td>Nests specs</td><td>❌</td><td>❌</td><td>✅</td></tr>
+                        </table>
+
+                        <div class="tip-box">
+                            <strong>Best practice:</strong> Always use <code>spec</code> or <code>autospec</code> to catch API mismatches early!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 5 (was Question 8) -->
+            <div class="question-card" data-question="5">
+                <span class="question-number">Question 5</span>
+                <h2 class="question-title">HTTP Status Codes</h2>
+
+                <p><strong>Match each scenario with the correct HTTP status code:</strong></p>
+
+                <table style="width: 100%; margin: 1rem 0;">
+                    <tr><th>Scenario</th><th>Status Code</th></tr>
+                    <tr><td>1. User created successfully</td><td>A. 400</td></tr>
+                    <tr><td>2. Invalid JSON in request body</td><td>B. 401</td></tr>
+                    <tr><td>3. User not logged in</td><td>C. 403</td></tr>
+                    <tr><td>4. Logged in but accessing admin route</td><td>D. 404</td></tr>
+                    <tr><td>5. User ID doesn't exist</td><td>E. 201</td></tr>
+                    <tr><td>6. Server crashed unexpectedly</td><td>F. 500</td></tr>
+                </table>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(5)">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-5">
+                        <h3>Answer</h3>
+
+                        <table>
+                            <tr><th>Scenario</th><th>Status Code</th></tr>
+                            <tr><td>1. User created successfully</td><td><strong>E. 201 Created</strong></td></tr>
+                            <tr><td>2. Invalid JSON in request body</td><td><strong>A. 400 Bad Request</strong></td></tr>
+                            <tr><td>3. User not logged in</td><td><strong>B. 401 Unauthorized</strong></td></tr>
+                            <tr><td>4. Logged in but accessing admin</td><td><strong>C. 403 Forbidden</strong></td></tr>
+                            <tr><td>5. User ID doesn't exist</td><td><strong>D. 404 Not Found</strong></td></tr>
+                            <tr><td>6. Server crashed unexpectedly</td><td><strong>F. 500 Internal Error</strong></td></tr>
+                        </table>
+
+                        <div class="code-block">
+                            <pre><code class="language-text">2xx - Success
+├── 200 OK              - General success (GET, PUT, PATCH)
+├── 201 Created         - Resource created (POST)
+└── 204 No Content      - Success, no body (DELETE)
+
+4xx - Client Errors (your fault)
+├── 400 Bad Request     - Malformed request/validation error
+├── 401 Unauthorized    - Not authenticated (needs login)
+├── 403 Forbidden       - Authenticated but not permitted
+├── 404 Not Found       - Resource doesn't exist
+└── 422 Unprocessable   - Valid JSON but semantic error
+
+5xx - Server Errors (our fault)
+├── 500 Internal Error  - Unexpected server crash
+└── 503 Unavailable     - Server overloaded/maintenance</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="question-card results-card" data-question="results">
+                <div class="results-icon">🏆</div>
+                <h2 class="results-title">Quiz Complete!</h2>
+
+                <p>You've reviewed all 5 questions on Mocking & Web API Testing.</p>
+
+                <div class="key-takeaways">
+                    <h3>Key Takeaways</h3>
+                    <ol>
+                        <li><strong>Patch where used, not where defined</strong></li>
+                        <li><strong><code>MagicMock</code></strong> for magic methods, <code>Mock</code> otherwise</li>
+                        <li><strong><code>side_effect</code></strong> for sequences, exceptions, or computed values</li>
+                        <li><strong>Always use <code>spec</code> or <code>autospec</code></strong> to catch typos</li>
+                        <li><strong>Know your HTTP status codes</strong></li>
+                    </ol>
+                </div>
+
+                <button class="restart-btn" onclick="restartQuiz()">🔄 Start Over</button>
+            </div>
+
+            <!-- Navigation -->
+            <div class="navigation">
+                <button class="nav-btn" id="prevBtn" onclick="changeQuestion(-1)" disabled>
+                    ← Previous
+                </button>
+                <button class="nav-btn primary" id="nextBtn" onclick="changeQuestion(1)">
+                    Next →
+                </button>
+            </div>
+
+            <!-- Question dots -->
+            <div class="question-dots" id="questionDots">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <footer>
+            <p>Quiz: Mocking & Web API Testing</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script>
+        const totalQuestions = 5;
+        let currentQuestion = 1;
+        let answeredQuestions = new Set();
+
+        function initDots() {
+            const dotsContainer = document.getElementById('questionDots');
+            dotsContainer.innerHTML = '';
+            for (let i = 1; i <= totalQuestions; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot' + (i === 1 ? ' active' : '');
+                dot.onclick = () => goToQuestion(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateUI() {
+            const progress = (currentQuestion / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent =
+                currentQuestion <= totalQuestions
+                    ? `Question ${currentQuestion} of ${totalQuestions}`
+                    : 'Quiz Complete!';
+
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            const targetQuestion = currentQuestion <= totalQuestions ? currentQuestion : 'results';
+            document.querySelector(`[data-question="${targetQuestion}"]`).classList.add('active');
+
+            document.getElementById('prevBtn').disabled = currentQuestion <= 1;
+
+            if (currentQuestion >= totalQuestions) {
+                document.getElementById('nextBtn').textContent = 'Finish →';
+            } else if (currentQuestion > totalQuestions) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('prevBtn').textContent = '← Back to Questions';
+            } else {
+                document.getElementById('nextBtn').textContent = 'Next →';
+                document.getElementById('nextBtn').style.display = 'block';
+            }
+
+            document.querySelectorAll('.dot').forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index + 1 === currentQuestion && currentQuestion <= totalQuestions) {
+                    dot.classList.add('active');
+                }
+                if (answeredQuestions.has(index + 1)) {
+                    dot.classList.add('answered');
+                }
+            });
+
+            Prism.highlightAll();
+        }
+
+        function changeQuestion(delta) {
+            const newQuestion = currentQuestion + delta;
+            if (newQuestion >= 1 && newQuestion <= totalQuestions + 1) {
+                currentQuestion = newQuestion;
+                updateUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function goToQuestion(num) {
+            currentQuestion = num;
+            updateUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function revealAnswer(questionNum) {
+            const answerContent = document.getElementById(`answer-${questionNum}`);
+            const btn = answerContent.previousElementSibling;
+
+            answerContent.classList.toggle('visible');
+
+            if (answerContent.classList.contains('visible')) {
+                btn.innerHTML = '<span>✅</span> Answer Revealed';
+                btn.classList.add('revealed');
+                answeredQuestions.add(questionNum);
+                updateUI();
+                Prism.highlightAll();
+            } else {
+                btn.innerHTML = '<span>💡</span> Reveal Answer';
+                btn.classList.remove('revealed');
+            }
+        }
+
+        function restartQuiz() {
+            currentQuestion = 1;
+            answeredQuestions.clear();
+
+            document.querySelectorAll('.answer-content').forEach(el => {
+                el.classList.remove('visible');
+            });
+            document.querySelectorAll('.reveal-btn').forEach(btn => {
+                btn.innerHTML = '<span>💡</span> Reveal Answer';
+                btn.classList.remove('revealed');
+            });
+
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.classList.remove('answered');
+            });
+
+            updateUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        initDots();
+        updateUI();
+    </script>
+</body>
+</html>

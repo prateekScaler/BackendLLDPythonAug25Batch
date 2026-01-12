@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Guide - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn nav-btn-active">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔐</div>
+            <h1>Authentication Guide</h1>
+            <p class="subtitle">Auth vs Auth, Password Security & Tokens</p>
+        </header>
+
+        <div class="section">
+            <h2>Welcome!</h2>
+            <p>This interactive guide covers the fundamentals of authentication and authorization in software development. From ancient history to modern JWTs, you'll learn why security matters and how to implement it correctly.</p>
+
+            <div class="info-box">
+                <strong>What You'll Learn:</strong>
+                <ul>
+                    <li>The fascinating history of identity verification</li>
+                    <li>Authentication vs Authorization (they're different!)</li>
+                    <li>Why password storage methods matter</li>
+                    <li>How BCrypt protects passwords</li>
+                    <li>Different ways of authentication (OTP, passwords, biometrics)</li>
+                    <li>Encoding vs Encryption vs Hashing (ELI5 explained!)</li>
+                    <li>Session-based authentication (used by Scaler!)</li>
+                    <li>Role-Based Access Control (RBAC) for managing permissions</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 style="margin: 2rem 0 1rem; text-align: center;">Choose a Topic</h2>
+
+        <div class="card-grid">
+            <a href="01_history.html" class="card">
+                <div class="card-icon">📜</div>
+                <h3>1. History of Authentication</h3>
+                <p>From Roman watchwords to biometrics - 5000 years of proving identity</p>
+            </a>
+
+            <a href="02_auth_vs_auth.html" class="card">
+                <div class="card-icon">🔐 vs 🎫</div>
+                <h3>2. Authentication vs Authorization</h3>
+                <p>"Who are you?" vs "What can you do?" - Plus intro to RBAC</p>
+            </a>
+
+            <a href="03_ways_of_auth.html" class="card">
+                <div class="card-icon">🔑</div>
+                <h3>3. Ways of Authentication</h3>
+                <p>Passwords, OTP, Biometrics - Different methods compared</p>
+            </a>
+
+            <a href="04_passwords.html" class="card">
+                <div class="card-icon">🛡️</div>
+                <h3>4. Password Security</h3>
+                <p>Plaintext to BCrypt - Why and how passwords should be stored</p>
+            </a>
+
+            <a href="05_encoding.html" class="card">
+                <div class="card-icon">🔄</div>
+                <h3>5. Encoding vs Encryption vs Hashing</h3>
+                <p>Three transforms, three purposes - with ELI5 examples</p>
+            </a>
+
+            <a href="06_sessions.html" class="card">
+                <div class="card-icon">🍪</div>
+                <h3>6. Session-Based Authentication</h3>
+                <p>How web apps remember you - used by Scaler!</p>
+            </a>
+
+            <a href="07_cheatsheet.html" class="card">
+                <div class="card-icon">📋</div>
+                <h3>7. Cheat Sheet</h3>
+                <p>Quick reference for all authentication patterns</p>
+            </a>
+
+            <a href="08_rbac.html" class="card">
+                <div class="card-icon">👥</div>
+                <h3>8. RBAC Deep Dive</h3>
+                <p>Managing permissions at scale with roles and hierarchies</p>
+            </a>
+        </div>
+
+        <div class="section" style="margin-top: 2rem;">
+            <h2 style="text-align: center;">Test Your Knowledge</h2>
+            <div class="card-grid">
+                <a href="quiz_mocking.html" class="card" style="border: 2px solid #fab005; background: linear-gradient(135deg, #fff9db 0%, #ffec99 100%);">
+                    <div class="card-icon">🧪</div>
+                    <h3>Mocking & Web API Quiz</h3>
+                    <p>5 interactive questions on mocking and patching</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Stats: Why This Matters</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Year</th>
+                        <th>Company</th>
+                        <th>Vulnerability</th>
+                        <th>Accounts Exposed</th>
+                    </tr>
+                    <tr>
+                        <td>2012</td>
+                        <td>LinkedIn</td>
+                        <td>SHA-1 (no salt)</td>
+                        <td>117 million</td>
+                    </tr>
+                    <tr>
+                        <td>2013</td>
+                        <td>Adobe</td>
+                        <td>3DES encryption (not hashing!)</td>
+                        <td>153 million</td>
+                    </tr>
+                    <tr>
+                        <td>2016</td>
+                        <td>Yahoo</td>
+                        <td>MD5</td>
+                        <td>3 billion</td>
+                    </tr>
+                    <tr>
+                        <td>2019</td>
+                        <td>Facebook</td>
+                        <td>Plaintext in logs</td>
+                        <td>600 million</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="danger-box">
+                <strong>All of these breaches could have been prevented</strong> with proper password hashing. By the end of this guide, you'll understand exactly why.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Three Factors</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🧠</div>
+                    <h3>Something You Know</h3>
+                    <p>Passwords, PINs, security questions</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📱</div>
+                    <h3>Something You Have</h3>
+                    <p>Phone, hardware token, smart card</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">👤</div>
+                    <h3>Something You Are</h3>
+                    <p>Fingerprint, face, voice, retina</p>
+                </div>
+            </div>
+
+            <p style="text-align: center; margin-top: 1rem; color: var(--text-muted);">
+                <strong>Multi-Factor Authentication (MFA)</strong> combines two or more of these factors.
+            </p>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Quiz: Test Your Knowledge</div>
+            <p style="margin-bottom: 1rem;">What's the difference between Authentication and Authorization?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) They're the same thing
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Authentication verifies identity; Authorization verifies permissions
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Authorization comes before Authentication
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Authentication is for admins; Authorization is for users
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <span></span>
+            <a href="01_history.html">Start Learning: History →</a>
+        </div>
+
+        <footer>
+            <p>Authentication Guide - Part 1 of the Security Series</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Authentication answers "Who are you?" while Authorization answers "What are you allowed to do?"';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Authentication verifies identity first, then Authorization checks what that identity can access.';
+            }
+        }
+    </script>
+</body>
+</html>

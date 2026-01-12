@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encoding vs Encryption vs Hashing - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .transform-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border: 2px solid var(--border-color);
+            text-align: center;
+        }
+        .transform-card.encoding { border-color: #339af0; background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%); }
+        .transform-card.encryption { border-color: #51cf66; background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%); }
+        .transform-card.hashing { border-color: #ff6b6b; background: linear-gradient(135deg, #ffe3e3 0%, #ffc9c9 100%); }
+        .transform-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .transform-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .transform-subtitle { color: var(--text-muted); margin-bottom: 1rem; }
+        .eli5-box {
+            background: #fff9db;
+            border: 2px dashed #fab005;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .eli5-box h4 {
+            color: #e67700;
+            margin-bottom: 0.5rem;
+        }
+        .arrow-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        .arrow-item {
+            background: var(--bg-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+        }
+        .arrow { font-size: 1.5rem; color: var(--accent-color); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔄</div>
+            <h1>Encoding vs Encryption vs Hashing</h1>
+            <p class="subtitle">Three transforms, three different purposes</p>
+        </header>
+
+        <!-- ELI5 Overview -->
+        <div class="eli5-box">
+            <h4>🧒 The 5-Year-Old Version</h4>
+            <p><strong>Encoding</strong> = Translating a letter to another language (anyone can translate back)</p>
+            <p><strong>Encryption</strong> = Locking your diary with a key (only key holder can open)</p>
+            <p><strong>Hashing</strong> = Putting steak through a meat grinder (you can't un-grind it!)</p>
+        </div>
+
+        <!-- Three Cards -->
+        <div class="transform-card encoding">
+            <div class="transform-icon">📖</div>
+            <div class="transform-title">ENCODING</div>
+            <div class="transform-subtitle">Translation / Format Conversion</div>
+            <div class="arrow-flow">
+                <div class="arrow-item">HELLO</div>
+                <div class="arrow">→</div>
+                <div class="arrow-item">SEVMTE8=</div>
+                <div class="arrow">→</div>
+                <div class="arrow-item">HELLO</div>
+            </div>
+            <p><strong>Anyone can reverse it</strong> - No key needed</p>
+            <p>Examples: Base64, ASCII, URL encoding</p>
+        </div>
+
+        <div class="transform-card encryption">
+            <div class="transform-icon">🔒</div>
+            <div class="transform-title">ENCRYPTION</div>
+            <div class="transform-subtitle">Locked with a Key</div>
+            <div class="arrow-flow">
+                <div class="arrow-item">HELLO</div>
+                <div class="arrow">+ 🔑 →</div>
+                <div class="arrow-item">X#9@k</div>
+                <div class="arrow">+ 🔑 →</div>
+                <div class="arrow-item">HELLO</div>
+            </div>
+            <p><strong>Only key holder can reverse</strong> - Key required</p>
+            <p>Examples: AES, RSA, ChaCha20</p>
+        </div>
+
+        <div class="transform-card hashing">
+            <div class="transform-icon">👆</div>
+            <div class="transform-title">HASHING</div>
+            <div class="transform-subtitle">One-Way Fingerprint</div>
+            <div class="arrow-flow">
+                <div class="arrow-item">HELLO</div>
+                <div class="arrow">→</div>
+                <div class="arrow-item">2cf24dba...</div>
+                <div class="arrow">✗</div>
+                <div class="arrow-item" style="opacity: 0.5;">???</div>
+            </div>
+            <p><strong>Cannot be reversed</strong> - One-way only</p>
+            <p>Examples: SHA-256, BCrypt, Argon2</p>
+        </div>
+
+        <div class="section">
+            <h2>Letter-Based Examples (ELI5)</h2>
+
+            <h3>📖 Encoding: Pig Latin</h3>
+            <div class="diagram">
+<pre>
+Original:  HELLO
+Rule:      Move first letter to end, add "AY"
+Encoded:   ELLOHAY
+
+Reverse:   Remove "AY", move last letter to front
+Result:    HELLO
+
+✅ Anyone who knows the rule can reverse it!
+</pre>
+            </div>
+
+            <h3>🔒 Encryption: Caesar Cipher (shift by 3)</h3>
+            <div class="diagram">
+<pre>
+Original:  H   E   L   L   O
+Key:       +3  +3  +3  +3  +3  (shift each letter by 3)
+Encrypted: K   H   O   O   R
+
+To decrypt, you MUST know the shift amount (key = 3):
+K   H   O   O   R
+-3  -3  -3  -3  -3
+H   E   L   L   O
+
+❌ Without the key, you'd have to try all 25 possibilities!
+</pre>
+            </div>
+
+            <h3>👆 Hashing: Letter Sum</h3>
+            <div class="diagram">
+<pre>
+Original:  CAT
+Process:   C=3, A=1, T=20  →  3+1+20 = 24
+Hash:      24
+
+Now what word made 24?
+- CAT = 24 ✓
+- TAC = 24 ✓
+- ATC = 24 ✓
+- X = 24 ✓
+
+❌ IMPOSSIBLE to know which one was the original!
+   That's why it's called ONE-WAY.
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Comparison Table</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Encoding</th>
+                        <th>Encryption</th>
+                        <th>Hashing</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Purpose</strong></td>
+                        <td>Format conversion</td>
+                        <td>Confidentiality</td>
+                        <td>Integrity/Verification</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reversible?</strong></td>
+                        <td style="color: var(--success-color);">✅ Yes, by anyone</td>
+                        <td style="color: var(--warning-color);">✅ Yes, with key</td>
+                        <td style="color: var(--danger-color);">❌ No, never</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Key needed?</strong></td>
+                        <td>❌ No</td>
+                        <td>✅ Yes</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Security?</strong></td>
+                        <td>❌ None</td>
+                        <td>✅ Confidentiality</td>
+                        <td>✅ Integrity</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Analogy</strong></td>
+                        <td>Translation</td>
+                        <td>Locked box</td>
+                        <td>Meat grinder</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>When to Use What?</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0;">
+                    <div class="card-icon">📖</div>
+                    <h3>Use Encoding When...</h3>
+                    <ul>
+                        <li>Sending binary data in text format</li>
+                        <li>URL needs special characters</li>
+                        <li>Email attachments</li>
+                    </ul>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🔒</div>
+                    <h3>Use Encryption When...</h3>
+                    <ul>
+                        <li>Sending secrets over network</li>
+                        <li>Storing API keys you need to retrieve</li>
+                        <li>Protecting files</li>
+                    </ul>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">👆</div>
+                    <h3>Use Hashing When...</h3>
+                    <ul>
+                        <li>Storing passwords</li>
+                        <li>Verifying file integrity</li>
+                        <li>Digital signatures</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Mistakes</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Using Encoding for Security</h4>
+                    <pre><code class="language-python"># Base64 is NOT encryption!
+password = base64.b64encode("secret")
+# Anyone can decode this!</code></pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ Use Hashing for Passwords</h4>
+                    <pre><code class="language-python"># Proper password storage
+import bcrypt
+hashed = bcrypt.hashpw(password,
+                       bcrypt.gensalt())</code></pre>
+                </div>
+            </div>
+
+            <div class="danger-box">
+                <strong>Remember:</strong> Base64 is NOT security! It's just encoding. Anyone can decode it instantly.
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Which One to Use?</div>
+            <p style="margin-bottom: 1rem;">You need to store user passwords in a database. Which should you use?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Encoding (Base64)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    B) Encryption (AES)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    C) Hashing (BCrypt)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Any of the above
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="04_passwords.html">← Password Security</a>
+            <a href="06_sessions.html">Next: Session-Based Authentication →</a>
+        </div>
+
+        <footer>
+            <p>Page 5 of 8 - Authentication Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Use hashing (BCrypt/Argon2) for passwords because: (1) You don\'t need to retrieve the original password, just verify it matches. (2) If the database is stolen, attackers can\'t reverse the hashes.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Passwords should be HASHED (BCrypt), not encoded or encrypted. Encoding provides no security. Encryption can be reversed if the key is stolen. Hashing is one-way - even if the database is stolen, passwords remain safe.';
+            }
+        }
+    </script>
+</body>
+</html>

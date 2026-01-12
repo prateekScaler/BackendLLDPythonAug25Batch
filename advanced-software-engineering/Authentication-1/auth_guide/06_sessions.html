@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session-Based Authentication - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🍪</div>
+            <h1>Session-Based Authentication</h1>
+            <p class="subtitle">The traditional way web applications remember you</p>
+        </header>
+
+        <!-- Cookie Etymology Section -->
+        <div class="section">
+            <h2>Why Are They Called "Cookies"?</h2>
+
+            <div class="info-box">
+                <strong>Origin Story (1994):</strong> Lou Montulli at Netscape needed a way for websites to remember users. He borrowed the term "magic cookie" from Unix programming - a small piece of data passed between programs that the receiving program doesn't examine but uses as an identifier.
+            </div>
+
+            <div class="diagram">
+<pre>
+THE COOKIE METAPHOR
+═══════════════════
+
+Think of it like a coat check at a restaurant:
+
+┌─────────────────────────────────────────────────────┐
+│  COAT CHECK (Before Cookies)                        │
+│                                                     │
+│  Every time you need your coat:                     │
+│  "Hi, I'm John, 5'10", brown hair, I gave you      │
+│   a blue jacket at 7:15 PM..."                     │
+│                                                     │
+│  Exhausting! You describe yourself EVERY time.     │
+└─────────────────────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────┐
+│  COAT CHECK (With Cookies/Tokens)                   │
+│                                                     │
+│  First visit: Here's ticket #42                     │
+│  Next time:   "Ticket #42 please" → Here's your coat│
+│                                                     │
+│  Simple! The TICKET identifies you.                 │
+└─────────────────────────────────────────────────────┘
+
+The ticket = Cookie (session_id)
+The coat room's record = Session Store
+</pre>
+            </div>
+
+            <p><strong>Fun Fact:</strong> The term "magic cookie" itself comes from fortune cookies - you get something small that contains a message/identifier inside!</p>
+        </div>
+
+        <div class="section">
+            <h2>The Problem: HTTP is Stateless</h2>
+
+            <p>HTTP doesn't remember anything between requests. Every request is independent:</p>
+
+            <div class="diagram">
+<pre>
+WITHOUT SESSIONS
+════════════════
+
+Browser                          Server
+   │                               │
+   │── Request: Show my profile ──►│  "Who are you?"
+   │◄── Please login first ────────│
+   │                               │
+   │── Login: user/pass ──────────►│  "OK, you're John"
+   │◄── Here's your profile ───────│
+   │                               │
+   │── Request: Show my orders ───►│  "Who are you?" (forgot!)
+   │◄── Please login first ────────│  (asks again!)
+   │                               │
+
+😫 User has to login EVERY time!
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>The Challenge:</strong> How do we make the server "remember" that you already logged in?
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Solution: Sessions + Cookies</h2>
+
+            <div class="diagram">
+<pre>
+SESSION-BASED AUTHENTICATION
+════════════════════════════
+
+Browser                          Server                    Session Store
+   │                               │                           │
+   │── Login: user/pass ──────────►│                           │
+   │                               │── Create session ────────►│
+   │                               │   (session_id: abc123)    │
+   │                               │   (user_id: 42)           │
+   │                               │◄── Stored! ───────────────│
+   │◄── Set-Cookie: sid=abc123 ────│                           │
+   │                               │                           │
+   │── Request + Cookie: sid=abc123►│                           │
+   │                               │── Lookup abc123 ─────────►│
+   │                               │◄── user_id: 42 ───────────│
+   │◄── Here's John's profile ─────│                           │
+   │                               │                           │
+
+✅ Server remembers you via the session!
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How It Works Step-by-Step</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">1️⃣</div>
+                    <h3>Login</h3>
+                    <p>User sends username + password. Server verifies credentials.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">2️⃣</div>
+                    <h3>Create Session</h3>
+                    <p>Server generates random session ID, stores user info in session store.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">3️⃣</div>
+                    <h3>Send Cookie</h3>
+                    <p>Server sends session ID to browser as a cookie.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">4️⃣</div>
+                    <h3>Subsequent Requests</h3>
+                    <p>Browser automatically sends cookie. Server looks up session.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Code Example</h2>
+
+            <pre><code class="language-python"># views.py - Django session-based authentication
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+# Login endpoint
+@csrf_exempt  # In production, use proper CSRF handling!
+@require_http_methods(["POST"])
+def login_view(request):
+    data = json.loads(request.body)
+    username = data.get('username')
+    password = data.get('password')
+
+    # Django's built-in authentication
+    user = authenticate(request, username=username, password=password)
+
+    if user is None:
+        return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+    # Create session (Django does this automatically with login())
+    login(request, user)  # This sets request.session and creates cookie
+
+    return JsonResponse({'message': 'Login successful'})
+
+# Protected endpoint
+def profile_view(request):
+    # Check if user is authenticated
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Please login'}, status=401)
+
+    # Access user from session (Django handles this automatically)
+    user = request.user
+    return JsonResponse({'name': user.get_full_name(), 'email': user.email})
+
+# Logout
+def logout_view(request):
+    logout(request)  # Destroys the session
+    return JsonResponse({'message': 'Logged out'})</code></pre>
+
+            <pre><code class="language-python"># urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('login/', views.login_view, name='login'),
+    path('profile/', views.profile_view, name='profile'),
+    path('logout/', views.logout_view, name='logout'),
+]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Session Storage Options</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Storage</th>
+                        <th>Pros</th>
+                        <th>Cons</th>
+                        <th>Used When</th>
+                    </tr>
+                    <tr>
+                        <td><strong>In-Memory</strong></td>
+                        <td>Fast, simple</td>
+                        <td>Lost on restart, not scalable</td>
+                        <td>Development, small apps</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Database</strong></td>
+                        <td>Persistent, queryable</td>
+                        <td>Slower, DB load</td>
+                        <td>When you need to track sessions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Redis</strong></td>
+                        <td>Fast, scalable, auto-expiry</td>
+                        <td>Extra infrastructure</td>
+                        <td>Production apps (most common)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="success-box">
+                <strong>Scaler uses sessions!</strong> When you log into the Scaler platform, a session is created. This is why if you clear your cookies, you get logged out.
+            </div>
+        </div>
+
+        <!-- Session Security History -->
+        <div class="section">
+            <h2>The Evolution of Session Security (Learning from Breaches)</h2>
+
+            <p>Session management wasn't always secure. Early implementations had critical flaws that attackers exploited:</p>
+
+            <h3>Early Session_ID Mistakes</h3>
+
+            <div class="danger-box">
+                <h4>Mistake #1: Predictable Session IDs (1990s)</h4>
+                <p>Early systems used sequential or predictable session IDs:</p>
+                <pre style="background: #fff; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+User 1: session_id = 1001
+User 2: session_id = 1002
+User 3: session_id = 1003  ← Easy to guess!
+
+Attacker: "Let me try session_id = 1004..."
+</pre>
+            </div>
+
+            <div class="danger-box">
+                <h4>Mistake #2: Session IDs in URLs (Early 2000s)</h4>
+                <p>Some sites put session IDs in URLs instead of cookies:</p>
+                <pre style="background: #fff; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+https://bank.com/account?sessionid=ABC123
+
+Problems:
+• Appears in browser history
+• Shared when copying URLs
+• Logged in server access logs
+• Leaked via Referer header
+</pre>
+            </div>
+
+            <h3>Famous Session-Related Breaches</h3>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Breach</th>
+                        <th>Year</th>
+                        <th>What Happened</th>
+                        <th>Lesson Learned</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Firesheep Attack</strong></td>
+                        <td>2010</td>
+                        <td>Firefox extension that let anyone on public WiFi steal session cookies from Facebook, Twitter, etc.</td>
+                        <td>Always use HTTPS! Session cookies without Secure flag could be intercepted.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GitHub OAuth Tokens</strong></td>
+                        <td>2014</td>
+                        <td>Session tokens leaked via Referer headers to third-party analytics</td>
+                        <td>Never put tokens in URLs; use HttpOnly cookies</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Zoom Session Hijacking</strong></td>
+                        <td>2020</td>
+                        <td>Predictable meeting IDs allowed "Zoom bombing"</td>
+                        <td>Session/meeting IDs must be cryptographically random</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>How Modern Sessions Are Secure</h3>
+
+            <div class="diagram">
+<pre>
+MODERN SESSION SECURITY
+═══════════════════════
+
+1990s Session ID:                 2024 Session ID:
+"user_42"                         "a7f8b2c9e4d1f6a8b3c7e9d2f4a1b8c6"
+    │                                         │
+    │                                         │
+Predictable                         Cryptographically random
+4 characters                        32+ characters (128+ bits)
+Easy to guess                       Impossible to guess
+
+Modern best practices:
+✅ 128+ bits of randomness (use crypto.randomBytes)
+✅ HttpOnly flag (no JavaScript access)
+✅ Secure flag (HTTPS only)
+✅ SameSite flag (CSRF protection)
+✅ Short expiration times
+✅ Regenerate after login (prevent session fixation)
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Who Uses Session-Based Auth?</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0;">
+                    <div class="card-icon">🎓</div>
+                    <h3>Scaler</h3>
+                    <p>Uses session-based auth for student portal</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🛒</div>
+                    <h3>Amazon</h3>
+                    <p>Session-based for shopping experience</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">🏦</div>
+                    <h3>Banks</h3>
+                    <p>Most banking sites use sessions for security</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #fab005;">
+                    <div class="card-icon">📧</div>
+                    <h3>Gmail</h3>
+                    <p>Uses session cookies (plus additional security)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amazon Deep Dive -->
+        <div class="section">
+            <h2>Case Study: Why Amazon Uses Sessions at Scale</h2>
+
+            <div class="info-box">
+                <strong>Wait, doesn't Amazon have millions of users? How do sessions scale?</strong><br>
+                Great question! Let's understand why session-based auth is STILL the right choice for Amazon.
+            </div>
+
+            <h3>Amazon's Requirements</h3>
+
+            <div class="diagram">
+<pre>
+AMAZON'S SCALE
+══════════════
+
+📊 By the numbers:
+• 300+ million active customer accounts
+• 200 million Prime members
+• Peak traffic: millions of concurrent sessions
+• Global presence: multiple regions
+
+🤔 So why sessions and not tokens?
+</pre>
+            </div>
+
+            <h3>Why Sessions Work for Amazon</h3>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>Reason 1: Instant Control</h4>
+                    <p>Amazon needs to immediately invalidate sessions when:</p>
+                    <ul>
+                        <li>Suspicious activity detected</li>
+                        <li>User reports account compromised</li>
+                        <li>User logs out from all devices</li>
+                        <li>Password is changed</li>
+                    </ul>
+                    <p><strong>With JWT:</strong> Can't force logout until token expires!</p>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Reason 2: Cart & State</h4>
+                    <p>Shopping requires server-side state:</p>
+                    <ul>
+                        <li>Shopping cart contents</li>
+                        <li>Recently viewed items</li>
+                        <li>Session-specific offers</li>
+                        <li>A/B testing assignments</li>
+                    </ul>
+                    <p><strong>Already need server storage</strong> - sessions fit naturally!</p>
+                </div>
+            </div>
+
+            <h3>How Amazon Scales Sessions</h3>
+
+            <div class="diagram">
+<pre>
+AMAZON'S SESSION ARCHITECTURE (Simplified)
+══════════════════════════════════════════
+
+┌────────────────────────────────────────────────────────┐
+│                   GLOBAL LOAD BALANCER                  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│   Region:    │   │   Region:    │   │   Region:    │
+│   US-East    │   │   EU-West    │   │   AP-South   │
+└──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+       │                  │                  │
+       ▼                  ▼                  ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│   Elastic    │   │   Elastic    │   │   Elastic    │
+│   Cache      │   │   Cache      │   │   Cache      │
+│   (Redis)    │   │   (Redis)    │   │   (Redis)    │
+│              │   │              │   │              │
+│  Sessions    │   │  Sessions    │   │  Sessions    │
+│  for US      │   │  for EU      │   │  for APAC   │
+└──────────────┘   └──────────────┘   └──────────────┘
+
+Key Strategies:
+1. Geographic sharding - Users hit nearby regions
+2. Redis clusters - Millions of sessions per region
+3. Session stickiness - User stays on same region
+4. Replication - Backup for failover
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>The Lesson:</strong> Sessions don't fail to scale - they require infrastructure planning. With proper architecture (Redis clusters, geographic distribution), sessions handle internet-scale traffic while providing control that tokens cannot match.
+            </div>
+
+            <div class="warning-box">
+                <strong>When Tokens Make Sense:</strong> Amazon DOES use tokens for their public APIs (AWS services use tokens/signatures). Different use cases = different solutions!
+            </div>
+        </div>
+
+        <!-- Pre-Quiz for Thinking -->
+        <div class="quiz-container" style="background: #fef3c7; border: 2px solid #f59e0b; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);">
+            <div class="quiz-title" style="color: #92400e;">🤔 Think Before You Peek!</div>
+            <p style="margin-bottom: 1rem; color: #78350f;">Before looking at the pros and cons, try to answer these questions yourself:</p>
+
+            <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+                <p style="color: #1f2937;"><strong>Q1:</strong> If a user's account gets hacked at 2 PM, how quickly can you log them out with session-based auth?</p>
+                <details style="margin-top: 0.5rem;">
+                    <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">Click to reveal</summary>
+                    <p style="margin-top: 0.5rem; padding: 0.5rem; background: #d1fae5; border-radius: 4px; color: #065f46; border: 1px solid #6ee7b7;">
+                        <strong>Instantly!</strong> Just delete their session from Redis/DB. Next request = logged out.
+                    </p>
+                </details>
+            </div>
+
+            <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+                <p style="color: #1f2937;"><strong>Q2:</strong> You have 3 servers behind a load balancer. User logs in on Server 1, next request goes to Server 2. Problem?</p>
+                <details style="margin-top: 0.5rem;">
+                    <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">Click to reveal</summary>
+                    <p style="margin-top: 0.5rem; padding: 0.5rem; background: #fee2e2; border-radius: 4px; color: #991b1b; border: 1px solid #fca5a5;">
+                        <strong>Yes!</strong> Server 2 doesn't have the session. Need shared storage (Redis) or sticky sessions.
+                    </p>
+                </details>
+            </div>
+
+            <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+                <p style="color: #1f2937;"><strong>Q3:</strong> Your frontend is on <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">app.example.com</code> and API on <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">api.example.com</code>. Will cookies automatically be sent?</p>
+                <details style="margin-top: 0.5rem;">
+                    <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">Click to reveal</summary>
+                    <p style="margin-top: 0.5rem; padding: 0.5rem; background: #fef3c7; border-radius: 4px; color: #92400e; border: 1px solid #fcd34d;">
+                        <strong>Not automatically!</strong> Different subdomains = CORS complexity. Need special configuration.
+                    </p>
+                </details>
+            </div>
+
+            <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <p style="color: #1f2937;"><strong>Q4:</strong> A mobile app wants to authenticate. Can it use cookies easily?</p>
+                <details style="margin-top: 0.5rem;">
+                    <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">Click to reveal</summary>
+                    <p style="margin-top: 0.5rem; padding: 0.5rem; background: #fee2e2; border-radius: 4px; color: #991b1b; border: 1px solid #fca5a5;">
+                        <strong>Not really.</strong> Mobile apps don't have browsers with automatic cookie handling. Tokens in headers are more natural.
+                    </p>
+                </details>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Pros and Cons of Session-Based Authentication</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>✅ Advantages</h4>
+                    <ul>
+                        <li><strong>Easy to invalidate</strong> - Delete session = user logged out instantly. No waiting for token expiry!</li>
+                        <li><strong>Server has control</strong> - Can force logout, track active users, see who's online</li>
+                        <li><strong>Smaller cookie</strong> - Only 32-character session ID sent (not full user data)</li>
+                        <li><strong>Secure by default</strong> - User data stays on server, client only has meaningless ID</li>
+                        <li><strong>Can revoke immediately</strong> - User compromised? One DB delete and they're out everywhere</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>❌ Disadvantages</h4>
+                    <ul>
+                        <li><strong>Server storage needed</strong> - Must store all active sessions (1 million users = 1 million session records)</li>
+                        <li><strong>Scaling challenges</strong> - Multiple servers need shared session store (Redis cluster)</li>
+                        <li><strong>Not great for mobile</strong> - Mobile apps don't have browser cookie jars</li>
+                        <li><strong>CORS complexity</strong> - Cookie sharing across domains requires careful configuration</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CORS Deep Dive -->
+        <div class="section">
+            <h2>Understanding CORS Complexity with Sessions</h2>
+
+            <div class="info-box">
+                <strong>What is CORS?</strong> Cross-Origin Resource Sharing - security rules that control how web pages can request resources from different domains.
+            </div>
+
+            <h3>The Problem: Real-World Scenario</h3>
+
+            <div class="diagram">
+<pre>
+CORS + COOKIES CHALLENGE
+════════════════════════
+
+Your Setup:
+• Frontend (React):  https://app.mycompany.com
+• Backend (API):     https://api.mycompany.com
+• Different origins! (subdomain counts as different)
+
+What you WANT:
+┌──────────────────┐                    ┌──────────────────┐
+│     Frontend     │                    │      Backend     │
+│  app.mycompany   │ ──── Request ────► │  api.mycompany   │
+│                  │ + session cookie   │                  │
+└──────────────────┘                    └──────────────────┘
+
+What actually happens (by default):
+┌──────────────────┐                    ┌──────────────────┐
+│     Frontend     │                    │      Backend     │
+│  app.mycompany   │ ──── Request ────► │  api.mycompany   │
+│                  │ ❌ NO COOKIE!      │  "Who are you?"  │
+└──────────────────┘                    └──────────────────┘
+
+Browser blocks cookies to "foreign" domains by default!
+</pre>
+            </div>
+
+            <h3>Real Example: Paytm's Architecture</h3>
+
+            <div class="diagram">
+<pre>
+PAYTM EXAMPLE
+═════════════
+
+Domains involved:
+• paytm.com           (main site)
+• accounts.paytm.com  (login)
+• payments.paytm.com  (transactions)
+• api.paytm.com       (backend APIs)
+
+Each is a DIFFERENT ORIGIN!
+
+Challenge: User logs in on accounts.paytm.com
+           How does payments.paytm.com know they're logged in?
+
+Solutions:
+1. Set cookie domain to ".paytm.com" (parent domain)
+2. Use proper CORS headers
+3. Set credentials: 'include' on frontend
+</pre>
+            </div>
+
+            <h3>Making CORS + Cookies Work</h3>
+
+            <pre><code class="language-python"># settings.py - Django CORS configuration (using django-cors-headers)
+# pip install django-cors-headers
+
+INSTALLED_APPS = [
+    ...
+    'corsheaders',
+    ...
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Must be before CommonMiddleware
+    'django.middleware.common.CommonMiddleware',
+    ...
+]
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "https://app.mycompany.com",  # Specific origin, NOT "*"
+]
+CORS_ALLOW_CREDENTIALS = True  # Allow cookies to be sent</code></pre>
+
+            <pre><code class="language-python"># views.py - Django view with CORS
+from django.http import JsonResponse
+
+def get_data(request):
+    data = {'message': 'Hello from API'}
+    response = JsonResponse(data)
+    # django-cors-headers handles the CORS headers automatically!
+    return response</code></pre>
+
+            <pre><code class="language-javascript">// Frontend (JavaScript) - Must explicitly include credentials
+fetch('https://api.mycompany.com/api/data', {
+    method: 'GET',
+    credentials: 'include',  // ← This is REQUIRED for cookies!
+    headers: {
+        'Content-Type': 'application/json'
+    }
+})</code></pre>
+
+            <div class="danger-box">
+                <strong>Common Mistake:</strong> Setting <code>Access-Control-Allow-Origin: *</code> (wildcard) does NOT work with cookies! You must specify the exact origin when using credentials.
+            </div>
+
+            <div class="warning-box">
+                <strong>Why Tokens Are Easier:</strong> With JWT tokens in the Authorization header, you don't need <code>credentials: 'include'</code>. Headers work across origins more naturally than cookies.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Scaling Problem</h2>
+
+            <div class="diagram">
+<pre>
+SINGLE SERVER - No Problem
+══════════════════════════
+
+Browser ──────► Server (sessions in memory)
+                  └── session abc123: user_id=42
+
+
+MULTIPLE SERVERS - Problem!
+═══════════════════════════
+
+                ┌── Server 1 (has session abc123)
+Browser ──────► │
+  (Load         │
+  Balancer)     └── Server 2 (doesn't know abc123!) ❌
+
+Solution: Shared Session Store (Redis)
+
+                ┌── Server 1 ──┐
+Browser ──────► │              ├──► Redis (all sessions)
+                └── Server 2 ──┘
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>This is why Redis is so popular:</strong> It allows multiple servers to share the same session data, making your app horizontally scalable.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Security Best Practices</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Practice</th>
+                        <th>Why</th>
+                        <th>How</th>
+                    </tr>
+                    <tr>
+                        <td><strong>HttpOnly cookies</strong></td>
+                        <td>Prevents JavaScript from reading cookie</td>
+                        <td><code>Set-Cookie: sid=abc; HttpOnly</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Secure flag</strong></td>
+                        <td>Only send cookie over HTTPS</td>
+                        <td><code>Set-Cookie: sid=abc; Secure</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>SameSite attribute</strong></td>
+                        <td>Prevents CSRF attacks</td>
+                        <td><code>Set-Cookie: sid=abc; SameSite=Strict</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Session expiry</strong></td>
+                        <td>Limits damage if cookie stolen</td>
+                        <td>Set reasonable timeout (e.g., 30 mins - 24 hours)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Regenerate session ID</strong></td>
+                        <td>Prevents session fixation attacks</td>
+                        <td>New session ID after login</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- SameSite Deep Dive -->
+        <div class="section">
+            <h2>Understanding SameSite: CSRF Protection Explained</h2>
+
+            <div class="info-box">
+                <strong>What is CSRF?</strong> Cross-Site Request Forgery - an attack where a malicious site tricks your browser into making requests to a site where you're logged in.
+            </div>
+
+            <h3>The CSRF Attack (Without SameSite)</h3>
+
+            <div class="diagram">
+<pre>
+CSRF ATTACK SCENARIO
+════════════════════
+
+1. You login to yourbank.com
+   Browser stores: Cookie: session_id=abc123
+
+2. While still logged in, you visit evil.com
+
+3. evil.com contains hidden code:
+   ┌─────────────────────────────────────────────┐
+   │  &lt;img src="https://yourbank.com/transfer    │
+   │       ?to=hacker&amount=10000"&gt;             │
+   │                                             │
+   │  or hidden form:                            │
+   │  &lt;form action="yourbank.com/transfer"&gt;     │
+   │    &lt;input name="to" value="hacker"&gt;        │
+   │    &lt;input name="amount" value="10000"&gt;     │
+   │  &lt;/form&gt;                                   │
+   │  &lt;script&gt;document.forms[0].submit()&lt;/script&gt;│
+   └─────────────────────────────────────────────┘
+
+4. Browser automatically sends YOUR cookie!
+   yourbank.com sees: valid session → performs transfer!
+
+5. You just lost $10,000! 💸
+</pre>
+            </div>
+
+            <h3>How SameSite Stops This</h3>
+
+            <div class="diagram">
+<pre>
+SAMESITE PROTECTION
+═══════════════════
+
+Without SameSite:
+evil.com → request to yourbank.com → Cookie SENT ❌
+
+With SameSite=Strict:
+evil.com → request to yourbank.com → Cookie BLOCKED ✅
+
+The browser asks: "Is this request coming from the SAME site?"
+• Request from yourbank.com to yourbank.com → YES → Send cookie
+• Request from evil.com to yourbank.com → NO → Block cookie!
+</pre>
+            </div>
+
+            <h3>SameSite Options Explained</h3>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Value</th>
+                        <th>Behavior</th>
+                        <th>Use When</th>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><code>Strict</code></td>
+                        <td>Cookie ONLY sent for same-site requests. Never sent for cross-site.</td>
+                        <td>Banking, admin panels - maximum security</td>
+                    </tr>
+                    <tr style="background: #fff3bf;">
+                        <td><code>Lax</code></td>
+                        <td>Cookie sent for same-site + top-level navigations (clicking links). Blocks form POSTs from other sites.</td>
+                        <td>Most websites - good balance. <strong>Default in modern browsers!</strong></td>
+                    </tr>
+                    <tr style="background: #f8d7da;">
+                        <td><code>None</code></td>
+                        <td>Cookie always sent (must also have Secure flag). Cross-site allowed.</td>
+                        <td>Third-party contexts (widgets, embeds, OAuth)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>Real-World Example: Google Login</h3>
+
+            <div class="diagram">
+<pre>
+WHY GOOGLE USES SameSite=Lax
+════════════════════════════
+
+Scenario: You click "Login with Google" on someapp.com
+
+1. someapp.com redirects you to accounts.google.com
+2. You login on Google (if not already)
+3. Google redirects back to someapp.com
+
+With SameSite=Strict:
+❌ Google's cookie wouldn't be sent when you click "Login with Google"
+   because you're on someapp.com (different site)
+
+With SameSite=Lax:
+✅ Clicking link = top-level navigation
+   Google's cookie IS sent, login works!
+
+With SameSite=None:
+✅ Works, but unnecessary (and less secure for other cases)
+</pre>
+            </div>
+
+            <pre><code class="language-python"># settings.py - Django session cookie security settings
+
+# Session cookie settings (recommended for production)
+SESSION_COOKIE_HTTPONLY = True   # No JavaScript access
+SESSION_COOKIE_SECURE = True     # HTTPS only (set False for local dev)
+SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+SESSION_COOKIE_AGE = 86400       # 24 hour expiry (in seconds)
+
+# CSRF cookie settings (also important!)
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'Lax'</code></pre>
+
+            <pre><code class="language-python"># views.py - If you need to set a custom cookie manually
+from django.http import JsonResponse
+
+def login_view(request):
+    # ... verify credentials ...
+
+    response = JsonResponse({'message': 'Logged in'})
+    response.set_cookie(
+        'my_custom_cookie',
+        value='some_value',
+        httponly=True,      # No JavaScript access
+        secure=True,        # HTTPS only
+        samesite='Lax',     # CSRF protection
+        max_age=86400       # 24 hour expiry
+    )
+    return response</code></pre>
+
+            <div class="success-box">
+                <strong>Modern Default:</strong> Since 2020, Chrome and other browsers default to <code>SameSite=Lax</code> if not specified. This broke many old websites but significantly improved web security!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Coming Up: Token-Based Authentication</h2>
+
+            <p>Sessions work great for traditional web apps, but what about:</p>
+            <ul>
+                <li>Mobile apps that don't naturally use cookies?</li>
+                <li>Microservices that need to talk to each other?</li>
+                <li>Single-page apps (SPAs) with separate frontend/backend?</li>
+            </ul>
+
+            <div class="info-box">
+                <strong>Next Class Preview:</strong> We'll cover <strong>Token-Based Authentication (JWT)</strong> - where instead of storing sessions on the server, we give the client a signed token that contains their identity. This solves the scaling problem but introduces new challenges!
+            </div>
+
+            <div class="diagram">
+<pre>
+SESSION vs TOKEN (Quick Preview)
+════════════════════════════════
+
+Session-Based:
+  Server stores: { session_id: user_data }
+  Client stores: session_id (in cookie)
+
+Token-Based:
+  Server stores: nothing!
+  Client stores: signed token with user_data
+
+More details in next class! 🚀
+</pre>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Session-Based Auth</div>
+            <p style="margin-bottom: 1rem;">Why is Redis commonly used for session storage in production?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) It's free to use
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) It allows multiple servers to share session data
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) It's required by law for authentication
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) It's built into Python
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="05_encoding.html">&larr; Encoding vs Encryption vs Hashing</a>
+            <a href="07_cheatsheet.html">Next: Cheat Sheet &rarr;</a>
+        </div>
+
+        <footer>
+            <p>Page 6 of 8 - Authentication Guide</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Redis provides a shared session store that multiple servers can access, solving the horizontal scaling problem.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Redis is used because it allows multiple application servers to access the same session data, enabling horizontal scaling.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2d1b4e 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ff6b6b;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #3d2066;
+        }
+
+        .card h2 {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+        }
+
+        .instructions {
+            background: #3d2066;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .instructions h4 {
+            color: #ff6b6b;
+            margin-bottom: 0.5rem;
+        }
+
+        .instructions ol {
+            padding-left: 1.5rem;
+        }
+
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin: 0.25rem;
+        }
+
+        button:hover {
+            background: #ff5252;
+        }
+
+        button.secondary {
+            background: #3d2066;
+            color: #ff6b6b;
+        }
+
+        .result-box {
+            background: #0f0f1a;
+            border: 1px solid #3d2066;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        code {
+            background: #3d2066;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background: #4a3000;
+            border: 1px solid #ff9500;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-box {
+            background: #0a3d1f;
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .diagram {
+            background: #0f0f1a;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        .diagram pre {
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .url-breakdown {
+            background: #0f0f1a;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .url-example {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        .url-part {
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            margin: 2px;
+        }
+
+        .url-part.protocol { background: #3d5a80; }
+        .url-part.domain { background: #98c1d9; color: #1a1a2e; }
+        .url-part.port { background: #ee6c4d; }
+        .url-part.path { background: #293241; }
+
+        .url-label {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .url-label span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .origin-box {
+            border: 2px dashed #ff6b6b;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .origin-box-label {
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #3d2066;
+            border-radius: 8px;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 CORS Demo</h1>
+        <p class="subtitle">Understanding Cross-Origin Resource Sharing with cookies</p>
+
+        <!-- URL Breakdown -->
+        <div class="card">
+            <h2>🔍 Understanding URL Origin</h2>
+            <p style="margin-bottom: 1rem;">An <strong>Origin</strong> is defined by three parts of a URL:</p>
+
+            <div class="url-breakdown">
+                <div class="url-example">
+                    <span class="url-part protocol">https://</span>
+                    <span class="url-part domain">api.mysite.com</span>
+                    <span class="url-part port">:443</span>
+                    <span class="url-part path">/api/users</span>
+                </div>
+                <div class="url-label">
+                    <span style="background: #3d5a80;">Protocol (scheme)</span>
+                    <span style="background: #98c1d9; color: #1a1a2e;">Domain (host)</span>
+                    <span style="background: #ee6c4d;">Port</span>
+                    <span style="background: #293241;">Path (ignored for origin)</span>
+                </div>
+
+                <div class="origin-box">
+                    <div class="origin-box-label">ORIGIN = Protocol + Domain + Port</div>
+                    <div class="url-example" style="margin-bottom: 0;">
+                        <span class="url-part protocol">https://</span>
+                        <span class="url-part domain">api.mysite.com</span>
+                        <span class="url-part port">:443</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin: 1.5rem 0 1rem; color: #ff6b6b;">Same Origin vs Cross Origin Examples</h3>
+
+            <div class="url-breakdown">
+                <p style="color: #00ff88; margin-bottom: 0.5rem;">✅ SAME ORIGIN (no CORS needed):</p>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">https://</span>
+                        <span class="url-part domain">mysite.com</span>
+                        <span class="url-part path">/page1</span>
+                    </div>
+                    <span style="font-size: 1.5rem;">↔</span>
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">https://</span>
+                        <span class="url-part domain">mysite.com</span>
+                        <span class="url-part path">/api/data</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 0.85rem;">Same protocol, domain, and port (443 is default for https)</p>
+            </div>
+
+            <div class="url-breakdown">
+                <p style="color: #ff6b6b; margin-bottom: 0.5rem;">❌ CROSS ORIGIN - Different Subdomain:</p>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">https://</span>
+                        <span class="url-part domain">app.mysite.com</span>
+                    </div>
+                    <span style="font-size: 1.5rem;">↔</span>
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">https://</span>
+                        <span class="url-part domain" style="background: #ff6b6b;">api.mysite.com</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 0.85rem;">⚠️ "app" vs "api" subdomain = DIFFERENT origin!</p>
+            </div>
+
+            <div class="url-breakdown">
+                <p style="color: #ff6b6b; margin-bottom: 0.5rem;">❌ CROSS ORIGIN - Different Port (Common in development!):</p>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">http://</span>
+                        <span class="url-part domain">localhost</span>
+                        <span class="url-part port">:3000</span>
+                    </div>
+                    <span style="font-size: 1.5rem;">↔</span>
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">http://</span>
+                        <span class="url-part domain">localhost</span>
+                        <span class="url-part port" style="background: #ff6b6b;">:8000</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 0.85rem;">⚠️ React on 3000, Django on 8000 = CORS required!</p>
+            </div>
+
+            <div class="url-breakdown">
+                <p style="color: #ff6b6b; margin-bottom: 0.5rem;">❌ CROSS ORIGIN - Different Protocol:</p>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol">http://</span>
+                        <span class="url-part domain">mysite.com</span>
+                    </div>
+                    <span style="font-size: 1.5rem;">↔</span>
+                    <div class="url-example" style="margin: 0;">
+                        <span class="url-part protocol" style="background: #ff6b6b;">https://</span>
+                        <span class="url-part domain">mysite.com</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 0.85rem;">⚠️ http vs https = DIFFERENT origin!</p>
+            </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="card">
+            <h2>What is CORS?</h2>
+            <div class="diagram"><pre>
+SAME ORIGIN (No CORS needed):
+┌─────────────────────┐         ┌─────────────────────┐
+│ https://mysite.com  │ ─────── │ https://mysite.com  │
+│     (Frontend)      │         │     (Backend)       │
+└─────────────────────┘         └─────────────────────┘
+     Same protocol, domain, port = Same Origin ✅
+
+
+CROSS ORIGIN (CORS required):
+┌─────────────────────┐         ┌─────────────────────────┐
+│ https://mysite.com  │ ─ CORS ─│ https://api.mysite.com  │
+│     (Frontend)      │         │       (Backend)         │
+└─────────────────────┘         └─────────────────────────┘
+     Different subdomain = Cross Origin!
+
+┌──────────────────────┐         ┌──────────────────────┐
+│ http://localhost:3000│ ─ CORS ─│ http://localhost:8000│
+│     (React App)      │         │     (Django API)     │
+└──────────────────────┘         └──────────────────────┘
+     Different port = Cross Origin!
+</pre></div>
+        </div>
+
+        <!-- Demo Section -->
+        <div class="card">
+            <h2>🧪 CORS Test</h2>
+            <div class="instructions">
+                <h4>How to test CORS:</h4>
+                <ol>
+                    <li>Open this page in your browser</li>
+                    <li>Open DevTools → Network tab</li>
+                    <li>Click the buttons below</li>
+                    <li>Watch for CORS headers in the response</li>
+                    <li>Check if cookies are sent/received</li>
+                </ol>
+            </div>
+
+            <p><strong>Target URL:</strong></p>
+            <input type="text" id="target-url" value="http://localhost:8000/api/cors/">
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="include-credentials" checked>
+                <label for="include-credentials">Include credentials (cookies)</label>
+            </div>
+
+            <button onclick="makeCorsRequest()">Make Cross-Origin Request</button>
+            <button onclick="makeSimpleRequest()" class="secondary">Make Simple Request</button>
+
+            <div class="result-box" id="cors-result">
+Results will appear here...
+
+Check the Network tab to see:
+- Request headers (especially Cookie and Origin)
+- Response headers (Access-Control-Allow-*)
+- Whether the request succeeded or was blocked
+            </div>
+        </div>
+
+        <!-- CORS Headers Explanation -->
+        <div class="card">
+            <h2>📋 CORS Headers Explained</h2>
+            <div class="diagram"><pre>
+REQUEST HEADERS (sent by browser):
+─────────────────────────────────
+Origin: http://localhost:3000     ← "I'm from this origin"
+
+
+RESPONSE HEADERS (set by server):
+─────────────────────────────────
+Access-Control-Allow-Origin: http://localhost:3000
+    ↑ "I allow this origin"
+
+Access-Control-Allow-Credentials: true
+    ↑ "Cookies are allowed"
+
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+    ↑ "These HTTP methods are allowed"
+
+Access-Control-Allow-Headers: Content-Type, Authorization
+    ↑ "These custom headers are allowed"
+</pre></div>
+
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> When using <code>credentials: 'include'</code>:
+                <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                    <li><code>Access-Control-Allow-Origin</code> cannot be <code>*</code></li>
+                    <li>Must specify exact origin (e.g., <code>http://localhost:3000</code>)</li>
+                    <li><code>Access-Control-Allow-Credentials: true</code> is required</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Preflight Request -->
+        <div class="card">
+            <h2>🔄 Preflight Requests</h2>
+            <div class="instructions">
+                <h4>When does browser send a preflight?</h4>
+                <p>For "non-simple" requests, browser first sends an OPTIONS request:</p>
+            </div>
+            <div class="diagram"><pre>
+NON-SIMPLE REQUEST TRIGGERS PREFLIGHT:
+─────────────────────────────────────
+✗ Custom headers (e.g., Authorization, X-Custom-Header)
+✗ Content-Type other than: text/plain, multipart/form-data,
+  application/x-www-form-urlencoded
+✗ Methods other than: GET, HEAD, POST
+
+
+PREFLIGHT FLOW:
+───────────────
+
+1. Browser sends OPTIONS request first:
+   ┌────────────┐   OPTIONS /api/data   ┌────────────┐
+   │   Browser  │ ────────────────────► │   Server   │
+   └────────────┘                       └────────────┘
+
+2. Server responds with allowed methods/headers:
+   ┌────────────┐   Access-Control-*    ┌────────────┐
+   │   Browser  │ ◄──────────────────── │   Server   │
+   └────────────┘                       └────────────┘
+
+3. If allowed, browser sends actual request:
+   ┌────────────┐   POST /api/data      ┌────────────┐
+   │   Browser  │ ────────────────────► │   Server   │
+   └────────────┘                       └────────────┘
+</pre></div>
+
+            <button onclick="makePreflightRequest()">Trigger Preflight Request</button>
+            <div class="result-box" id="preflight-result">
+Preflight result will appear here...
+
+Look in Network tab for:
+1. OPTIONS request (preflight)
+2. Actual POST request (if preflight succeeds)
+            </div>
+        </div>
+
+        <!-- Current Settings -->
+        <div class="card">
+            <h2>⚙️ Server CORS Settings</h2>
+            <button onclick="getServerSettings()">Get Current Server Settings</button>
+            <div class="result-box" id="settings-result">Click to see current CORS settings...</div>
+        </div>
+    </div>
+
+    <script>
+        async function makeCorsRequest() {
+            const url = document.getElementById('target-url').value;
+            const includeCredentials = document.getElementById('include-credentials').checked;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    credentials: includeCredentials ? 'include' : 'omit',
+                });
+
+                const data = await response.json();
+
+                document.getElementById('cors-result').textContent =
+                    `SUCCESS! Response received:\n\n${JSON.stringify(data, null, 2)}\n\n` +
+                    `Status: ${response.status}\n` +
+                    `Credentials included: ${includeCredentials}`;
+            } catch (error) {
+                document.getElementById('cors-result').textContent =
+                    `ERROR: ${error.message}\n\n` +
+                    `This usually means:\n` +
+                    `- CORS is not configured on the server\n` +
+                    `- The origin is not allowed\n` +
+                    `- Credentials are required but not allowed\n\n` +
+                    `Check the browser console for more details!`;
+            }
+        }
+
+        async function makeSimpleRequest() {
+            const url = document.getElementById('target-url').value;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    // No credentials - simple request
+                });
+
+                const data = await response.json();
+
+                document.getElementById('cors-result').textContent =
+                    `SUCCESS (Simple Request):\n\n${JSON.stringify(data, null, 2)}\n\n` +
+                    `Note: No cookies sent with this request!`;
+            } catch (error) {
+                document.getElementById('cors-result').textContent =
+                    `ERROR: ${error.message}`;
+            }
+        }
+
+        async function makePreflightRequest() {
+            const url = document.getElementById('target-url').value;
+
+            try {
+                // This will trigger a preflight because of custom header
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Custom-Header': 'trigger-preflight',
+                    },
+                    body: JSON.stringify({ test: 'data' }),
+                    credentials: 'include',
+                });
+
+                const data = await response.json();
+
+                document.getElementById('preflight-result').textContent =
+                    `SUCCESS! Preflight passed, actual request completed:\n\n` +
+                    `${JSON.stringify(data, null, 2)}\n\n` +
+                    `Check Network tab - you should see:\n` +
+                    `1. OPTIONS request (preflight)\n` +
+                    `2. POST request (actual)`;
+            } catch (error) {
+                document.getElementById('preflight-result').textContent =
+                    `ERROR: ${error.message}\n\n` +
+                    `Preflight might have failed. Check Network tab for OPTIONS request.`;
+            }
+        }
+
+        async function getServerSettings() {
+            try {
+                const response = await fetch('/api/cors/', { credentials: 'include' });
+                const data = await response.json();
+                document.getElementById('settings-result').textContent =
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('settings-result').textContent =
+                    `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

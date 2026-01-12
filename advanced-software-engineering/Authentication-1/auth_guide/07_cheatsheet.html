@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet - Auth Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .cheat-section {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .cheat-section h3 {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn nav-btn-active">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>Authentication Cheat Sheet</h1>
+            <p class="subtitle">Quick reference for all patterns</p>
+        </header>
+
+        <div class="cheat-section">
+            <h3>🔐 Authentication vs Authorization</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Authentication</th>
+                        <th>Authorization</th>
+                    </tr>
+                    <tr>
+                        <td>Question</td>
+                        <td>"Who are you?"</td>
+                        <td>"What can you do?"</td>
+                    </tr>
+                    <tr>
+                        <td>Order</td>
+                        <td>First</td>
+                        <td>After authentication</td>
+                    </tr>
+                    <tr>
+                        <td>HTTP Status</td>
+                        <td>401 Unauthorized</td>
+                        <td>403 Forbidden</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔑 Three Authentication Factors</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Factor</th>
+                        <th>What It Is</th>
+                        <th>Examples</th>
+                    </tr>
+                    <tr>
+                        <td>Something You <strong>KNOW</strong></td>
+                        <td>Information only you know</td>
+                        <td>Password, PIN, Security question</td>
+                    </tr>
+                    <tr>
+                        <td>Something You <strong>HAVE</strong></td>
+                        <td>Physical item you possess</td>
+                        <td>Phone (OTP), Hardware key, Smart card</td>
+                    </tr>
+                    <tr>
+                        <td>Something You <strong>ARE</strong></td>
+                        <td>Biometric characteristic</td>
+                        <td>Fingerprint, Face, Retina</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔄 Encoding vs Encryption vs Hashing</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Transform</th>
+                        <th>Reversible?</th>
+                        <th>Key Needed?</th>
+                        <th>Use For</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Encoding</strong></td>
+                        <td>Yes, by anyone</td>
+                        <td>No</td>
+                        <td>Format conversion (Base64, URL)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Encryption</strong></td>
+                        <td>Yes, with key</td>
+                        <td>Yes</td>
+                        <td>Confidentiality (AES, RSA)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hashing</strong></td>
+                        <td>No, never</td>
+                        <td>No</td>
+                        <td>Verification (BCrypt, SHA)</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="danger-box" style="margin-top: 1rem;">
+                <strong>Remember:</strong> Base64 is NOT security! Anyone can decode it.
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔑 Password Hashing Quick Reference</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th>Status</th>
+                        <th>Use?</th>
+                    </tr>
+                    <tr>
+                        <td>Plaintext</td>
+                        <td>☠️ Dangerous</td>
+                        <td>❌ NEVER</td>
+                    </tr>
+                    <tr>
+                        <td>Base64 (Encoding)</td>
+                        <td>☠️ NOT Security</td>
+                        <td>❌ NEVER for passwords</td>
+                    </tr>
+                    <tr>
+                        <td>MD5</td>
+                        <td>☠️ Broken</td>
+                        <td>❌ NEVER</td>
+                    </tr>
+                    <tr>
+                        <td>SHA-256 (unsalted)</td>
+                        <td>⚠️ Rainbow table risk</td>
+                        <td>❌ Not for passwords</td>
+                    </tr>
+                    <tr>
+                        <td>BCrypt</td>
+                        <td>✅ Good</td>
+                        <td>✅ YES (cost >= 12)</td>
+                    </tr>
+                    <tr>
+                        <td>Argon2</td>
+                        <td>✅ Best</td>
+                        <td>✅ YES (preferred)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🛡️ BCrypt Code</h3>
+            <pre><code class="language-python"># Hash a password
+import bcrypt
+hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+
+# Verify a password
+if bcrypt.checkpw(password.encode(), stored_hash):
+    print("Valid!")
+
+# BCrypt hash format:
+# $2b$12$[22-char salt][31-char hash] = 60 chars total
+
+# Online tester: https://bcrypt-generator.com/</code></pre>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🍪 Session-Based vs Token-Based Auth</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Session-Based</th>
+                        <th>Token-Based (JWT)</th>
+                    </tr>
+                    <tr>
+                        <td>Server stores</td>
+                        <td>Session data</td>
+                        <td>Nothing (stateless)</td>
+                    </tr>
+                    <tr>
+                        <td>Client stores</td>
+                        <td>Session ID (cookie)</td>
+                        <td>JWT token</td>
+                    </tr>
+                    <tr>
+                        <td>Scaling</td>
+                        <td>Needs shared store (Redis)</td>
+                        <td>Easy (no shared state)</td>
+                    </tr>
+                    <tr>
+                        <td>Revocation</td>
+                        <td>Easy (delete session)</td>
+                        <td>Hard (token is self-contained)</td>
+                    </tr>
+                    <tr>
+                        <td>Best for</td>
+                        <td>Traditional web apps</td>
+                        <td>APIs, mobile, microservices</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>✅ Security Rules</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>DO</h4>
+                    <ul>
+                        <li>Use BCrypt/Argon2 for passwords</li>
+                        <li>Use cost factor >= 12</li>
+                        <li>Use HTTPS always</li>
+                        <li>Set HttpOnly on cookies</li>
+                        <li>Implement session expiry</li>
+                        <li>Regenerate session ID after login</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>DON'T</h4>
+                    <ul>
+                        <li>Store plaintext passwords</li>
+                        <li>Use MD5 or unsalted SHA</li>
+                        <li>Think Base64 = encryption</li>
+                        <li>Store sensitive data in cookies</li>
+                        <li>Skip CSRF protection</li>
+                        <li>Use predictable session IDs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔢 HTTP Status Codes</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>When to Use</th>
+                    </tr>
+                    <tr>
+                        <td><code>200</code></td>
+                        <td>OK</td>
+                        <td>Success</td>
+                    </tr>
+                    <tr>
+                        <td><code>401</code></td>
+                        <td>Unauthorized</td>
+                        <td>Not authenticated (show login)</td>
+                    </tr>
+                    <tr>
+                        <td><code>403</code></td>
+                        <td>Forbidden</td>
+                        <td>Authenticated but not authorized</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>👥 RBAC Quick Reference</h3>
+            <div class="diagram">
+<pre>
+Users → Roles → Permissions
+
+User: Alice  ──► Role: Admin   ──► Permissions: users:create, users:delete
+User: Bob    ──► Role: Editor  ──► Permissions: posts:create, posts:edit
+User: Charlie──► Role: Viewer  ──► Permissions: posts:read
+</pre>
+            </div>
+            <p style="margin-top: 1rem;"><strong>Key Principle:</strong> Assign permissions to roles, assign users to roles (never permissions directly to users).</p>
+        </div>
+
+        <div class="section">
+            <h2>Golden Rules Summary</h2>
+
+            <div class="success-box">
+                <ol style="margin: 0; padding-left: 1.5rem;">
+                    <li><strong>Authentication != Authorization</strong> - 401 vs 403</li>
+                    <li><strong>Never store plaintext passwords</strong> - Use BCrypt (cost >= 12)</li>
+                    <li><strong>Encoding != Encryption</strong> - Base64 is NOT security</li>
+                    <li><strong>Session-based for most web apps</strong> - Token-based for APIs</li>
+                    <li><strong>Always verify on backend</strong> - Never trust frontend alone</li>
+                    <li><strong>Use RBAC for permissions</strong> - Never hardcode role checks</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="06_sessions.html">&larr; Session-Based Auth</a>
+            <a href="08_rbac.html">Next: RBAC Deep Dive &rarr;</a>
+        </div>
+
+        <footer>
+            <p>Page 7 of 8 - Authentication Guide</p>
+            <p style="margin-top: 0.5rem; opacity: 0.7;">Stay Secure!</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>
