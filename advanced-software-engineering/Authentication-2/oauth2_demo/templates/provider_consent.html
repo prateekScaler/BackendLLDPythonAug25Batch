@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorize - Demo Provider</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .consent-container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .provider-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .provider-logo h1 {
+            color: #764ba2;
+            font-size: 1.5em;
+        }
+
+        .user-info {
+            text-align: center;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-info strong {
+            color: #333;
+        }
+
+        .user-info p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .teaching-banner {
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .teaching-banner h4 {
+            color: #e65100;
+            margin-bottom: 5px;
+        }
+
+        .teaching-banner p {
+            color: #bf360c;
+            font-size: 0.9em;
+        }
+
+        .app-request {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .app-request h2 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .permissions {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .permissions h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .permission-item:last-child {
+            border-bottom: none;
+        }
+
+        .permission-icon {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+        }
+
+        .permission-text {
+            flex: 1;
+        }
+
+        .permission-text strong {
+            color: #333;
+            display: block;
+        }
+
+        .permission-text span {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .allow-btn {
+            background: #4caf50;
+            color: white;
+        }
+
+        .allow-btn:hover {
+            background: #43a047;
+        }
+
+        .deny-btn {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .deny-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .warning {
+            margin-top: 20px;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .warning p {
+            color: #c62828;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="consent-container">
+        <div class="provider-logo">
+            <h1>🔐 Demo Provider</h1>
+        </div>
+
+        <div class="user-info">
+            <strong>{{ user_name }}</strong>
+            <p>{{ user_email }}</p>
+        </div>
+
+        <div class="teaching-banner">
+            <h4>📚 Consent Screen</h4>
+            <p>This is where YOU (the user) decide what data to share. Read carefully! Only approve apps you trust.</p>
+        </div>
+
+        <div class="app-request">
+            <h2><strong>{{ client_name }}</strong> wants to:</h2>
+        </div>
+
+        <div class="permissions">
+            <h4>This will allow the app to:</h4>
+
+            {% for s in scope_list %}
+            <div class="permission-item">
+                <div class="permission-icon">
+                    {% if s == 'profile' %}👤{% elif s == 'email' %}📧{% elif s == 'read' %}📖{% elif s == 'write' %}✏️{% else %}🔑{% endif %}
+                </div>
+                <div class="permission-text">
+                    {% if s == 'profile' %}
+                    <strong>View your basic profile info</strong>
+                    <span>Name, profile picture</span>
+                    {% elif s == 'email' %}
+                    <strong>View your email address</strong>
+                    <span>{{ user_email }}</span>
+                    {% elif s == 'read' %}
+                    <strong>Read your data</strong>
+                    <span>View your stored information</span>
+                    {% elif s == 'write' %}
+                    <strong>Modify your data</strong>
+                    <span>Create or update information</span>
+                    {% else %}
+                    <strong>{{ s }} access</strong>
+                    <span>Custom permission</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <form method="POST" action="{% url 'provider_consent' %}">
+            {% csrf_token %}
+            <div class="buttons">
+                <button type="submit" name="action" value="deny" class="deny-btn">Deny</button>
+                <button type="submit" name="action" value="allow" class="allow-btn">Allow</button>
+            </div>
+        </form>
+
+        <div class="warning">
+            <p>Make sure you trust {{ client_name }} before allowing access to your account.</p>
+        </div>
+    </div>
+</body>
+</html>

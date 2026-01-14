@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth2 Demo - Authorization Code Flow</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+
+        /* Header */
+        .header {
+            background: #1a0a2e;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #3a2a4e;
+        }
+
+        .header h1 {
+            color: #ff9f43;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: #1a0a2e;
+            padding: 0 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid #3a2a4e;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: #ff9f43;
+            background: rgba(255, 159, 67, 0.1);
+        }
+
+        .nav-tab.active {
+            color: #ff9f43;
+            border-bottom-color: #ff9f43;
+            background: rgba(255, 159, 67, 0.1);
+        }
+
+        .nav-tab .icon {
+            margin-right: 8px;
+        }
+
+        /* Flow Progress Bar */
+        .flow-progress {
+            background: #0a0a15;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 0.8em;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #555;
+        }
+
+        .flow-step.active {
+            color: #ff9f43;
+        }
+
+        .flow-step.completed {
+            color: #2ed573;
+        }
+
+        .flow-step .num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+        }
+
+        .flow-step.active .num {
+            background: #ff9f43;
+            color: #1a0a2e;
+        }
+
+        .flow-step.completed .num {
+            background: #2ed573;
+            color: #1a0a2e;
+        }
+
+        .flow-arrow {
+            color: #444;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Tab Panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Card Styling */
+        .card {
+            background: #1a0a2e;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #3a2a4e;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #ff9f43;
+            margin-bottom: 8px;
+            font-size: 1.4em;
+        }
+
+        .card .description {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #3a2a4e;
+            border-radius: 8px;
+            background: #0f0f23;
+            color: #fff;
+            margin-bottom: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.95em;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #ff9f43;
+        }
+
+        input[readonly] {
+            background: #1a1a2e;
+            color: #888;
+        }
+
+        /* Buttons */
+        button {
+            background: #ff9f43;
+            color: #1a0a2e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        button.danger { background: #ff4757; color: white; }
+        button.danger:hover { background: #ff3344; }
+        button.success { background: #2ed573; color: #1a0a2e; }
+        button.success:hover { background: #26c066; }
+        button.secondary { background: #3a2a4e; color: #ff9f43; }
+        button.secondary:hover { background: #4a3a5e; }
+
+        /* Result Box */
+        .result {
+            background: #0f0f23;
+            border: 1px solid #3a2a4e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #2a1a3a;
+            border-left: 4px solid #ff9f43;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .info-box h4 {
+            color: #ff9f43;
+            margin-bottom: 10px;
+        }
+
+        .info-box p, .info-box li {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .info-box ol, .info-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .info-box code {
+            background: #1a0a2e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* Teaching Point */
+        .teaching-point {
+            background: #1a3a2a;
+            border-left: 4px solid #2ed573;
+        }
+
+        .teaching-point h4 {
+            color: #2ed573;
+        }
+
+        /* Warning Box */
+        .warning-box {
+            background: #3a2a1a;
+            border-left: 4px solid #ffa502;
+        }
+
+        .warning-box h4 {
+            color: #ffa502;
+        }
+
+        /* Actors */
+        .actors {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .actor {
+            background: #0f0f23;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .actor h4 {
+            margin-bottom: 8px;
+        }
+
+        .actor p {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        .actor.user { border-top: 3px solid #27ae60; }
+        .actor.user h4 { color: #27ae60; }
+        .actor.client { border-top: 3px solid #3498db; }
+        .actor.client h4 { color: #3498db; }
+        .actor.provider { border-top: 3px solid #9b59b6; }
+        .actor.provider h4 { color: #9b59b6; }
+
+        /* Participant Tags */
+        .participant {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-bottom: 15px;
+            margin-right: 5px;
+        }
+
+        .participant.user { background: #27ae60; color: white; }
+        .participant.client { background: #3498db; color: white; }
+        .participant.provider { background: #9b59b6; color: white; }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            background: #0f0f23;
+            border-radius: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        /* URL Box */
+        .url-box {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px dashed #3a2a4e;
+        }
+
+        .url-box code {
+            word-break: break-all;
+            color: #ffd700;
+            font-size: 0.85em;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #3a2a4e;
+        }
+
+        .nav-buttons button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        footer code {
+            background: #1a0a2e;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>OAuth2 Authorization Code Flow Demo</h1>
+        <p>Learn how "Login with Google/GitHub" actually works behind the scenes</p>
+    </div>
+
+    <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab(0)">
+            <span class="icon">1.</span>Overview
+        </button>
+        <button class="nav-tab" onclick="showTab(1)">
+            <span class="icon">2.</span>Start OAuth
+        </button>
+        <button class="nav-tab" onclick="showTab(2)">
+            <span class="icon">3.</span>Provider Flow
+        </button>
+        <button class="nav-tab" onclick="showTab(3)">
+            <span class="icon">4.</span>Exchange Code
+        </button>
+        <button class="nav-tab" onclick="showTab(4)">
+            <span class="icon">5.</span>Access Data
+        </button>
+        <button class="nav-tab" onclick="showTab(5)">
+            <span class="icon">6.</span>Refresh & Revoke
+        </button>
+    </nav>
+
+    <div class="flow-progress">
+        <div class="flow-step" id="fs-1"><span class="num">1</span> Start</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-2"><span class="num">2</span> Redirect</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-3"><span class="num">3</span> Login</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-4"><span class="num">4</span> Consent</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-5"><span class="num">5</span> Code</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-6"><span class="num">6</span> Tokens</div>
+        <span class="flow-arrow">-></span>
+        <div class="flow-step" id="fs-7"><span class="num">7</span> Data</div>
+    </div>
+
+    <div class="main-content">
+        <!-- Tab 1: Overview -->
+        <div class="tab-panel active" id="tab-0">
+            <div class="card">
+                <h2>Understanding OAuth2</h2>
+                <p class="description">OAuth2 allows users to grant third-party applications access to their data without sharing passwords.</p>
+
+                <div class="actors">
+                    <div class="actor user">
+                        <h4>User (You)</h4>
+                        <p>Wants to use an app<br>Has account at Provider</p>
+                    </div>
+                    <div class="actor client">
+                        <h4>Client App</h4>
+                        <p>Your website/app<br>Needs user data</p>
+                    </div>
+                    <div class="actor provider">
+                        <h4>Provider</h4>
+                        <p>Google, GitHub, etc.<br>Holds user data</p>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4>The Authorization Code Flow (6 Steps)</h4>
+                    <ol>
+                        <li><strong>User clicks "Login with Provider"</strong> on your app</li>
+                        <li><strong>App redirects to Provider</strong> with client_id and requested scopes</li>
+                        <li><strong>User logs in</strong> at Provider (password never shared with your app!)</li>
+                        <li><strong>User consents</strong> to share requested data</li>
+                        <li><strong>Provider redirects back</strong> with authorization CODE</li>
+                        <li><strong>App exchanges code for tokens</strong> (server-to-server)</li>
+                    </ol>
+                </div>
+
+                <div class="info-box teaching-point">
+                    <h4>Why This Flow?</h4>
+                    <ul>
+                        <li><strong>User passwords stay private</strong> - only the provider sees them</li>
+                        <li><strong>Limited access</strong> - user controls what data to share (scopes)</li>
+                        <li><strong>Revocable</strong> - user can disconnect your app anytime</li>
+                        <li><strong>Secure</strong> - code exchange happens server-to-server</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <div></div>
+                <button onclick="showTab(1)">Next: Start OAuth &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Start OAuth -->
+        <div class="tab-panel" id="tab-1">
+            <div class="card">
+                <h2>Start OAuth2 Flow</h2>
+                <p class="description">Configure the authorization request and redirect to the provider.</p>
+
+                <span class="participant client">Client App</span>
+
+                <div class="info-box">
+                    <h4>What Your App Sends</h4>
+                    <ul>
+                        <li><strong>client_id:</strong> Your app's identifier (public)</li>
+                        <li><strong>redirect_uri:</strong> Where to send user after consent</li>
+                        <li><strong>scope:</strong> What data you're requesting</li>
+                        <li><strong>state:</strong> Random string to prevent CSRF attacks</li>
+                        <li><strong>response_type:</strong> Always "code" for this flow</li>
+                    </ul>
+                </div>
+
+                <label>Scopes to Request</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="scope-profile" checked>
+                    <label for="scope-profile">profile (name, picture)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="scope-email" checked>
+                    <label for="scope-email">email</label>
+                </div>
+
+                <label>State (CSRF Protection)</label>
+                <input type="text" id="state" placeholder="Random string for security">
+                <button class="secondary" onclick="generateState()">Generate Random State</button>
+
+                <button class="success" onclick="startOAuth()" style="display: block; margin-top: 20px; width: 100%;">
+                    Login with Demo Provider
+                </button>
+
+                <div class="url-box" id="auth-url-display" style="display: none;">
+                    <strong>Authorization URL:</strong><br><br>
+                    <code id="auth-url"></code>
+                </div>
+
+                <div class="info-box warning-box" style="margin-top: 20px;">
+                    <h4>Security: The State Parameter</h4>
+                    <p>The <code>state</code> parameter prevents CSRF attacks. Your app generates a random string, sends it to the provider, and verifies it comes back unchanged in the callback. This ensures the callback is from a flow YOU initiated.</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(0)">&larr; Back: Overview</button>
+                <button onclick="showTab(2)">Next: Provider Flow &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 3: Provider Flow -->
+        <div class="tab-panel" id="tab-2">
+            <div class="card">
+                <h2>What Happens at the Provider</h2>
+                <p class="description">The user interacts directly with the OAuth provider (Google, GitHub, etc.)</p>
+
+                <span class="participant provider">OAuth Provider</span>
+                <span class="participant user">User</span>
+
+                <div class="info-box">
+                    <h4>Provider-Side Steps</h4>
+                    <ol>
+                        <li><strong>Login Page:</strong> User enters credentials directly to Google/GitHub</li>
+                        <li><strong>Consent Screen:</strong> Shows what data your app is requesting</li>
+                        <li><strong>User Decision:</strong> Allow or Deny access</li>
+                        <li><strong>Redirect:</strong> Send user back to your app with authorization code</li>
+                    </ol>
+                </div>
+
+                <div class="info-box teaching-point">
+                    <h4>Security: Password Isolation</h4>
+                    <p>The user's password is <strong>NEVER</strong> shared with your application!</p>
+                    <br>
+                    <p>Authentication happens directly between the user and the provider. Your app only receives a one-time authorization code, which proves the user consented.</p>
+                </div>
+
+                <div class="info-box warning-box">
+                    <h4>The Consent Screen Shows:</h4>
+                    <ul>
+                        <li>Your app's name and logo</li>
+                        <li>Exactly what data you're requesting (scopes)</li>
+                        <li>What your app can do with that data</li>
+                        <li>Option to review/revoke later</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><strong>Users should always review this carefully before clicking "Allow"!</strong></p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(1)">&larr; Back: Start OAuth</button>
+                <button onclick="showTab(3)">Next: Exchange Code &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 4: Exchange Code -->
+        <div class="tab-panel" id="tab-3">
+            <div class="card">
+                <h2>Exchange Code for Tokens</h2>
+                <p class="description">After receiving the authorization code, exchange it for access tokens (server-to-server).</p>
+
+                <span class="participant client">Client App (Backend)</span>
+                <span class="participant provider">OAuth Provider</span>
+
+                <div class="info-box">
+                    <h4>Why Server-to-Server?</h4>
+                    <p>This request includes your <code>client_secret</code>, which must NEVER be exposed in frontend code. This exchange happens from your backend server directly to the provider's token endpoint.</p>
+                </div>
+
+                <label>Authorization Code (from callback)</label>
+                <input type="text" id="auth-code" placeholder="Paste code from callback URL...">
+
+                <label>Client ID</label>
+                <input type="text" id="client-id" value="{{ client_id }}" readonly>
+
+                <label>Client Secret (keep this secret!)</label>
+                <input type="text" id="client-secret" value="{{ client_secret }}">
+
+                <label>Redirect URI (must match original)</label>
+                <input type="text" id="redirect-uri" value="http://localhost:8003/callback/">
+
+                <button onclick="exchangeCode()">Exchange Code for Tokens</button>
+
+                <div id="token-result" class="result" style="display: none;"></div>
+
+                <div class="info-box teaching-point" style="margin-top: 20px;">
+                    <h4>What You Get Back</h4>
+                    <ul>
+                        <li><strong>access_token:</strong> Use this to access user data (short-lived)</li>
+                        <li><strong>refresh_token:</strong> Use this to get new access tokens (long-lived)</li>
+                        <li><strong>expires_in:</strong> How long until access token expires</li>
+                        <li><strong>token_type:</strong> Usually "Bearer"</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(2)">&larr; Back: Provider Flow</button>
+                <button onclick="showTab(4)">Next: Access Data &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 5: Access Data -->
+        <div class="tab-panel" id="tab-4">
+            <div class="card">
+                <h2>Access User Data</h2>
+                <p class="description">Use the access token to retrieve user information from the provider.</p>
+
+                <span class="participant client">Client App</span>
+
+                <div class="info-box">
+                    <h4>Using the Access Token</h4>
+                    <p>Send the access token in the <code>Authorization</code> header:</p>
+                    <code style="display: block; margin-top: 10px; padding: 10px; background: #1a0a2e; border-radius: 4px;">
+                        Authorization: Bearer &lt;access_token&gt;
+                    </code>
+                </div>
+
+                <label>Access Token</label>
+                <textarea id="access-token" rows="3" placeholder="Paste access token from previous step..."></textarea>
+
+                <button class="success" onclick="getUserInfo()">Get User Info</button>
+
+                <div id="userinfo-result" class="result" style="display: none;"></div>
+
+                <div class="info-box teaching-point" style="margin-top: 20px;">
+                    <h4>What Data Can You Access?</h4>
+                    <p>Only data covered by the <strong>scopes</strong> the user approved:</p>
+                    <ul>
+                        <li><strong>profile:</strong> Name, profile picture, etc.</li>
+                        <li><strong>email:</strong> User's email address</li>
+                        <li><strong>Other scopes:</strong> Calendar, contacts, repos (depends on provider)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(3)">&larr; Back: Exchange Code</button>
+                <button onclick="showTab(5)">Next: Refresh & Revoke &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 6: Refresh & Revoke -->
+        <div class="tab-panel" id="tab-5">
+            <div class="card">
+                <h2>Refresh Tokens</h2>
+                <p class="description">Access tokens expire quickly. Use refresh tokens to get new ones without user interaction.</p>
+
+                <span class="participant client">Client App</span>
+
+                <label>Refresh Token</label>
+                <textarea id="refresh-token" rows="2" placeholder="Paste refresh token..."></textarea>
+
+                <button onclick="refreshTokens()">Get New Access Token</button>
+
+                <div id="refresh-result" class="result" style="display: none;"></div>
+
+                <div class="info-box teaching-point">
+                    <h4>Access Token vs Refresh Token</h4>
+                    <ul>
+                        <li><strong>Access Token:</strong> Short-lived (minutes to hours), used for API calls</li>
+                        <li><strong>Refresh Token:</strong> Long-lived (days to months), used only to get new access tokens</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><strong>Why?</strong> If an access token is stolen, the damage is limited to its short lifetime. Refresh tokens are stored securely and used less frequently.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Token Revocation</h2>
+                <p class="description">Revoke tokens when user logs out or if security is compromised.</p>
+
+                <label>Token to Revoke</label>
+                <input type="text" id="revoke-token" placeholder="Access or refresh token...">
+
+                <button class="danger" onclick="revokeToken()">Revoke Token</button>
+                <button class="secondary" onclick="resetDemo()">Reset Demo</button>
+
+                <div id="revoke-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Debug: Provider State</h2>
+                <p class="description">See what the OAuth provider has stored internally (for educational purposes only).</p>
+
+                <span class="participant provider">OAuth Provider (Debug)</span>
+
+                <button onclick="inspectStore()">Inspect Provider's Internal State</button>
+
+                <div id="inspect-result" class="result" style="display: none;"></div>
+
+                <div class="info-box warning-box">
+                    <h4>Educational Only!</h4>
+                    <p>In production, you would never see this view. Real providers like Google/GitHub don't expose their internal state. This is purely for learning how OAuth2 works internally.</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(4)">&larr; Back: Access Data</button>
+                <button class="success" onclick="showTab(0)">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>OAuth2 Demo for Educational Purposes</p>
+        <p>Demo Users: {% for user in users %}<code>{{ user.email }}</code> / <code>{{ user.password }}</code>{% if not forloop.last %} | {% endif %}{% endfor %}</p>
+    </footer>
+
+    <script>
+        const CLIENT_ID = '{{ client_id }}';
+        const CLIENT_SECRET = '{{ client_secret }}';
+
+        function showTab(index) {
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`tab-${index}`).classList.add('active');
+            document.querySelectorAll('.nav-tab')[index].classList.add('active');
+        }
+
+        function updateFlowProgress(step) {
+            for (let i = 1; i <= 7; i++) {
+                const el = document.getElementById(`fs-${i}`);
+                el.classList.remove('active', 'completed');
+                if (i < step) el.classList.add('completed');
+                if (i === step) el.classList.add('active');
+            }
+        }
+
+        function generateState() {
+            const state = Math.random().toString(36).substring(2, 15) +
+                         Math.random().toString(36).substring(2, 15);
+            document.getElementById('state').value = state;
+            localStorage.setItem('oauth_state', state);
+        }
+
+        function startOAuth() {
+            const scopes = [];
+            if (document.getElementById('scope-profile').checked) scopes.push('profile');
+            if (document.getElementById('scope-email').checked) scopes.push('email');
+
+            let state = document.getElementById('state').value;
+            if (!state) {
+                generateState();
+                state = document.getElementById('state').value;
+            }
+
+            localStorage.setItem('oauth_state', state);
+
+            const params = new URLSearchParams({
+                client_id: CLIENT_ID,
+                redirect_uri: 'http://localhost:8003/callback/',
+                response_type: 'code',
+                scope: scopes.join(' '),
+                state: state
+            });
+
+            const authUrl = `/oauth/authorize/?${params.toString()}`;
+
+            document.getElementById('auth-url').textContent = window.location.origin + authUrl;
+            document.getElementById('auth-url-display').style.display = 'block';
+
+            updateFlowProgress(1);
+
+            setTimeout(() => {
+                window.location.href = authUrl;
+            }, 1500);
+        }
+
+        async function apiCall(endpoint, data) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return await response.json();
+        }
+
+        function showResult(elementId, data) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+
+            let html = '';
+            if (data.teaching_point) {
+                html += `<div class="info-box teaching-point" style="margin: 0 0 15px 0;">
+                    <h4>Teaching Point</h4>
+                    <pre style="white-space: pre-wrap;">${data.teaching_point}</pre>
+                </div>`;
+            }
+
+            const displayData = {...data};
+            delete displayData.teaching_point;
+            html += `<pre>${JSON.stringify(displayData, null, 2)}</pre>`;
+
+            el.innerHTML = html;
+        }
+
+        async function exchangeCode() {
+            const code = document.getElementById('auth-code').value;
+            const clientId = document.getElementById('client-id').value;
+            const clientSecret = document.getElementById('client-secret').value;
+            const redirectUri = document.getElementById('redirect-uri').value;
+
+            if (!code) {
+                alert('Enter the authorization code from the callback');
+                return;
+            }
+
+            const result = await apiCall('/api/exchange/', {
+                code: code,
+                client_id: clientId,
+                client_secret: clientSecret,
+                redirect_uri: redirectUri
+            });
+
+            showResult('token-result', result);
+
+            if (result.success && result.tokens) {
+                document.getElementById('access-token').value = result.tokens.access_token;
+                document.getElementById('refresh-token').value = result.tokens.refresh_token || '';
+                updateFlowProgress(6);
+            }
+        }
+
+        async function getUserInfo() {
+            const accessToken = document.getElementById('access-token').value;
+
+            if (!accessToken) {
+                alert('Enter an access token');
+                return;
+            }
+
+            const result = await apiCall('/api/userinfo/', {
+                access_token: accessToken
+            });
+
+            showResult('userinfo-result', result);
+            if (result.success) {
+                updateFlowProgress(7);
+            }
+        }
+
+        async function refreshTokens() {
+            const refreshToken = document.getElementById('refresh-token').value;
+            const clientId = document.getElementById('client-id').value;
+            const clientSecret = document.getElementById('client-secret').value;
+
+            if (!refreshToken) {
+                alert('Enter a refresh token');
+                return;
+            }
+
+            const result = await apiCall('/api/refresh/', {
+                refresh_token: refreshToken,
+                client_id: clientId,
+                client_secret: clientSecret
+            });
+
+            showResult('refresh-result', result);
+
+            if (result.success && result.tokens) {
+                document.getElementById('access-token').value = result.tokens.access_token;
+            }
+        }
+
+        async function revokeToken() {
+            const token = document.getElementById('revoke-token').value;
+            const clientId = document.getElementById('client-id').value;
+            const clientSecret = document.getElementById('client-secret').value;
+
+            if (!token) {
+                alert('Enter a token to revoke');
+                return;
+            }
+
+            const result = await apiCall('/api/revoke/', {
+                token: token,
+                client_id: clientId,
+                client_secret: clientSecret
+            });
+
+            showResult('revoke-result', result);
+        }
+
+        async function resetDemo() {
+            await apiCall('/api/reset/', {});
+            document.getElementById('auth-code').value = '';
+            document.getElementById('access-token').value = '';
+            document.getElementById('refresh-token').value = '';
+            document.getElementById('revoke-token').value = '';
+            document.querySelectorAll('.result').forEach(el => el.style.display = 'none');
+            updateFlowProgress(0);
+            alert('Demo reset! All tokens cleared.');
+        }
+
+        async function inspectStore() {
+            const response = await fetch('/api/inspect/');
+            const result = await response.json();
+            showResult('inspect-result', result);
+        }
+
+        // Check for callback parameters on page load
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                document.getElementById('auth-code').value = code;
+                showTab(3); // Go to Exchange Code tab
+                updateFlowProgress(5);
+            }
+        };
+    </script>
+</body>
+</html>

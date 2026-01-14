@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Demo Provider</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .provider-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .provider-logo h1 {
+            color: #764ba2;
+            font-size: 1.8em;
+        }
+
+        .provider-logo p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .teaching-banner {
+            background: #e8f4ff;
+            border: 1px solid #b8d4ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .teaching-banner h4 {
+            color: #2d5aa6;
+            margin-bottom: 5px;
+        }
+
+        .teaching-banner p {
+            color: #4a7fc1;
+            font-size: 0.9em;
+        }
+
+        .app-info {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .app-info p {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .app-info strong {
+            color: #333;
+        }
+
+        .scope-list {
+            margin-top: 10px;
+        }
+
+        .scope-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 2px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .error-msg {
+            background: #ffe6e6;
+            color: #cc0000;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd6;
+        }
+
+        .demo-users {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .demo-users h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .demo-user-btn {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 3px;
+            font-size: 0.85em;
+            cursor: pointer;
+            border: none;
+        }
+
+        .demo-user-btn:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="provider-logo">
+            <h1>🔐 Demo Provider</h1>
+            <p>Sign in to continue</p>
+        </div>
+
+        <div class="teaching-banner">
+            <h4>📚 Teaching Point</h4>
+            <p>This is the OAuth Provider's login page (like accounts.google.com). Your credentials are entered HERE, not on the client app!</p>
+        </div>
+
+        <div class="app-info">
+            <p><strong>{{ client_name }}</strong> wants to access your account</p>
+            <div class="scope-list">
+                <p>Requested permissions:</p>
+                {% for s in scope.split %}
+                <span class="scope-tag">{{ s }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'provider_login' %}">
+            {% csrf_token %}
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="alice@example.com" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+            <button type="submit">Sign In</button>
+        </form>
+
+        <div class="demo-users">
+            <h4>Demo Users (click to autofill):</h4>
+            <button type="button" class="demo-user-btn" onclick="fillUser('alice@example.com', 'password123')">
+                alice@example.com
+            </button>
+            <button type="button" class="demo-user-btn" onclick="fillUser('bob@example.com', 'secret456')">
+                bob@example.com
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function fillUser(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+    </script>
+</body>
+</html>

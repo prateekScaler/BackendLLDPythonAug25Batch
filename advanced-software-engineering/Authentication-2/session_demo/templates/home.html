@@ -12,373 +12,668 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e0e0e0;
             min-height: 100vh;
-            padding: 2rem;
+            color: #eee;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            color: #00d4ff;
-            margin-bottom: 0.5rem;
-            font-size: 2.5rem;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #888;
-            margin-bottom: 2rem;
-        }
-
-        .status-bar {
+        /* Header */
+        .header {
             background: #0f3460;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #1a4a7a;
+        }
+
+        .header h1 {
+            color: #00d4ff;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: #0f3460;
+            padding: 0 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 5px;
+            border-bottom: 1px solid #1a4a7a;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .nav-tab.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .nav-tab .icon {
+            margin-right: 8px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: #0a0a15;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            font-size: 0.85em;
+            color: #888;
         }
 
         .status-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 8px;
         }
 
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
+            background: #ff4444;
         }
 
-        .status-dot.online { background: #00ff88; }
-        .status-dot.offline { background: #ff4444; }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
+        .status-dot.online {
+            background: #00ff88;
         }
 
+        .status-item code {
+            background: #1a4a7a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Tab Panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Card Styling */
         .card {
             background: #0f3460;
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 25px;
             border: 1px solid #1a4a7a;
+            margin-bottom: 20px;
         }
 
         .card h2 {
             color: #00d4ff;
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            margin-bottom: 8px;
+            font-size: 1.4em;
         }
 
-        .card p {
+        .card .description {
             color: #aaa;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
 
-        button {
-            background: #00d4ff;
-            color: #1a1a2e;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s;
-            margin: 0.25rem;
+        /* Form Elements */
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
         }
 
-        button:hover {
-            background: #00b8e6;
-            transform: translateY(-1px);
-        }
-
-        button.danger {
-            background: #ff4444;
-            color: white;
-        }
-
-        button.danger:hover {
-            background: #cc3333;
-        }
-
-        button.secondary {
-            background: #1a4a7a;
-            color: #00d4ff;
-        }
-
-        input {
+        input, select {
             width: 100%;
-            padding: 0.75rem;
+            padding: 12px;
             border: 1px solid #1a4a7a;
             border-radius: 8px;
             background: #16213e;
-            color: #e0e0e0;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
+            color: #fff;
+            margin-bottom: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.95em;
         }
 
-        input:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: #00d4ff;
         }
 
+        /* Buttons */
+        button {
+            background: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #00b8e6;
+            transform: translateY(-2px);
+        }
+
+        button.danger { background: #ff4757; color: white; }
+        button.danger:hover { background: #ff3344; }
+        button.success { background: #00ff88; color: #1a1a2e; }
+        button.success:hover { background: #00dd77; }
+        button.secondary { background: #1a4a7a; color: #00d4ff; }
+        button.secondary:hover { background: #2a5a8a; }
+
+        /* Result Box */
         .result-box {
             background: #16213e;
             border: 1px solid #1a4a7a;
             border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
             white-space: pre-wrap;
-            max-height: 300px;
+            max-height: 350px;
             overflow-y: auto;
+            line-height: 1.5;
         }
 
-        .instructions {
-            background: #1a4a7a;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
+        /* Instructions/Info Box */
+        .info-box {
+            background: #1a3a5a;
+            border-left: 4px solid #00d4ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
         }
 
-        .instructions h4 {
+        .info-box h4 {
             color: #00d4ff;
-            margin-bottom: 0.5rem;
+            margin-bottom: 10px;
         }
 
-        .instructions ol {
-            padding-left: 1.5rem;
+        .info-box p, .info-box li {
+            color: #ccc;
+            line-height: 1.6;
         }
 
-        .instructions li {
-            margin-bottom: 0.25rem;
+        .info-box ol, .info-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
         }
 
-        .cookie-display {
-            background: #16213e;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-
-        .cookie-display h4 {
-            color: #00d4ff;
-            margin-bottom: 0.5rem;
-        }
-
-        code {
-            background: #1a4a7a;
-            padding: 0.2rem 0.5rem;
+        .info-box code {
+            background: #0f3460;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
+            font-family: 'Consolas', monospace;
         }
 
-        .flex-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        /* Warning Box */
+        .warning-box {
+            background: #3a2a1a;
+            border-left: 4px solid #ffa502;
         }
 
+        .warning-box h4 {
+            color: #ffa502;
+        }
+
+        /* Success Box */
+        .success-box {
+            background: #1a3a2a;
+            border-left: 4px solid #00ff88;
+        }
+
+        .success-box h4 {
+            color: #00ff88;
+        }
+
+        /* Checkbox Group */
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            background: #16213e;
+            border-radius: 8px;
         }
 
         .checkbox-group input[type="checkbox"] {
             width: auto;
             margin: 0;
+            cursor: pointer;
         }
 
-        select {
-            padding: 0.5rem;
-            border-radius: 8px;
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        /* Select Inline */
+        .select-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .select-group label {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .select-group select {
+            margin: 0;
+            flex: 1;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #1a4a7a;
+        }
+
+        .nav-buttons button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Cookie Visual */
+        .cookie-visual {
             background: #16213e;
-            color: #e0e0e0;
-            border: 1px solid #1a4a7a;
-            margin-left: 0.5rem;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
         }
 
-        .highlight {
-            color: #00ff88;
+        .cookie-attr {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 3px;
+            border-radius: 4px;
+            font-size: 0.85em;
         }
 
-        .warning {
-            color: #ffaa00;
+        .cookie-attr.httponly { background: #e74c3c; color: white; }
+        .cookie-attr.secure { background: #2ecc71; color: white; }
+        .cookie-attr.samesite { background: #9b59b6; color: white; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85em;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍪 Session-Based Auth Demo</h1>
-        <p class="subtitle">Interactive demo for teaching cookies, sessions, and authentication</p>
+    <div class="header">
+        <h1>Session-Based Authentication Demo</h1>
+        <p>Learn how cookies and server-side sessions work together for authentication</p>
+    </div>
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-dot {% if is_authenticated %}online{% else %}offline{% endif %}"></div>
-                <span>{% if is_authenticated %}Logged in as: <strong>{{ user.username }}</strong>{% else %}Not logged in{% endif %}</span>
-            </div>
-            <div class="status-item">
-                <span>Session ID: <code>{{ session_key|default:"None" }}</code></span>
-            </div>
-            <div>
-                <button onclick="refreshSessionInfo()">🔄 Refresh</button>
-            </div>
+    <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab(0)">
+            <span class="icon">1.</span>Setup & Login
+        </button>
+        <button class="nav-tab" onclick="showTab(1)">
+            <span class="icon">2.</span>Session Info
+        </button>
+        <button class="nav-tab" onclick="showTab(2)">
+            <span class="icon">3.</span>Protected Access
+        </button>
+        <button class="nav-tab" onclick="showTab(3)">
+            <span class="icon">4.</span>Cookie Attributes
+        </button>
+        <button class="nav-tab" onclick="showTab(4)">
+            <span class="icon">5.</span>Session Storage
+        </button>
+        <button class="nav-tab" onclick="showTab(5)">
+            <span class="icon">6.</span>Debug Tools
+        </button>
+    </nav>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-dot {% if is_authenticated %}online{% endif %}"></span>
+            <span>{% if is_authenticated %}Logged in: <strong>{{ user.username }}</strong>{% else %}Not logged in{% endif %}</span>
         </div>
+        <div class="status-item">
+            <span>Session ID:</span>
+            <code>{{ session_key|default:"None"|truncatechars:20 }}</code>
+        </div>
+        <button class="secondary" onclick="location.reload()" style="padding: 6px 12px; font-size: 0.8em;">Refresh</button>
+    </div>
 
-        <div class="grid">
-            <!-- Setup Card -->
+    <div class="main-content">
+        <!-- Tab 1: Setup & Login -->
+        <div class="tab-panel active" id="tab-0">
             <div class="card">
-                <h2>⚙️ Setup (Run Once)</h2>
-                <p>Create a test user to use for login demos.</p>
-                <button onclick="createTestUser()">Create Test User</button>
-                <div class="result-box" id="setup-result">Click button to create test user...</div>
-            </div>
+                <h2>Setup & Login</h2>
+                <p class="description">First create a test user, then login to establish a session.</p>
 
-            <!-- Login Card -->
-            <div class="card">
-                <h2>🔐 Login Demo</h2>
-                <div class="instructions">
-                    <h4>What to observe:</h4>
+                <div class="info-box">
+                    <h4>How Session Auth Works</h4>
                     <ol>
-                        <li>Open DevTools → Network tab</li>
-                        <li>Click Login and watch the response</li>
-                        <li>Check Set-Cookie header in response</li>
+                        <li>User sends credentials (username/password)</li>
+                        <li>Server validates and creates a session (stored on server)</li>
+                        <li>Server sends back a <strong>session ID cookie</strong></li>
+                        <li>Browser sends this cookie with every subsequent request</li>
+                        <li>Server looks up session data using the cookie</li>
+                    </ol>
+                </div>
+
+                <h3 style="color: #00d4ff; margin: 20px 0 15px;">Step 1: Create Test User</h3>
+                <button onclick="createTestUser()">Create Test User</button>
+                <div class="result-box" id="setup-result">Click to create a test user (testuser / testpass123)...</div>
+
+                <h3 style="color: #00d4ff; margin: 20px 0 15px;">Step 2: Login</h3>
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username" value="testuser">
+
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter password" value="testpass123">
+
+                <button class="success" onclick="login()">Login</button>
+                <button class="danger" onclick="logout()">Logout</button>
+
+                <div class="result-box" id="login-result">Login result will appear here...</div>
+
+                <div class="info-box warning-box" style="margin-top: 20px;">
+                    <h4>What to Observe (DevTools)</h4>
+                    <ol>
+                        <li>Open DevTools (F12) → Network tab</li>
+                        <li>Click Login and watch the request</li>
+                        <li>Check Response Headers → find <code>Set-Cookie</code></li>
                         <li>Go to Application → Cookies to see the session cookie</li>
                     </ol>
                 </div>
-                <input type="text" id="username" placeholder="Username" value="testuser">
-                <input type="password" id="password" placeholder="Password" value="testpass123">
-                <div class="flex-buttons">
-                    <button onclick="login()">🔑 Login</button>
-                    <button onclick="logout()" class="danger">🚪 Logout</button>
-                </div>
-                <div class="result-box" id="login-result">Login/logout result will appear here...</div>
             </div>
 
-            <!-- Session Info Card -->
+            <div class="nav-buttons">
+                <div></div>
+                <button onclick="showTab(1)">Next: Session Info &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Session Info -->
+        <div class="tab-panel" id="tab-1">
             <div class="card">
-                <h2>📋 Session Info</h2>
-                <p>See what's stored in your session on the server.</p>
-                <div class="instructions">
-                    <h4>Key concept:</h4>
-                    <p>The browser only has the session_id cookie. All actual data is stored on the server!</p>
+                <h2>Session Information</h2>
+                <p class="description">See what's actually stored in your session on the server.</p>
+
+                <div class="info-box">
+                    <h4>Key Concept: Server-Side Storage</h4>
+                    <p>The browser only stores a <strong>session ID</strong> in the cookie. All actual user data (username, permissions, cart items, etc.) is stored on the <strong>server</strong>.</p>
+                    <br>
+                    <p>This is different from JWT where all data is in the token itself!</p>
                 </div>
-                <button onclick="getSessionInfo()">Get Session Info</button>
-                <div class="result-box" id="session-result">Click to see session data...</div>
+
+                <button onclick="getSessionInfo()">Get Session Info from Server</button>
+
+                <div class="result-box" id="session-result">Click to see what the server knows about your session...</div>
+
+                <div class="info-box success-box" style="margin-top: 20px;">
+                    <h4>Session vs JWT Comparison</h4>
+                    <ul>
+                        <li><strong>Session:</strong> Data on server, only ID in cookie (~32 bytes)</li>
+                        <li><strong>JWT:</strong> All data in token (~500+ bytes), stateless</li>
+                        <li><strong>Session:</strong> Easy to invalidate (delete from server)</li>
+                        <li><strong>JWT:</strong> Hard to invalidate (needs blacklist)</li>
+                    </ul>
+                </div>
             </div>
 
-            <!-- Protected Resource Card -->
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(0)">&larr; Back: Login</button>
+                <button onclick="showTab(2)">Next: Protected Access &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 3: Protected Access -->
+        <div class="tab-panel" id="tab-2">
             <div class="card">
-                <h2>🔒 Protected Resource</h2>
-                <p>Try accessing a protected endpoint before and after login.</p>
-                <div class="instructions">
-                    <h4>What to observe:</h4>
+                <h2>Protected Resource Access</h2>
+                <p class="description">Test accessing a protected endpoint before and after login.</p>
+
+                <div class="info-box">
+                    <h4>How Protection Works</h4>
                     <ol>
-                        <li>Without login: 401 Unauthorized</li>
-                        <li>With login: Access granted!</li>
-                        <li>Check Network tab - Cookie header is sent automatically</li>
+                        <li>Browser automatically sends session cookie with request</li>
+                        <li>Server receives cookie and looks up session</li>
+                        <li>If session exists and user is authenticated → Access granted</li>
+                        <li>If no session or not authenticated → 401 Unauthorized</li>
                     </ol>
                 </div>
-                <button onclick="accessProtected()">Access Protected Resource</button>
-                <div class="result-box" id="protected-result">Click to try accessing...</div>
-            </div>
 
-            <!-- Custom Cookie Card -->
-            <div class="card">
-                <h2>🍪 Cookie Attributes Demo</h2>
-                <p>Create cookies with different security attributes.</p>
-                <div class="instructions">
-                    <h4>Try this:</h4>
+                <button class="success" onclick="accessProtected()">Access Protected Resource</button>
+
+                <div class="result-box" id="protected-result">Click to try accessing the protected endpoint...</div>
+
+                <div class="info-box warning-box" style="margin-top: 20px;">
+                    <h4>Try This Experiment</h4>
                     <ol>
-                        <li>Create cookie with HttpOnly=true</li>
-                        <li>Run <code>document.cookie</code> in console</li>
-                        <li>Create cookie with HttpOnly=false</li>
-                        <li>Run <code>document.cookie</code> again - now it appears!</li>
+                        <li>Try accessing while logged out → 401 error</li>
+                        <li>Login (go to Setup & Login tab)</li>
+                        <li>Try accessing again → Success!</li>
+                        <li>Open Network tab to see the Cookie header being sent</li>
                     </ol>
                 </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(1)">&larr; Back: Session Info</button>
+                <button onclick="showTab(3)">Next: Cookie Attributes &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 4: Cookie Attributes -->
+        <div class="tab-panel" id="tab-3">
+            <div class="card">
+                <h2>Cookie Security Attributes</h2>
+                <p class="description">Explore different cookie attributes and their security implications.</p>
+
+                <div class="info-box">
+                    <h4>Cookie Attribute Legend</h4>
+                    <p>
+                        <span class="cookie-attr httponly">HttpOnly</span> JavaScript cannot read this cookie (XSS protection)
+                    </p>
+                    <p style="margin-top: 8px;">
+                        <span class="cookie-attr secure">Secure</span> Only sent over HTTPS connections
+                    </p>
+                    <p style="margin-top: 8px;">
+                        <span class="cookie-attr samesite">SameSite</span> Controls cross-site request behavior (CSRF protection)
+                    </p>
+                </div>
+
+                <label>Cookie Name</label>
                 <input type="text" id="cookie-name" placeholder="Cookie name" value="demo_cookie">
+
                 <div class="checkbox-group">
                     <input type="checkbox" id="httponly" checked>
-                    <label for="httponly">HttpOnly (no JS access)</label>
+                    <label for="httponly">HttpOnly (JavaScript cannot access)</label>
                 </div>
+
                 <div class="checkbox-group">
                     <input type="checkbox" id="secure">
-                    <label for="secure">Secure (HTTPS only)</label>
+                    <label for="secure">Secure (HTTPS only - won't work on localhost HTTP)</label>
                 </div>
-                <div class="checkbox-group">
-                    <label>SameSite:</label>
+
+                <div class="select-group">
+                    <label>SameSite Policy:</label>
                     <select id="samesite">
-                        <option value="Lax">Lax (default)</option>
-                        <option value="Strict">Strict</option>
-                        <option value="None">None</option>
+                        <option value="Lax">Lax (default - safe for most cases)</option>
+                        <option value="Strict">Strict (maximum protection)</option>
+                        <option value="None">None (allows cross-site, requires Secure)</option>
                     </select>
                 </div>
-                <div class="flex-buttons">
-                    <button onclick="setCookie()">Set Cookie</button>
-                    <button onclick="deleteCookie()" class="secondary">Delete Cookie</button>
+
+                <button onclick="setCookie()">Set Cookie</button>
+                <button class="secondary" onclick="deleteCookie()">Delete Cookie</button>
+
+                <div class="result-box" id="cookie-result">Cookie operations result...</div>
+
+                <div class="info-box warning-box" style="margin-top: 20px;">
+                    <h4>HttpOnly Experiment</h4>
+                    <ol>
+                        <li>Create cookie WITH HttpOnly checked</li>
+                        <li>Open Console, type: <code>document.cookie</code></li>
+                        <li>The cookie is NOT visible!</li>
+                        <li>Create cookie WITHOUT HttpOnly</li>
+                        <li>Type <code>document.cookie</code> again - now it appears!</li>
+                    </ol>
+                    <p style="margin-top: 10px;"><strong>This is why HttpOnly protects against XSS attacks!</strong></p>
                 </div>
-                <div class="result-box" id="cookie-result">Cookie result will appear here...</div>
             </div>
 
-            <!-- Session Data Card -->
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(2)">&larr; Back: Protected Access</button>
+                <button onclick="showTab(4)">Next: Session Storage &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 5: Session Storage -->
+        <div class="tab-panel" id="tab-4">
             <div class="card">
-                <h2>💾 Store Data in Session</h2>
-                <p>Store arbitrary data in the server-side session.</p>
-                <input type="text" id="session-key" placeholder="Key (e.g., favorite_color)">
-                <input type="text" id="session-value" placeholder="Value (e.g., blue)">
-                <div class="flex-buttons">
-                    <button onclick="setSessionData()">Store in Session</button>
-                    <button onclick="getSessionData()" class="secondary">Get All Data</button>
+                <h2>Server-Side Session Storage</h2>
+                <p class="description">Store and retrieve custom data in the server-side session.</p>
+
+                <div class="info-box">
+                    <h4>What Can You Store in Sessions?</h4>
+                    <ul>
+                        <li>User preferences (theme, language)</li>
+                        <li>Shopping cart contents</li>
+                        <li>Form wizard progress</li>
+                        <li>Temporary authentication state (2FA)</li>
+                        <li>Any data that should persist across requests</li>
+                    </ul>
                 </div>
-                <div class="result-box" id="session-data-result">Session data result...</div>
+
+                <label>Key (e.g., favorite_color)</label>
+                <input type="text" id="session-key" placeholder="Enter key name">
+
+                <label>Value (e.g., blue)</label>
+                <input type="text" id="session-value" placeholder="Enter value">
+
+                <button onclick="setSessionData()">Store in Session</button>
+                <button class="secondary" onclick="getSessionData()">Get All Session Data</button>
+
+                <div class="result-box" id="session-data-result">Session data operations result...</div>
+
+                <div class="info-box success-box" style="margin-top: 20px;">
+                    <h4>Try This</h4>
+                    <ol>
+                        <li>Store some data (e.g., key: "cart", value: "3 items")</li>
+                        <li>Click "Get All Session Data" to see it</li>
+                        <li>Refresh the page - the data persists!</li>
+                        <li>Open a new tab - same session, same data!</li>
+                        <li>Logout - session data is cleared</li>
+                    </ol>
+                </div>
             </div>
 
-            <!-- Headers Card -->
-            <div class="card">
-                <h2>📨 Request Headers</h2>
-                <p>See all headers the server receives, including the Cookie header.</p>
-                <button onclick="getHeaders()">View Headers</button>
-                <div class="result-box" id="headers-result">Headers will appear here...</div>
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(3)">&larr; Back: Cookie Attributes</button>
+                <button onclick="showTab(5)">Next: Debug Tools &rarr;</button>
             </div>
+        </div>
 
-            <!-- Browser Cookie Display -->
+        <!-- Tab 6: Debug Tools -->
+        <div class="tab-panel" id="tab-5">
             <div class="card">
-                <h2>🔍 Browser Cookies (JS accessible)</h2>
-                <p>Shows cookies that JavaScript CAN read (non-HttpOnly).</p>
+                <h2>Debug Tools</h2>
+                <p class="description">Inspect headers and cookies for debugging.</p>
+
+                <h3 style="color: #00d4ff; margin: 20px 0 15px;">Request Headers</h3>
+                <p style="color: #aaa; margin-bottom: 15px;">See all headers the server receives, including the Cookie header.</p>
+                <button onclick="getHeaders()">View Request Headers</button>
+                <div class="result-box" id="headers-result">Request headers will appear here...</div>
+
+                <h3 style="color: #00d4ff; margin: 30px 0 15px;">JavaScript-Accessible Cookies</h3>
+                <p style="color: #aaa; margin-bottom: 15px;">Shows cookies that JavaScript CAN read (non-HttpOnly only).</p>
                 <button onclick="showBrowserCookies()">Read document.cookie</button>
                 <div class="result-box" id="browser-cookies">Click to read cookies via JavaScript...</div>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <h4>Understanding the Output</h4>
+                    <ul>
+                        <li><strong>Cookie header:</strong> What the browser sends to the server</li>
+                        <li><strong>document.cookie:</strong> What JavaScript can access (no HttpOnly cookies)</li>
+                        <li>Session cookies (sessionid) are typically HttpOnly for security</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(4)">&larr; Back: Session Storage</button>
+                <button class="success" onclick="showTab(0)">Start Over</button>
             </div>
         </div>
     </div>
 
+    <footer>
+        <p>Session-Based Auth Demo for Educational Purposes</p>
+    </footer>
+
     <script>
         const API_BASE = '';
 
-        // Utility function for API calls
+        function showTab(index) {
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`tab-${index}`).classList.add('active');
+            document.querySelectorAll('.nav-tab')[index].classList.add('active');
+        }
+
         async function apiCall(url, options = {}) {
             try {
                 const response = await fetch(API_BASE + url, {
@@ -387,7 +682,7 @@
                         'Content-Type': 'application/json',
                         ...options.headers,
                     },
-                    credentials: 'include',  // Important for cookies!
+                    credentials: 'include',
                 });
                 return await response.json();
             } catch (error) {
@@ -414,37 +709,33 @@
                 body: JSON.stringify({ username, password })
             });
             document.getElementById('login-result').textContent = formatJSON(result);
-            // Show reminder to check Network tab
-            document.getElementById('login-result').textContent +=
-                '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-                '👆 CHECK NETWORK TAB NOW!\n' +
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-                '1. Click on the "login" request\n' +
-                '2. Go to "Response Headers"\n' +
-                '3. Find "Set-Cookie" header\n' +
-                '4. Click REFRESH button above when done';
+            if (result.success) {
+                document.getElementById('login-result').textContent +=
+                    '\n\n' + '='.repeat(40) + '\n' +
+                    'SUCCESS! Check DevTools:\n' +
+                    '='.repeat(40) + '\n' +
+                    '1. Network tab → Click "login" request\n' +
+                    '2. Response Headers → Find "Set-Cookie"\n' +
+                    '3. Application → Cookies → See session cookie\n' +
+                    '4. Click REFRESH in status bar to update UI';
+            }
         }
 
         async function logout() {
             const result = await apiCall('/api/logout/', { method: 'POST' });
             document.getElementById('login-result').textContent = formatJSON(result);
             document.getElementById('login-result').textContent +=
-                '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-                '👆 CHECK NETWORK TAB NOW!\n' +
-                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-                '1. Click on the "logout" request\n' +
-                '2. Check "Set-Cookie" header (expires cookie)\n' +
-                '3. Click REFRESH button above when done';
+                '\n\n' + '='.repeat(40) + '\n' +
+                'LOGGED OUT!\n' +
+                '='.repeat(40) + '\n' +
+                'Session cookie has been invalidated.\n' +
+                'Click REFRESH in status bar to update UI.';
         }
 
         // Session Info
         async function getSessionInfo() {
             const result = await apiCall('/api/session/');
             document.getElementById('session-result').textContent = formatJSON(result);
-        }
-
-        async function refreshSessionInfo() {
-            location.reload();
         }
 
         // Protected Resource
@@ -462,7 +753,16 @@
 
             const url = `/api/cookie/set/?name=${name}&httponly=${httponly}&secure=${secure}&samesite=${samesite}`;
             const result = await apiCall(url);
-            document.getElementById('cookie-result').textContent = formatJSON(result);
+
+            let output = formatJSON(result);
+            output += '\n\n' + '='.repeat(40) + '\n';
+            output += 'Cookie Attributes Set:\n';
+            output += '='.repeat(40) + '\n';
+            output += `HttpOnly: ${httponly} ${httponly ? '(JS cannot read)' : '(JS can read)'}\n`;
+            output += `Secure: ${secure} ${secure ? '(HTTPS only)' : '(HTTP allowed)'}\n`;
+            output += `SameSite: ${samesite}\n`;
+
+            document.getElementById('cookie-result').textContent = output;
         }
 
         async function deleteCookie() {
@@ -475,6 +775,12 @@
         async function setSessionData() {
             const key = document.getElementById('session-key').value;
             const value = document.getElementById('session-value').value;
+
+            if (!key || !value) {
+                document.getElementById('session-data-result').textContent = 'Please enter both key and value!';
+                return;
+            }
+
             const result = await apiCall('/api/session/set/', {
                 method: 'POST',
                 body: JSON.stringify({ key, value })
@@ -496,10 +802,24 @@
         // Browser Cookies
         function showBrowserCookies() {
             const cookies = document.cookie;
-            const result = cookies
-                ? `JavaScript can see these cookies:\n\n${cookies}\n\n(HttpOnly cookies are NOT visible here!)`
-                : 'No cookies visible to JavaScript.\n\n(All cookies might be HttpOnly, or there are no cookies)';
-            document.getElementById('browser-cookies').textContent = result;
+            let output = '';
+
+            if (cookies) {
+                output = 'JavaScript CAN see these cookies:\n';
+                output += '='.repeat(40) + '\n\n';
+                output += cookies.split(';').map(c => c.trim()).join('\n');
+                output += '\n\n' + '='.repeat(40) + '\n';
+                output += 'Note: HttpOnly cookies are NOT shown above!\n';
+                output += 'Those are protected from JavaScript access.';
+            } else {
+                output = 'No cookies visible to JavaScript.\n\n';
+                output += 'This could mean:\n';
+                output += '1. All cookies are HttpOnly (good for security!)\n';
+                output += '2. No cookies exist yet\n\n';
+                output += 'Try creating a cookie WITHOUT HttpOnly to see it here.';
+            }
+
+            document.getElementById('browser-cookies').textContent = output;
         }
 
         // Load session info on page load

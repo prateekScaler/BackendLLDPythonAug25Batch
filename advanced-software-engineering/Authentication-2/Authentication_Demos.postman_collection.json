@@ -1,0 +1,897 @@
+{
+	"info": {
+		"_postman_id": "auth-demos-collection",
+		"name": "Authentication Demos",
+		"description": "API collection for Session, JWT, and OAuth2 authentication demos.\n\n**Ports:**\n- Session Demo: 8001\n- JWT Demo: 8002\n- OAuth2 Demo: 8003\n\nRun `./run_all.sh` to start all servers.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "session_base_url",
+			"value": "http://localhost:8001",
+			"type": "string"
+		},
+		{
+			"key": "jwt_base_url",
+			"value": "http://localhost:8002",
+			"type": "string"
+		},
+		{
+			"key": "oauth2_base_url",
+			"value": "http://localhost:8003",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "oauth2_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "oauth2_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "oauth2_client_id",
+			"value": "demo_client_id",
+			"type": "string"
+		},
+		{
+			"key": "oauth2_client_secret",
+			"value": "demo_client_secret_12345",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Session Demo (Port 8001)",
+			"description": "Session-based authentication using cookies. The server stores session data and sends a session ID cookie to the browser.",
+			"item": [
+				{
+					"name": "Setup",
+					"item": [
+						{
+							"name": "Create Test User",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{session_base_url}}/api/create-user/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "create-user", ""]
+								},
+								"description": "Creates a test user (testuser/testpass123). Run this first before testing login."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Authentication",
+					"item": [
+						{
+							"name": "Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"testpass123\"\n}"
+								},
+								"url": {
+									"raw": "{{session_base_url}}/api/login/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "login", ""]
+								},
+								"description": "Login with username and password. Server creates a session and returns a session cookie (sessionid)."
+							},
+							"response": []
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{session_base_url}}/api/logout/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "logout", ""]
+								},
+								"description": "Logout and destroy the session. The session cookie will be invalidated."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Session Operations",
+					"item": [
+						{
+							"name": "Get Session Info",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/session/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "session", ""]
+								},
+								"description": "Get information about the current session stored on the server."
+							},
+							"response": []
+						},
+						{
+							"name": "Set Session Data",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"key\": \"favorite_color\",\n    \"value\": \"blue\"\n}"
+								},
+								"url": {
+									"raw": "{{session_base_url}}/api/session/set/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "session", "set", ""]
+								},
+								"description": "Store custom key-value data in the server-side session."
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Session Data",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/session/data/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "session", "data", ""]
+								},
+								"description": "Retrieve all data stored in the current session."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Cookie Operations",
+					"item": [
+						{
+							"name": "Set Custom Cookie",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/cookie/set/?name=demo_cookie&httponly=true&secure=false&samesite=Lax",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "cookie", "set", ""],
+									"query": [
+										{
+											"key": "name",
+											"value": "demo_cookie",
+											"description": "Cookie name"
+										},
+										{
+											"key": "httponly",
+											"value": "true",
+											"description": "If true, JavaScript cannot access this cookie"
+										},
+										{
+											"key": "secure",
+											"value": "false",
+											"description": "If true, cookie only sent over HTTPS"
+										},
+										{
+											"key": "samesite",
+											"value": "Lax",
+											"description": "SameSite policy: Strict, Lax, or None"
+										}
+									]
+								},
+								"description": "Set a custom cookie with configurable security attributes (HttpOnly, Secure, SameSite)."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Custom Cookie",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/cookie/delete/?name=demo_cookie",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "cookie", "delete", ""],
+									"query": [
+										{
+											"key": "name",
+											"value": "demo_cookie",
+											"description": "Name of cookie to delete"
+										}
+									]
+								},
+								"description": "Delete a cookie by name."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Protected Resources",
+					"item": [
+						{
+							"name": "Access Protected Resource",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/protected/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "protected", ""]
+								},
+								"description": "Try to access a protected resource. Returns 401 if not logged in, 200 with data if authenticated."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Debug",
+					"item": [
+						{
+							"name": "View Request Headers",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/headers/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "headers", ""]
+								},
+								"description": "View all HTTP headers the server receives, including the Cookie header."
+							},
+							"response": []
+						},
+						{
+							"name": "CORS Demo",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_base_url}}/api/cors/",
+									"host": ["{{session_base_url}}"],
+									"path": ["api", "cors", ""]
+								},
+								"description": "Endpoint for testing CORS (Cross-Origin Resource Sharing)."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. JWT Demo (Port 8002)",
+			"description": "JWT (JSON Web Token) authentication. Tokens are self-contained and signed, no server-side session storage needed.",
+			"item": [
+				{
+					"name": "Authentication",
+					"item": [
+						{
+							"name": "Login & Get Token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.token) {",
+											"    pm.collectionVariables.set('jwt_token', jsonData.token);",
+											"    console.log('Token saved to collection variable');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"alice\",\n    \"password\": \"password123\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/login/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "login", ""]
+								},
+								"description": "Login and receive a JWT token. Available users: alice, bob, charlie (all with password: password123)"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Token Operations",
+					"item": [
+						{
+							"name": "Verify Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/verify/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "verify", ""]
+								},
+								"description": "Verify a JWT token and access protected resources. Server checks the signature and claims."
+							},
+							"response": []
+						},
+						{
+							"name": "Decode Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/decode/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "decode", ""]
+								},
+								"description": "Decode a JWT token to see its header, payload, and signature parts."
+							},
+							"response": []
+						},
+						{
+							"name": "Revoke Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/revoke/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "revoke", ""]
+								},
+								"description": "Revoke a JWT token by adding it to the blacklist. Demonstrates the challenge of revoking stateless tokens."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Security Demos",
+					"item": [
+						{
+							"name": "Tamper Token (Attack Demo)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\",\n    \"new_claims\": {\n        \"role\": \"admin\"\n    }\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/tamper/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "tamper", ""]
+								},
+								"description": "Try to modify the token payload (e.g., change role to admin). Demonstrates why tampering fails due to signature verification."
+							},
+							"response": []
+						},
+						{
+							"name": "Explain Signature",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/signature/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "signature", ""]
+								},
+								"description": "Learn how the JWT signature is calculated and why it provides integrity protection."
+							},
+							"response": []
+						},
+						{
+							"name": "Create Expired Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"alice\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/expired/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "expired", ""]
+								},
+								"description": "Create a token that is already expired. Use this with Verify Token to see expiry handling."
+							},
+							"response": []
+						},
+						{
+							"name": "Impersonation Demo",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/impersonate/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "impersonate", ""]
+								},
+								"description": "Demonstrates what happens if a token is stolen - the attacker can impersonate the user until the token expires."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Utility",
+					"item": [
+						{
+							"name": "Reset Demo",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{}"
+								},
+								"url": {
+									"raw": "{{jwt_base_url}}/api/reset/",
+									"host": ["{{jwt_base_url}}"],
+									"path": ["api", "reset", ""]
+								},
+								"description": "Reset the demo by clearing all revoked tokens from the blacklist."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. OAuth2 Demo (Port 8003)",
+			"description": "OAuth2 Authorization Code Flow. Demonstrates how 'Login with Google/GitHub' works.",
+			"item": [
+				{
+					"name": "OAuth2 Provider Endpoints",
+					"description": "These endpoints simulate what Google/GitHub provide.",
+					"item": [
+						{
+							"name": "Authorization Endpoint",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{oauth2_base_url}}/oauth/authorize/?client_id={{oauth2_client_id}}&redirect_uri=http://localhost:8003/callback/&response_type=code&scope=profile email&state=random_state_123",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["oauth", "authorize", ""],
+									"query": [
+										{
+											"key": "client_id",
+											"value": "{{oauth2_client_id}}",
+											"description": "Your app's client ID"
+										},
+										{
+											"key": "redirect_uri",
+											"value": "http://localhost:8003/callback/",
+											"description": "Where to redirect after consent"
+										},
+										{
+											"key": "response_type",
+											"value": "code",
+											"description": "Must be 'code' for Authorization Code flow"
+										},
+										{
+											"key": "scope",
+											"value": "profile email",
+											"description": "What data you're requesting"
+										},
+										{
+											"key": "state",
+											"value": "random_state_123",
+											"description": "CSRF protection token"
+										}
+									]
+								},
+								"description": "Start the OAuth2 flow. In browser, this redirects to login page. Returns HTML in Postman."
+							},
+							"response": []
+						},
+						{
+							"name": "Token Endpoint",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.access_token) {",
+											"    pm.collectionVariables.set('oauth2_access_token', jsonData.access_token);",
+											"    console.log('Access token saved');",
+											"}",
+											"if (jsonData.refresh_token) {",
+											"    pm.collectionVariables.set('oauth2_refresh_token', jsonData.refresh_token);",
+											"    console.log('Refresh token saved');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "grant_type",
+											"value": "authorization_code",
+											"type": "text"
+										},
+										{
+											"key": "code",
+											"value": "PASTE_AUTH_CODE_HERE",
+											"type": "text",
+											"description": "Authorization code from callback"
+										},
+										{
+											"key": "redirect_uri",
+											"value": "http://localhost:8003/callback/",
+											"type": "text"
+										},
+										{
+											"key": "client_id",
+											"value": "{{oauth2_client_id}}",
+											"type": "text"
+										},
+										{
+											"key": "client_secret",
+											"value": "{{oauth2_client_secret}}",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/oauth/token/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["oauth", "token", ""]
+								},
+								"description": "Exchange authorization code for access and refresh tokens. Replace PASTE_AUTH_CODE_HERE with actual code from callback."
+							},
+							"response": []
+						},
+						{
+							"name": "UserInfo Endpoint",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{oauth2_access_token}}",
+										"description": "Access token from token endpoint"
+									}
+								],
+								"url": {
+									"raw": "{{oauth2_base_url}}/oauth/userinfo/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["oauth", "userinfo", ""]
+								},
+								"description": "Get user profile information using the access token."
+							},
+							"response": []
+						},
+						{
+							"name": "Revoke Token (Provider)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "token",
+											"value": "{{oauth2_access_token}}",
+											"type": "text"
+										},
+										{
+											"key": "client_id",
+											"value": "{{oauth2_client_id}}",
+											"type": "text"
+										},
+										{
+											"key": "client_secret",
+											"value": "{{oauth2_client_secret}}",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/oauth/revoke/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["oauth", "revoke", ""]
+								},
+								"description": "Revoke a token at the OAuth2 provider level."
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Client API Endpoints",
+					"description": "JSON APIs used by the demo UI for easier testing.",
+					"item": [
+						{
+							"name": "Exchange Code for Tokens",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.tokens && jsonData.tokens.access_token) {",
+											"    pm.collectionVariables.set('oauth2_access_token', jsonData.tokens.access_token);",
+											"    console.log('Access token saved');",
+											"}",
+											"if (jsonData.tokens && jsonData.tokens.refresh_token) {",
+											"    pm.collectionVariables.set('oauth2_refresh_token', jsonData.tokens.refresh_token);",
+											"    console.log('Refresh token saved');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"code\": \"PASTE_AUTH_CODE_HERE\",\n    \"client_id\": \"{{oauth2_client_id}}\",\n    \"client_secret\": \"{{oauth2_client_secret}}\",\n    \"redirect_uri\": \"http://localhost:8003/callback/\"\n}"
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/exchange/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "exchange", ""]
+								},
+								"description": "JSON API to exchange authorization code for tokens. Replace PASTE_AUTH_CODE_HERE with the code from callback."
+							},
+							"response": []
+						},
+						{
+							"name": "Get User Info",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"access_token\": \"{{oauth2_access_token}}\"\n}"
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/userinfo/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "userinfo", ""]
+								},
+								"description": "Get user info using an access token."
+							},
+							"response": []
+						},
+						{
+							"name": "Refresh Token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.tokens && jsonData.tokens.access_token) {",
+											"    pm.collectionVariables.set('oauth2_access_token', jsonData.tokens.access_token);",
+											"    console.log('New access token saved');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"refresh_token\": \"{{oauth2_refresh_token}}\",\n    \"client_id\": \"{{oauth2_client_id}}\",\n    \"client_secret\": \"{{oauth2_client_secret}}\"\n}"
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/refresh/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "refresh", ""]
+								},
+								"description": "Get a new access token using a refresh token."
+							},
+							"response": []
+						},
+						{
+							"name": "Revoke Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"token\": \"{{oauth2_access_token}}\",\n    \"client_id\": \"{{oauth2_client_id}}\",\n    \"client_secret\": \"{{oauth2_client_secret}}\"\n}"
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/revoke/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "revoke", ""]
+								},
+								"description": "Revoke an access or refresh token."
+							},
+							"response": []
+						},
+						{
+							"name": "Inspect Provider State",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/inspect/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "inspect", ""]
+								},
+								"description": "Debug endpoint to see internal state of the OAuth2 provider (authorization codes, tokens, etc.)."
+							},
+							"response": []
+						},
+						{
+							"name": "Reset Demo",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{}"
+								},
+								"url": {
+									"raw": "{{oauth2_base_url}}/api/reset/",
+									"host": ["{{oauth2_base_url}}"],
+									"path": ["api", "reset", ""]
+								},
+								"description": "Reset the OAuth2 demo by clearing all authorization codes and tokens."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

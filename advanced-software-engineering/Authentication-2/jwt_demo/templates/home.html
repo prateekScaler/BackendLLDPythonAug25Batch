@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Demo - Interactive Learning</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+
+        /* Header */
+        .header {
+            background: #0f0f23;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .header h1 {
+            color: #00d9ff;
+            margin-bottom: 5px;
+            font-size: 1.8em;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.95em;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: #0f0f23;
+            padding: 0 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .nav-tab.active {
+            color: #00d9ff;
+            border-bottom-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        .nav-tab .step-num {
+            background: #333;
+            color: #888;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            margin-right: 8px;
+        }
+
+        .nav-tab.active .step-num {
+            background: #00d9ff;
+            color: #0f0f23;
+        }
+
+        .nav-tab.completed .step-num {
+            background: #2ed573;
+            color: #0f0f23;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Tab Panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Card Styling */
+        .card {
+            background: #0f0f23;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #00d9ff;
+            margin-bottom: 8px;
+            font-size: 1.4em;
+        }
+
+        .card .description {
+            color: #888;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Form Elements */
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #fff;
+            margin-bottom: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.95em;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+
+        /* Buttons */
+        button {
+            background: #00d9ff;
+            color: #0f0f23;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.95em;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #00b8d4;
+            transform: translateY(-2px);
+        }
+
+        button.danger { background: #ff4757; color: white; }
+        button.danger:hover { background: #ff3344; }
+        button.success { background: #2ed573; color: #0f0f23; }
+        button.success:hover { background: #26c066; }
+        button.warning { background: #ffa502; color: #0f0f23; }
+        button.secondary { background: #333; color: #fff; }
+        button.secondary:hover { background: #444; }
+
+        /* User Selection Pills */
+        .users-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .user-btn {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            border: 1px solid #333;
+        }
+
+        .user-btn:hover {
+            background: #2a2a4e;
+            border-color: #00d9ff;
+        }
+
+        /* Token Display */
+        .token-visual {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .token-part {
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline;
+        }
+
+        .token-header { background: #e74c3c; color: white; }
+        .token-payload { background: #9b59b6; color: white; }
+        .token-signature { background: #3498db; color: white; }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend span {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        /* Result Box */
+        .result {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .result:empty, .result[style*="display: none"] {
+            display: none;
+        }
+
+        /* Teaching Points */
+        .teaching-point {
+            background: #1a3a1a;
+            border-left: 4px solid #2ed573;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .teaching-point h4 {
+            color: #2ed573;
+            margin-bottom: 10px;
+        }
+
+        .teaching-point p, .teaching-point li {
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .teaching-point ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .teaching-point.error {
+            background: #3a1a1a;
+            border-left-color: #ff4757;
+        }
+
+        .teaching-point.error h4 {
+            color: #ff4757;
+        }
+
+        /* Attack Scenarios */
+        .attack-scenarios {
+            background: #2a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .attack-scenarios h4 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+
+        .scenario {
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #3a2a2a;
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .scenario strong {
+            color: #ff9f43;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .nav-buttons button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Status Indicator */
+        .status-bar {
+            background: #0a0a15;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+        }
+
+        .status-dot.active {
+            background: #2ed573;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>JWT (JSON Web Token) Interactive Demo</h1>
+        <p>Learn how JWT authentication works, why it's secure, and how attacks fail</p>
+    </div>
+
+    <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab(0)">
+            <span class="step-num">1</span>Login
+        </button>
+        <button class="nav-tab" onclick="showTab(1)">
+            <span class="step-num">2</span>Token
+        </button>
+        <button class="nav-tab" onclick="showTab(2)">
+            <span class="step-num">3</span>Use Token
+        </button>
+        <button class="nav-tab" onclick="showTab(3)">
+            <span class="step-num">4</span>Token Theft
+        </button>
+        <button class="nav-tab" onclick="showTab(4)">
+            <span class="step-num">5</span>Tampering
+        </button>
+        <button class="nav-tab" onclick="showTab(5)">
+            <span class="step-num">6</span>Signature
+        </button>
+        <button class="nav-tab" onclick="showTab(6)">
+            <span class="step-num">7</span>Expiry
+        </button>
+        <button class="nav-tab" onclick="showTab(7)">
+            <span class="step-num">8</span>Revocation
+        </button>
+    </nav>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-dot" id="login-status"></span>
+            <span>Logged in: <strong id="current-user">-</strong></span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot" id="token-status"></span>
+            <span>Token: <strong id="token-state">None</strong></span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Tab 1: Login -->
+        <div class="tab-panel active" id="tab-0">
+            <div class="card">
+                <h2>Login & Get Token</h2>
+                <p class="description">Select a demo user or enter credentials to authenticate and receive a JWT token.</p>
+
+                <label>Quick Select User</label>
+                <div class="users-list">
+                    {% for user in users %}
+                    <button class="user-btn" onclick="fillUser('{{ user.username }}', '{{ user.password }}')">
+                        {{ user.username }} ({{ user.role }})
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter password">
+
+                <button onclick="login()">Login & Get Token</button>
+
+                <div id="login-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <div></div>
+                <button onclick="showTab(1)">Next: View Token &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Token Display -->
+        <div class="tab-panel" id="tab-1">
+            <div class="card">
+                <h2>Your JWT Token</h2>
+                <p class="description">A JWT has three parts separated by dots: Header, Payload, and Signature.</p>
+
+                <div class="legend">
+                    <span class="token-header">Header (Algorithm)</span>
+                    <span class="token-payload">Payload (Claims/Data)</span>
+                    <span class="token-signature">Signature (Verification)</span>
+                </div>
+
+                <div id="token-visual" class="token-visual">
+                    <em style="color: #666;">Login first to see your token here...</em>
+                </div>
+
+                <button class="secondary" onclick="copyToken()">Copy Token</button>
+                <button onclick="decodeToken()">Decode & Inspect</button>
+
+                <div id="decode-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(0)">&larr; Back: Login</button>
+                <button onclick="showTab(2)">Next: Use Token &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 3: Use Token -->
+        <div class="tab-panel" id="tab-2">
+            <div class="card">
+                <h2>Use Token (Protected API)</h2>
+                <p class="description">Send your JWT to access protected resources. The server verifies the signature and checks claims.</p>
+
+                <label>Token to verify</label>
+                <textarea id="verify-token" rows="4" placeholder="Paste a token here or login to auto-fill..."></textarea>
+
+                <button class="success" onclick="verifyToken()">Access Protected Resource</button>
+
+                <div id="verify-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>How Verification Works</h4>
+                    <p>The server re-calculates the signature using the header + payload + secret key. If it matches the token's signature, the token is valid and untampered.</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(1)">&larr; Back: Token</button>
+                <button onclick="showTab(3)">Next: Token Theft &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 4: Token Theft -->
+        <div class="tab-panel" id="tab-3">
+            <div class="card">
+                <h2>Token Theft = Impersonation</h2>
+                <p class="description">If someone steals your token, they can impersonate you until it expires. This is why token security matters!</p>
+
+                <div class="attack-scenarios">
+                    <h4>How Tokens Get Stolen</h4>
+                    <div class="scenario">
+                        <strong>XSS Attack:</strong> Malicious JavaScript reads tokens from localStorage/cookies
+                    </div>
+                    <div class="scenario">
+                        <strong>Man-in-the-Middle:</strong> Token intercepted over unencrypted HTTP connection
+                    </div>
+                    <div class="scenario">
+                        <strong>Malware/Extensions:</strong> Malicious browser extension stealing session data
+                    </div>
+                    <div class="scenario">
+                        <strong>Phishing:</strong> User tricked into submitting token to fake site
+                    </div>
+                </div>
+
+                <button class="danger" onclick="impersonationDemo()">Simulate Token Theft</button>
+
+                <div id="impersonate-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>Mitigation Strategies</h4>
+                    <ul>
+                        <li>Use HTTPS everywhere (prevents MITM)</li>
+                        <li>Set HttpOnly cookies (prevents XSS reading tokens)</li>
+                        <li>Short token expiry times</li>
+                        <li>Implement token refresh rotation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(2)">&larr; Back: Use Token</button>
+                <button onclick="showTab(4)">Next: Tampering &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 5: Tampering -->
+        <div class="tab-panel" id="tab-4">
+            <div class="card">
+                <h2>Try to Tamper the Token</h2>
+                <p class="description">What if an attacker modifies the payload to gain more privileges? Let's try!</p>
+
+                <label>Select Attack Type</label>
+                <select id="tamper-type" onchange="updateTamperFields()">
+                    <option value="role">Change role to "admin" (Privilege Escalation)</option>
+                    <option value="user_id">Change user_id to 1 (Identity Theft)</option>
+                    <option value="username">Change username to "admin"</option>
+                    <option value="custom">Custom modification</option>
+                </select>
+
+                <div id="custom-tamper" style="display: none;">
+                    <label>Custom JSON to merge into payload</label>
+                    <textarea id="tamper-json" rows="2" placeholder='{"role": "superadmin"}'></textarea>
+                </div>
+
+                <button class="danger" onclick="tamperToken()">Attempt Tampering Attack</button>
+
+                <div id="tamper-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>Why Tampering is Detected</h4>
+                    <p>When you modify the payload, the signature no longer matches. The server recalculates the expected signature and compares - any mismatch means tampering!</p>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(3)">&larr; Back: Token Theft</button>
+                <button onclick="showTab(5)">Next: Signature &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 6: Signature -->
+        <div class="tab-panel" id="tab-5">
+            <div class="card">
+                <h2>Why Tampering Fails</h2>
+                <p class="description">Understanding the cryptographic signature that protects JWT integrity.</p>
+
+                <button onclick="explainSignature()">Show Signature Calculation</button>
+
+                <div id="signature-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>The Math Behind Security</h4>
+                    <p><code>Signature = HMAC-SHA256(base64(header) + "." + base64(payload), SECRET_KEY)</code></p>
+                    <br>
+                    <p>Without knowing the secret key, attackers cannot:</p>
+                    <ul>
+                        <li>Create valid signatures for modified payloads</li>
+                        <li>Forge new tokens</li>
+                        <li>Guess the secret (256-bit entropy)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(4)">&larr; Back: Tampering</button>
+                <button onclick="showTab(6)">Next: Expiry &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 7: Expiry -->
+        <div class="tab-panel" id="tab-6">
+            <div class="card">
+                <h2>Token Expiration</h2>
+                <p class="description">JWTs have a limited lifetime defined by the "exp" (expiration) claim.</p>
+
+                <button class="warning" onclick="createExpiredToken()">Create Already-Expired Token</button>
+                <button onclick="verifyExpiredToken()">Try to Use Expired Token</button>
+
+                <div id="expiry-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>Why Expiry Matters</h4>
+                    <ul>
+                        <li><strong>Limits damage window:</strong> Stolen tokens become useless after expiry</li>
+                        <li><strong>Forces re-authentication:</strong> Users must prove identity periodically</li>
+                        <li><strong>Enables credential updates:</strong> Password/permission changes take effect</li>
+                        <li><strong>Typical lifetimes:</strong> Access tokens (15 min - 1 hour), Refresh tokens (days - weeks)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(5)">&larr; Back: Signature</button>
+                <button onclick="showTab(7)">Next: Revocation &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Tab 8: Revocation -->
+        <div class="tab-panel" id="tab-7">
+            <div class="card">
+                <h2>Token Revocation</h2>
+                <p class="description">What happens when a user logs out or their account is compromised?</p>
+
+                <button class="danger" onclick="revokeToken()">Revoke Current Token</button>
+                <button onclick="verifyAfterRevoke()">Try to Use Revoked Token</button>
+                <button class="warning" onclick="resetDemo()">Reset Demo</button>
+
+                <div id="revoke-result" class="result" style="display: none;"></div>
+
+                <div class="teaching-point">
+                    <h4>The Revocation Dilemma</h4>
+                    <p>JWT is stateless by design, but revocation requires state! Common solutions:</p>
+                    <ul>
+                        <li><strong>Short expiry + refresh tokens:</strong> Access tokens expire quickly; refresh tokens can be revoked</li>
+                        <li><strong>Token blacklist:</strong> Store revoked token IDs (requires database lookup)</li>
+                        <li><strong>Token versioning:</strong> Store version in user record; increment on logout</li>
+                        <li><strong>Hybrid approach:</strong> Short-lived JWTs + server-side session for sensitive ops</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="secondary" onclick="showTab(6)">&larr; Back: Expiry</button>
+                <button class="success" onclick="showTab(0)">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>JWT Demo for Educational Purposes | Tokens expire in 5 minutes</p>
+    </footer>
+
+    <script>
+        let currentToken = '';
+        let expiredToken = '';
+        let currentUser = '';
+
+        function showTab(index) {
+            // Hide all panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Deactivate all tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected panel and activate tab
+            document.getElementById(`tab-${index}`).classList.add('active');
+            document.querySelectorAll('.nav-tab')[index].classList.add('active');
+        }
+
+        function updateStatus() {
+            const loginStatus = document.getElementById('login-status');
+            const tokenStatus = document.getElementById('token-status');
+            const currentUserEl = document.getElementById('current-user');
+            const tokenState = document.getElementById('token-state');
+
+            if (currentUser) {
+                loginStatus.classList.add('active');
+                currentUserEl.textContent = currentUser;
+            } else {
+                loginStatus.classList.remove('active');
+                currentUserEl.textContent = '-';
+            }
+
+            if (currentToken) {
+                tokenStatus.classList.add('active');
+                tokenState.textContent = 'Active';
+            } else {
+                tokenStatus.classList.remove('active');
+                tokenState.textContent = 'None';
+            }
+        }
+
+        function fillUser(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+        }
+
+        async function apiCall(endpoint, data) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            return await response.json();
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.style.display = 'block';
+
+            let html = '';
+
+            if (data.teaching_point) {
+                html += `<div class="teaching-point ${isError ? 'error' : ''}">
+                    <h4>${isError ? 'Why This Failed' : 'Teaching Point'}</h4>
+                    <pre>${data.teaching_point}</pre>
+                </div>`;
+            }
+
+            if (data.attack_scenarios) {
+                html += `<div class="attack-scenarios">
+                    <h4>Common Attack Scenarios</h4>
+                    ${data.attack_scenarios.map(s => `
+                        <div class="scenario">
+                            <strong>${s.name}:</strong> ${s.description}<br>
+                            <em>Why? ${s.why_attempted}</em>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            // Show main data
+            const displayData = {...data};
+            delete displayData.teaching_point;
+            delete displayData.attack_scenarios;
+
+            html += `<pre>${JSON.stringify(displayData, null, 2)}</pre>`;
+
+            el.innerHTML = html;
+        }
+
+        function displayToken(token) {
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                document.getElementById('token-visual').innerHTML = `<em>Invalid token format</em>`;
+                return;
+            }
+
+            document.getElementById('token-visual').innerHTML = `
+                <span class="token-part token-header">${parts[0]}</span>.<span class="token-part token-payload">${parts[1]}</span>.<span class="token-part token-signature">${parts[2]}</span>
+            `;
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const result = await apiCall('/api/login/', { username, password });
+            showResult('login-result', result, !result.success);
+
+            if (result.success) {
+                currentToken = result.token;
+                currentUser = username;
+                displayToken(currentToken);
+                document.getElementById('verify-token').value = currentToken;
+                updateStatus();
+
+                // Mark tab as completed and move to next
+                document.querySelectorAll('.nav-tab')[0].classList.add('completed');
+            }
+        }
+
+        async function decodeToken() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const result = await apiCall('/api/decode/', { token: currentToken });
+            showResult('decode-result', result, !result.success);
+        }
+
+        async function verifyToken() {
+            const token = document.getElementById('verify-token').value;
+            if (!token) {
+                alert('Enter a token to verify!');
+                return;
+            }
+
+            const result = await apiCall('/api/verify/', { token });
+            showResult('verify-result', result, !result.success);
+        }
+
+        async function impersonationDemo() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const result = await apiCall('/api/impersonate/', { token: currentToken });
+            showResult('impersonate-result', result, !result.success);
+        }
+
+        function updateTamperFields() {
+            const type = document.getElementById('tamper-type').value;
+            document.getElementById('custom-tamper').style.display =
+                type === 'custom' ? 'block' : 'none';
+        }
+
+        async function tamperToken() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const type = document.getElementById('tamper-type').value;
+            let newClaims = {};
+
+            switch(type) {
+                case 'role':
+                    newClaims = { role: 'admin' };
+                    break;
+                case 'user_id':
+                    newClaims = { user_id: 1 };
+                    break;
+                case 'username':
+                    newClaims = { username: 'admin' };
+                    break;
+                case 'custom':
+                    try {
+                        newClaims = JSON.parse(document.getElementById('tamper-json').value);
+                    } catch(e) {
+                        alert('Invalid JSON!');
+                        return;
+                    }
+            }
+
+            const result = await apiCall('/api/tamper/', {
+                token: currentToken,
+                new_claims: newClaims
+            });
+            showResult('tamper-result', result, !result.success);
+        }
+
+        async function explainSignature() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const result = await apiCall('/api/signature/', { token: currentToken });
+            showResult('signature-result', result, !result.success);
+        }
+
+        async function createExpiredToken() {
+            const result = await apiCall('/api/expired/', {
+                username: document.getElementById('username').value || 'demo_user'
+            });
+
+            if (result.success) {
+                expiredToken = result.token;
+            }
+
+            showResult('expiry-result', result, !result.success);
+        }
+
+        async function verifyExpiredToken() {
+            if (!expiredToken) {
+                alert('Create an expired token first!');
+                return;
+            }
+
+            const result = await apiCall('/api/verify/', { token: expiredToken });
+            showResult('expiry-result', result, !result.success);
+        }
+
+        async function revokeToken() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const result = await apiCall('/api/revoke/', { token: currentToken });
+            showResult('revoke-result', result, !result.success);
+
+            document.getElementById('token-state').textContent = 'Revoked';
+        }
+
+        async function verifyAfterRevoke() {
+            if (!currentToken) {
+                alert('Login first to get a token!');
+                showTab(0);
+                return;
+            }
+
+            const result = await apiCall('/api/verify/', { token: currentToken });
+            showResult('revoke-result', result, !result.success);
+        }
+
+        async function resetDemo() {
+            await apiCall('/api/reset/', {});
+            currentToken = '';
+            expiredToken = '';
+            currentUser = '';
+
+            document.getElementById('token-visual').innerHTML = '<em style="color: #666;">Login first to see your token here...</em>';
+            document.getElementById('verify-token').value = '';
+
+            // Reset status
+            updateStatus();
+
+            // Clear all results
+            document.querySelectorAll('.result').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Reset tab states
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('completed');
+            });
+
+            showTab(0);
+            alert('Demo reset! All tokens cleared.');
+        }
+
+        function copyToken() {
+            if (currentToken) {
+                navigator.clipboard.writeText(currentToken);
+                alert('Token copied to clipboard!');
+            } else {
+                alert('No token to copy. Login first!');
+            }
+        }
+    </script>
+</body>
+</html>

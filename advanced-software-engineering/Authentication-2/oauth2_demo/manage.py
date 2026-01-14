@@ -6,16 +6,18 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'session_demo.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'oauth2_project.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(
-            "Couldn't import Django. Are you sure it's installed?"
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
         ) from exc
-    # Default to port 8001 for runserver
+    # Default to port 8003 for runserver
     if len(sys.argv) == 2 and sys.argv[1] == 'runserver':
-        sys.argv.append('8001')
+        sys.argv.append('8003')
     execute_from_command_line(sys.argv)
 
 

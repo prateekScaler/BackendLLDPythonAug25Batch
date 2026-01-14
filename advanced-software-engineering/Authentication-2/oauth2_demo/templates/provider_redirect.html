@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting... - Demo Provider</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .redirect-container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .success-icon {
+            text-align: center;
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #4caf50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .teaching-banner {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .teaching-banner h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .teaching-banner p {
+            color: #388e3c;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .code-display {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .code-display h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .code-value {
+            background: #263238;
+            color: #4caf50;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            word-break: break-all;
+            font-size: 0.85em;
+        }
+
+        .url-display {
+            background: #fff3e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .url-display h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .url-display code {
+            color: #bf360c;
+            word-break: break-all;
+            font-size: 0.85em;
+        }
+
+        .redirect-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .redirect-btn:hover {
+            background: #43a047;
+        }
+
+        .countdown {
+            text-align: center;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .security-note {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .security-note h4 {
+            color: #c62828;
+            margin-bottom: 5px;
+        }
+
+        .security-note p {
+            color: #d32f2f;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-container">
+        <div class="success-icon">✅</div>
+        <h1>Authorization Granted!</h1>
+
+        <div class="teaching-banner">
+            <h4>📚 Step 4: Provider Redirects Back</h4>
+            <p>
+                The provider (like Google) has created a one-time <strong>authorization code</strong> and is about to redirect you back to the client application. The client will then exchange this code for access tokens (server-to-server).
+            </p>
+        </div>
+
+        <div class="code-display">
+            <h4>Authorization Code:</h4>
+            <div class="code-value">{{ code }}</div>
+        </div>
+
+        {% if state %}
+        <div class="code-display">
+            <h4>State (for CSRF verification):</h4>
+            <div class="code-value">{{ state }}</div>
+        </div>
+        {% endif %}
+
+        <div class="url-display">
+            <h4>Redirect URL:</h4>
+            <code>{{ redirect_url }}</code>
+        </div>
+
+        <a href="{{ redirect_url }}" class="redirect-btn">Continue to Client App →</a>
+
+        <p class="countdown">Auto-redirecting in <span id="countdown">5</span> seconds...</p>
+
+        <div class="security-note">
+            <h4>🔒 Security Notes:</h4>
+            <p>
+                • This code expires in ~10 minutes<br>
+                • It can only be used ONCE<br>
+                • It requires the client_secret to exchange<br>
+                • Even if intercepted, it's useless without the secret
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let seconds = 5;
+        const countdownEl = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+
+            if (seconds <= 0) {
+                clearInterval(timer);
+                window.location.href = "{{ redirect_url }}";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

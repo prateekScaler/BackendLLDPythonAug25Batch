@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callback - My Demo App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #eee;
+        }
+
+        .callback-container {
+            background: #0f0f23;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid #333;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-header h1 {
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .app-header p {
+            color: #666;
+        }
+
+        {% if error %}
+        .error-banner {
+            background: #5a2727;
+            border-left: 4px solid #ff4757;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+
+        .error-banner h3 {
+            color: #ff4757;
+            margin-bottom: 10px;
+        }
+
+        .error-banner p {
+            color: #ffb3b3;
+        }
+        {% endif %}
+
+        .success-banner {
+            background: #27ae60;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .success-banner h3 {
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .success-banner p {
+            color: #a9dfbf;
+        }
+
+        .teaching-point {
+            background: #2d5a27;
+            border-left: 4px solid #2ed573;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+
+        .teaching-point h4 {
+            color: #2ed573;
+            margin-bottom: 10px;
+        }
+
+        .teaching-point p {
+            color: #a9dfbf;
+            line-height: 1.6;
+        }
+
+        .code-section {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .code-section h4 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+
+        .code-value {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            word-break: break-all;
+            color: #ffd700;
+            font-size: 0.85em;
+        }
+
+        .next-steps {
+            background: #1e3a5f;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .next-steps h4 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .next-steps ol {
+            color: #b3d9ff;
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div class="app-header">
+            <h1>💻 My Demo App</h1>
+            <p>OAuth2 Callback Handler</p>
+        </div>
+
+        {% if error %}
+        <div class="error-banner">
+            <h3>Authorization Failed</h3>
+            <p><strong>Error:</strong> {{ error }}</p>
+            {% if error_description %}
+            <p><strong>Description:</strong> {{ error_description }}</p>
+            {% endif %}
+        </div>
+
+        {% if teaching_point %}
+        <div class="teaching-point">
+            <h4>📚 What Happened</h4>
+            <p>{{ teaching_point }}</p>
+        </div>
+        {% endif %}
+
+        {% else %}
+
+        <div class="success-banner">
+            <h3>✅ Authorization Code Received!</h3>
+            <p>The user granted permission. Now exchange the code for tokens.</p>
+        </div>
+
+        <div class="teaching-point">
+            <h4>📚 Step 4 Complete: Back at the Client</h4>
+            <p>
+                The OAuth provider redirected the user back to your app with an <strong>authorization code</strong>.
+                This code is proof that the user approved your request. Now your server needs to exchange
+                this code for actual access tokens (Step 5).
+            </p>
+        </div>
+
+        <div class="code-section">
+            <h4>Authorization Code:</h4>
+            <div class="code-value">{{ code }}</div>
+        </div>
+
+        {% if state %}
+        <div class="code-section">
+            <h4>State (verify this matches what you sent!):</h4>
+            <div class="code-value">{{ state }}</div>
+        </div>
+        {% endif %}
+
+        <div class="next-steps">
+            <h4>🔄 Next Steps (Server-Side)</h4>
+            <ol>
+                <li>Copy this authorization code</li>
+                <li>Go back to the main demo page</li>
+                <li>Paste the code in Step 5 "Exchange Code for Tokens"</li>
+                <li>Click exchange to get your access_token and refresh_token</li>
+            </ol>
+        </div>
+
+        {% endif %}
+
+        <div style="text-align: center;">
+            <a href="/" class="btn btn-primary">← Back to Demo</a>
+        </div>
+    </div>
+
+    <script>
+        // Copy code to clipboard and store for convenience
+        {% if code %}
+        const code = "{{ code }}";
+        localStorage.setItem('oauth_code', code);
+        {% endif %}
+    </script>
+</body>
+</html>
