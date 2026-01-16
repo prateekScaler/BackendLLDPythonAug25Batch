@@ -398,6 +398,26 @@
             padding: 2px 8px;
             border-radius: 4px;
         }
+
+        /* Provider Toggle Buttons */
+        .provider-btn {
+            background: #1a1a2e;
+            border: 2px solid #3a2a4e;
+            color: #888;
+        }
+        .provider-btn:hover {
+            border-color: #ff9f43;
+            color: #fff;
+        }
+        .provider-btn.active {
+            background: linear-gradient(135deg, #2a1a3e 0%, #3a2a5e 100%);
+            border-color: #ff9f43;
+            color: #fff;
+        }
+        #btn-google.active {
+            background: linear-gradient(135deg, #1a2a4e 0%, #2a3a6e 100%);
+            border-color: #6eb5ff;
+        }
     </style>
 </head>
 <body>
@@ -488,6 +508,37 @@
                 </div>
             </div>
 
+            <!-- OAuth vs OIDC - Simplified -->
+            <div class="card">
+                <h2>🎯 OAuth vs OIDC</h2>
+                <p class="description">This demo lets you try BOTH to see the difference!</p>
+
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                    <tr style="background: #1a1a2e;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #333;"></th>
+                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ff9f43; color: #ff9f43;">🔑 OAuth Only</th>
+                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #2ed573; color: #2ed573;">🪪 OIDC</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; color: #888;">What you get</td>
+                        <td style="padding: 10px; text-align: center;"><code>access_token</code></td>
+                        <td style="padding: 10px; text-align: center;"><code>id_token</code> + <code>access_token</code></td>
+                    </tr>
+                    <tr style="background: #0f0f23;">
+                        <td style="padding: 10px; color: #888;">User identity</td>
+                        <td style="padding: 10px; text-align: center; color: #ff6b6b;">❌ Need separate API call</td>
+                        <td style="padding: 10px; text-align: center; color: #2ed573;">✅ In the JWT!</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; color: #888;">Analogy</td>
+                        <td style="padding: 10px; text-align: center; font-style: italic; color: #aaa;">"Here are my car keys"</td>
+                        <td style="padding: 10px; text-align: center; font-style: italic; color: #aaa;">"Here's my license + keys"</td>
+                    </tr>
+                </table>
+
+                <p style="color: #6eb5ff; font-size: 0.9em;">👉 In the next step, toggle between modes to see the difference in the token response!</p>
+            </div>
+
             <div class="nav-buttons">
                 <div></div>
                 <button onclick="showTab(1)">Next: Start OAuth &rarr;</button>
@@ -502,6 +553,42 @@
 
                 <span class="participant client">Client App</span>
 
+                <!-- Provider Toggle -->
+                <div style="background: #0f0f23; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #3a2a4e;">
+                    <label style="margin-bottom: 10px; color: #ff9f43; font-weight: bold;">Choose OAuth Provider</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="provider-btn active" id="btn-demo" onclick="selectProvider('demo')" style="flex: 1; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <span style="font-size: 1.5em;">🎭</span><br>
+                            <strong>Demo Provider</strong><br>
+                            <small style="opacity: 0.7;">Local simulation</small>
+                        </button>
+                        <button type="button" class="provider-btn" id="btn-google" onclick="selectProvider('google')" style="flex: 1; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s;">
+                            <span style="font-size: 1.5em;">🔵</span><br>
+                            <strong>Google OAuth</strong><br>
+                            <small style="opacity: 0.7;">Real authentication</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Config (hidden by default) -->
+                <div id="google-config" style="display: none; background: #1a2a4e; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #4a6a9e;">
+                    <h4 style="color: #6eb5ff; margin-bottom: 15px;">🔵 Google OAuth Configuration</h4>
+                    <div class="info-box warning-box" style="margin-bottom: 15px;">
+                        <h4>Setup Required</h4>
+                        <p>To use Google OAuth, you need to:</p>
+                        <ol style="margin-left: 20px; margin-top: 10px;">
+                            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #ff9f43;">Google Cloud Console</a></li>
+                            <li>Create a new project or select existing</li>
+                            <li>Create OAuth 2.0 credentials (Web application)</li>
+                            <li>Add <code>http://localhost:8003/google/callback/</code> to Authorized redirect URIs</li>
+                            <li>Copy your Client ID below</li>
+                        </ol>
+                    </div>
+                    <label>Google Client ID</label>
+                    <input type="text" id="google-client-id" placeholder="Your Google Client ID (ends with .apps.googleusercontent.com)">
+                    <small style="color: #888; display: block; margin-top: -10px; margin-bottom: 15px;">Client Secret is NOT needed for PKCE flow (frontend-only)</small>
+                </div>
+
                 <div class="info-box">
                     <h4>What Your App Sends</h4>
                     <ul>
@@ -513,22 +600,62 @@
                     </ul>
                 </div>
 
-                <label>Scopes to Request</label>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="scope-profile" checked>
-                    <label for="scope-profile">profile (name, picture)</label>
+                <!-- Simplified OAuth vs OIDC Toggle -->
+                <div style="background: #0f0f23; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #4a6a9e;">
+                    <label style="color: #6eb5ff; font-weight: bold; margin-bottom: 15px; display: block;">🎯 Choose Protocol Mode</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" id="btn-oauth-mode" onclick="setAuthMode('oauth')" style="flex: 1; padding: 15px; border-radius: 8px; cursor: pointer; background: #3a2a1a; border: 2px solid #ff9f43; color: #fff;">
+                            <strong style="color: #ff9f43;">🔑 OAuth Only</strong><br>
+                            <small style="color: #aaa;">access_token only</small>
+                        </button>
+                        <button type="button" id="btn-oidc-mode" onclick="setAuthMode('oidc')" style="flex: 1; padding: 15px; border-radius: 8px; cursor: pointer; background: #0f0f23; border: 2px solid #555; color: #888;">
+                            <strong>🪪 OIDC</strong><br>
+                            <small>id_token + access_token</small>
+                        </button>
+                    </div>
+                    <div id="mode-description" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #3a2a1a; border-left: 3px solid #ff9f43;">
+                        <p style="margin: 0; color: #ffcc80; font-size: 0.9em;">
+                            <strong>OAuth Only:</strong> You'll get an access_token to call APIs, but NO user identity. You'd need a separate /userinfo call.
+                        </p>
+                    </div>
                 </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="scope-email" checked>
-                    <label for="scope-email">email</label>
+
+                <label>Scopes to Request</label>
+                <div id="demo-scopes">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-openid">
+                        <label for="scope-openid" id="scope-openid-label">openid <span style="color: #888;">(enables OIDC)</span></label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-profile" checked>
+                        <label for="scope-profile">profile (name, picture)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-email" checked>
+                        <label for="scope-email">email</label>
+                    </div>
+                </div>
+                <div id="google-scopes" style="display: none;">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-google-profile" checked>
+                        <label for="scope-google-profile">openid (required for Google)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-google-email" checked>
+                        <label for="scope-google-email">email</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="scope-google-name" checked>
+                        <label for="scope-google-name">profile (name, picture)</label>
+                    </div>
                 </div>
 
                 <label>State (CSRF Protection)</label>
                 <input type="text" id="state" placeholder="Random string for security">
                 <button class="secondary" onclick="generateState()">Generate Random State</button>
 
-                <button class="success" onclick="startOAuth()" style="display: block; margin-top: 20px; width: 100%;">
-                    Login with Demo Provider
+                <button class="success" id="start-oauth-btn" onclick="startOAuth()" style="display: block; margin-top: 20px; width: 100%;">
+                    🎭 Login with Demo Provider
                 </button>
 
                 <div class="url-box" id="auth-url-display" style="display: none;">
@@ -748,6 +875,74 @@
     <script>
         const CLIENT_ID = '{{ client_id }}';
         const CLIENT_SECRET = '{{ client_secret }}';
+        let selectedProvider = 'demo';
+
+        function selectProvider(provider) {
+            selectedProvider = provider;
+
+            // Update button states
+            document.getElementById('btn-demo').classList.remove('active');
+            document.getElementById('btn-google').classList.remove('active');
+            document.getElementById(`btn-${provider}`).classList.add('active');
+
+            // Show/hide config sections
+            document.getElementById('google-config').style.display = provider === 'google' ? 'block' : 'none';
+            document.getElementById('demo-scopes').style.display = provider === 'demo' ? 'block' : 'none';
+            document.getElementById('google-scopes').style.display = provider === 'google' ? 'block' : 'none';
+
+            // Update button text
+            const btn = document.getElementById('start-oauth-btn');
+            if (provider === 'demo') {
+                btn.innerHTML = '🎭 Login with Demo Provider';
+            } else {
+                btn.innerHTML = '🔵 Login with Google';
+            }
+
+            // Store provider choice
+            localStorage.setItem('oauth_provider', provider);
+        }
+
+        function setAuthMode(mode) {
+            const openidCheckbox = document.getElementById('scope-openid');
+            const openidLabel = document.getElementById('scope-openid-label');
+            const oauthBtn = document.getElementById('btn-oauth-mode');
+            const oidcBtn = document.getElementById('btn-oidc-mode');
+            const modeDesc = document.getElementById('mode-description');
+
+            if (mode === 'oidc') {
+                // OIDC mode
+                openidCheckbox.checked = true;
+                oauthBtn.style.background = '#0f0f23';
+                oauthBtn.style.borderColor = '#555';
+                oauthBtn.style.color = '#888';
+                oauthBtn.querySelector('strong').style.color = '#888';
+                oidcBtn.style.background = '#1a3a2a';
+                oidcBtn.style.borderColor = '#2ed573';
+                oidcBtn.style.color = '#fff';
+                oidcBtn.querySelector('strong').style.color = '#2ed573';
+                openidLabel.innerHTML = 'openid <span style="color: #2ed573; font-weight: bold;">✓ ENABLED</span>';
+                modeDesc.style.background = '#1a3a2a';
+                modeDesc.style.borderLeftColor = '#2ed573';
+                modeDesc.innerHTML = '<p style="margin: 0; color: #a9dfbf; font-size: 0.9em;"><strong>OIDC Mode:</strong> You\'ll get an <code style="background:#0a0a15;padding:2px 6px;border-radius:3px;color:#2ed573;">id_token</code> (JWT with user identity) + access_token. User name/email included!</p>';
+                localStorage.setItem('auth_mode', 'oidc');
+            } else {
+                // OAuth only mode
+                openidCheckbox.checked = false;
+                oauthBtn.style.background = '#3a2a1a';
+                oauthBtn.style.borderColor = '#ff9f43';
+                oauthBtn.style.color = '#fff';
+                oauthBtn.querySelector('strong').style.color = '#ff9f43';
+                oidcBtn.style.background = '#0f0f23';
+                oidcBtn.style.borderColor = '#555';
+                oidcBtn.style.color = '#888';
+                oidcBtn.querySelector('strong').style.color = '#888';
+                openidLabel.innerHTML = 'openid <span style="color: #888;">(enables OIDC)</span>';
+                modeDesc.style.background = '#3a2a1a';
+                modeDesc.style.borderLeftColor = '#ff9f43';
+                modeDesc.innerHTML = '<p style="margin: 0; color: #ffcc80; font-size: 0.9em;"><strong>OAuth Only:</strong> You\'ll get an <code style="background:#0a0a15;padding:2px 6px;border-radius:3px;color:#ff9f43;">access_token</code> only. No user identity - you\'d need a separate /userinfo call.</p>';
+                localStorage.setItem('auth_mode', 'oauth');
+            }
+        }
 
         function showTab(index) {
             document.querySelectorAll('.tab-panel').forEach(panel => {
@@ -776,37 +971,115 @@
             localStorage.setItem('oauth_state', state);
         }
 
-        function startOAuth() {
-            const scopes = [];
-            if (document.getElementById('scope-profile').checked) scopes.push('profile');
-            if (document.getElementById('scope-email').checked) scopes.push('email');
+        // Generate PKCE code verifier and challenge for Google OAuth
+        function generateCodeVerifier() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return btoa(String.fromCharCode.apply(null, array))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
 
+        async function generateCodeChallenge(verifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(verifier);
+            const digest = await crypto.subtle.digest('SHA-256', data);
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+        }
+
+        async function startOAuth() {
             let state = document.getElementById('state').value;
             if (!state) {
                 generateState();
                 state = document.getElementById('state').value;
             }
-
             localStorage.setItem('oauth_state', state);
 
-            const params = new URLSearchParams({
-                client_id: CLIENT_ID,
-                redirect_uri: 'http://localhost:8003/callback/',
-                response_type: 'code',
-                scope: scopes.join(' '),
-                state: state
-            });
+            if (selectedProvider === 'google') {
+                // Google OAuth with PKCE
+                const googleClientId = document.getElementById('google-client-id').value;
+                if (!googleClientId) {
+                    alert('Please enter your Google Client ID');
+                    return;
+                }
 
-            const authUrl = `/oauth/authorize/?${params.toString()}`;
+                const scopes = [];
+                if (document.getElementById('scope-google-profile').checked) scopes.push('openid');
+                if (document.getElementById('scope-google-email').checked) scopes.push('email');
+                if (document.getElementById('scope-google-name').checked) scopes.push('profile');
 
-            document.getElementById('auth-url').textContent = window.location.origin + authUrl;
-            document.getElementById('auth-url-display').style.display = 'block';
+                // Generate PKCE
+                const codeVerifier = generateCodeVerifier();
+                const codeChallenge = await generateCodeChallenge(codeVerifier);
+                localStorage.setItem('code_verifier', codeVerifier);
+                localStorage.setItem('google_client_id', googleClientId);
 
-            updateFlowProgress(1);
+                const params = new URLSearchParams({
+                    client_id: googleClientId,
+                    redirect_uri: 'http://localhost:8003/google/callback/',
+                    response_type: 'code',
+                    scope: scopes.join(' '),
+                    state: state,
+                    code_challenge: codeChallenge,
+                    code_challenge_method: 'S256',
+                    access_type: 'offline',
+                    prompt: 'consent'
+                });
 
-            setTimeout(() => {
-                window.location.href = authUrl;
-            }, 1500);
+                const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+
+                document.getElementById('auth-url').textContent = authUrl;
+                document.getElementById('auth-url-display').style.display = 'block';
+                updateFlowProgress(1);
+
+                setTimeout(() => {
+                    window.location.href = authUrl;
+                }, 1500);
+
+            } else {
+                // Demo Provider
+                const scopes = [];
+
+                // OIDC: Add openid scope if selected
+                const openidChecked = document.getElementById('scope-openid').checked;
+                if (openidChecked) scopes.push('openid');
+                if (document.getElementById('scope-profile').checked) scopes.push('profile');
+                if (document.getElementById('scope-email').checked) scopes.push('email');
+
+                // Debug: Log scopes being sent
+                console.log('🔐 OAuth Request:', {
+                    openidChecked: openidChecked,
+                    scopes: scopes,
+                    mode: openidChecked ? 'OIDC' : 'OAuth Only'
+                });
+
+                // Store auth mode for display in results
+                localStorage.setItem('auth_mode', openidChecked ? 'oidc' : 'oauth');
+
+                const params = new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    redirect_uri: 'http://localhost:8003/callback/',
+                    response_type: 'code',
+                    scope: scopes.join(' '),
+                    state: state
+                });
+
+                const authUrl = `/oauth/authorize/?${params.toString()}`;
+                console.log('🔗 Auth URL:', authUrl);
+
+                document.getElementById('auth-url').textContent = window.location.origin + authUrl;
+                document.getElementById('auth-url-display').style.display = 'block';
+
+                updateFlowProgress(1);
+
+                setTimeout(() => {
+                    window.location.href = authUrl;
+                }, 1500);
+            }
         }
 
         async function apiCall(endpoint, data) {
@@ -830,11 +1103,67 @@
                 </div>`;
             }
 
+            // Check if this is a token response with id_token (OIDC)
+            if (data.tokens && data.tokens.id_token) {
+                html += `<div style="background: #1a3a2a; border: 2px solid #2ed573; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <h4 style="color: #2ed573; margin: 0 0 10px 0;">🪪 OIDC Mode - ID Token Received!</h4>
+                    <p style="color: #a9dfbf; font-size: 0.9em; margin-bottom: 10px;">
+                        The <code>id_token</code> is a JWT containing user identity. This is what makes OIDC different from plain OAuth!
+                    </p>
+                    <div style="background: #0a0a15; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                        <strong style="color: #2ed573;">id_token (JWT):</strong><br>
+                        <code style="color: #ffd700; word-break: break-all; font-size: 0.8em;">${data.tokens.id_token}</code>
+                    </div>
+                    <button onclick="decodeIdToken('${data.tokens.id_token}')" style="background: #2ed573; color: #1a0a2e; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                        🔍 Decode JWT to see user identity
+                    </button>
+                    <div id="decoded-jwt" style="display: none; margin-top: 10px;"></div>
+                </div>`;
+            } else if (data.tokens && !data.tokens.id_token) {
+                html += `<div style="background: #3a2a1a; border: 2px solid #ff9f43; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                    <h4 style="color: #ff9f43; margin: 0 0 10px 0;">🔑 OAuth Only Mode - No ID Token</h4>
+                    <p style="color: #ffcc80; font-size: 0.9em;">
+                        You only received an <code>access_token</code>. To get user identity, you must call the <code>/userinfo</code> endpoint separately.
+                        <br><br>
+                        <strong>With OIDC:</strong> User identity comes in the response itself (as id_token JWT)!
+                    </p>
+                </div>`;
+            }
+
             const displayData = {...data};
             delete displayData.teaching_point;
             html += `<pre>${JSON.stringify(displayData, null, 2)}</pre>`;
 
             el.innerHTML = html;
+        }
+
+        function decodeIdToken(token) {
+            try {
+                const parts = token.split('.');
+                const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+
+                const decodedDiv = document.getElementById('decoded-jwt');
+                decodedDiv.style.display = 'block';
+                decodedDiv.innerHTML = `
+                    <div style="background: #0a0a15; padding: 15px; border-radius: 4px;">
+                        <div style="margin-bottom: 10px;">
+                            <strong style="color: #ff6b6b;">Header:</strong>
+                            <pre style="color: #ff9999; margin: 5px 0;">${JSON.stringify(header, null, 2)}</pre>
+                        </div>
+                        <div>
+                            <strong style="color: #ffd700;">Payload (User Identity!):</strong>
+                            <pre style="color: #ffeb99; margin: 5px 0;">${JSON.stringify(payload, null, 2)}</pre>
+                        </div>
+                        <p style="color: #2ed573; margin-top: 10px; font-size: 0.9em;">
+                            ✅ <strong>This is the key difference!</strong> With OIDC, user identity (name, email) comes directly in the token response.
+                            No extra API call needed!
+                        </p>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('decoded-jwt').innerHTML = `<p style="color: #ff6b6b;">Error decoding JWT: ${e.message}</p>`;
+            }
         }
 
         async function exchangeCode() {
@@ -949,6 +1278,14 @@
                 document.getElementById('auth-code').value = code;
                 showTab(3); // Go to Exchange Code tab
                 updateFlowProgress(5);
+            }
+
+            // Initialize auth mode from localStorage or default to oauth
+            const savedMode = localStorage.getItem('auth_mode');
+            if (savedMode === 'oidc') {
+                setAuthMode('oidc');
+            } else {
+                setAuthMode('oauth');
             }
         };
     </script>

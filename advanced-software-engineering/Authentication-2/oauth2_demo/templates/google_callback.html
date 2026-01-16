@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Callback - My Demo App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #eee;
+        }
+
+        .callback-container {
+            background: #0f0f23;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 700px;
+            border: 1px solid #333;
+            margin: 20px;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-header h1 {
+            color: #4285f4;
+            margin-bottom: 5px;
+        }
+
+        .app-header p {
+            color: #666;
+        }
+
+        .google-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a2a4e;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #4285f4;
+            margin-bottom: 20px;
+        }
+
+        .error-banner {
+            background: #5a2727;
+            border-left: 4px solid #ff4757;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+
+        .error-banner h3 {
+            color: #ff4757;
+            margin-bottom: 10px;
+        }
+
+        .error-banner p {
+            color: #ffb3b3;
+        }
+
+        .success-banner {
+            background: linear-gradient(135deg, #1a3a5e 0%, #2a4a7e 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid #4285f4;
+        }
+
+        .success-banner h3 {
+            color: #4285f4;
+            margin-bottom: 5px;
+        }
+
+        .success-banner p {
+            color: #a9c9ff;
+        }
+
+        .teaching-point {
+            background: #2d5a27;
+            border-left: 4px solid #2ed573;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+        }
+
+        .teaching-point h4 {
+            color: #2ed573;
+            margin-bottom: 10px;
+        }
+
+        .teaching-point p {
+            color: #a9dfbf;
+            line-height: 1.6;
+        }
+
+        .code-section {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .code-section h4 {
+            color: #4285f4;
+            margin-bottom: 10px;
+        }
+
+        .code-value {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            word-break: break-all;
+            color: #ffd700;
+            font-size: 0.85em;
+        }
+
+        .exchange-section {
+            background: #1e3a5f;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .exchange-section h4 {
+            color: #4285f4;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .btn-google {
+            background: #4285f4;
+            color: white;
+            width: 100%;
+        }
+
+        .btn-google:hover {
+            background: #3367d6;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .result-box {
+            background: #0a0a15;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-box.success {
+            border: 2px solid #2ed573;
+        }
+
+        .result-box.error {
+            border: 2px solid #ff4757;
+        }
+
+        .result-box pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #eee;
+            font-size: 0.85em;
+        }
+
+        .user-info-card {
+            background: linear-gradient(135deg, #1a3a2e 0%, #2a5a4e 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+            border: 2px solid #2ed573;
+        }
+
+        .user-info-card h4 {
+            color: #2ed573;
+            margin-bottom: 15px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-profile img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #2ed573;
+        }
+
+        .user-details p {
+            margin: 5px 0;
+            color: #a9dfbf;
+        }
+
+        .user-details strong {
+            color: #fff;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <div class="app-header">
+            <div class="google-badge">
+                <span style="font-size: 1.5em;">🔵</span>
+                <span>Google OAuth</span>
+            </div>
+            <h1>Google OAuth Callback</h1>
+            <p>Real Google Authentication Flow</p>
+        </div>
+
+        {% if error %}
+        <div class="error-banner">
+            <h3>Authorization Failed</h3>
+            <p><strong>Error:</strong> {{ error }}</p>
+            {% if error_description %}
+            <p><strong>Description:</strong> {{ error_description }}</p>
+            {% endif %}
+        </div>
+
+        <div class="teaching-point">
+            <h4>What Happened</h4>
+            <p>
+                The user denied the authorization request, or an error occurred at Google's end.
+                Common reasons: user clicked "Cancel", invalid client_id, or incorrect redirect_uri.
+            </p>
+        </div>
+
+        {% else %}
+
+        <div class="success-banner">
+            <h3>Authorization Code Received from Google!</h3>
+            <p>Google has sent back an authorization code. Now exchange it for tokens using PKCE.</p>
+        </div>
+
+        <div class="teaching-point">
+            <h4>Real Google OAuth with PKCE</h4>
+            <p>
+                This is a <strong>real</strong> Google OAuth flow using PKCE (Proof Key for Code Exchange).
+                PKCE is required for public clients (like browser apps) that can't keep secrets.
+                The code_verifier proves we're the same app that started the flow.
+            </p>
+        </div>
+
+        <div class="code-section">
+            <h4>Authorization Code from Google:</h4>
+            <div class="code-value" id="auth-code">{{ code }}</div>
+        </div>
+
+        {% if state %}
+        <div class="code-section">
+            <h4>State (CSRF protection - verify it matches!):</h4>
+            <div class="code-value">{{ state }}</div>
+        </div>
+        {% endif %}
+
+        <div class="exchange-section">
+            <h4>Exchange Code for Tokens</h4>
+            <p style="color: #b3d9ff; margin-bottom: 15px;">
+                Click the button below to exchange the authorization code for access tokens.
+                This uses the PKCE code_verifier stored in your browser.
+            </p>
+            <button class="btn btn-google" onclick="exchangeGoogleCode()" id="exchange-btn">
+                Exchange Code for Google Tokens
+            </button>
+        </div>
+
+        <div class="result-box" id="result-box">
+            <h4 style="color: #4285f4; margin-bottom: 10px;">Token Response:</h4>
+            <pre id="result-content"></pre>
+        </div>
+
+        <div class="user-info-card" id="user-info-card">
+            <h4>Authenticated User</h4>
+            <div class="user-profile">
+                <img id="user-picture" src="" alt="Profile">
+                <div class="user-details">
+                    <p><strong id="user-name">Loading...</strong></p>
+                    <p id="user-email">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 25px;">
+            <a href="/" class="btn btn-primary">Back to Demo</a>
+        </div>
+    </div>
+
+    <script>
+        async function exchangeGoogleCode() {
+            const btn = document.getElementById('exchange-btn');
+            btn.innerHTML = '<span class="spinner"></span> Exchanging...';
+            btn.disabled = true;
+
+            const code = "{{ code }}";
+            const codeVerifier = localStorage.getItem('code_verifier');
+            const googleClientId = localStorage.getItem('google_client_id');
+
+            if (!codeVerifier) {
+                showError('Code verifier not found. Please start the OAuth flow again.');
+                return;
+            }
+
+            try {
+                // Exchange code for tokens using Google's token endpoint
+                const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        code: code,
+                        client_id: googleClientId,
+                        redirect_uri: 'http://localhost:8003/google/callback/',
+                        grant_type: 'authorization_code',
+                        code_verifier: codeVerifier,
+                    }),
+                });
+
+                const tokenData = await tokenResponse.json();
+
+                if (tokenData.error) {
+                    showError(`Google Error: ${tokenData.error} - ${tokenData.error_description || ''}`);
+                    return;
+                }
+
+                showSuccess(tokenData);
+
+                // If we got an ID token, decode it to show user info
+                if (tokenData.id_token) {
+                    const userInfo = parseJwt(tokenData.id_token);
+                    showUserInfo(userInfo);
+                }
+
+                // Also try to get user info from the userinfo endpoint
+                if (tokenData.access_token) {
+                    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: {
+                            'Authorization': `Bearer ${tokenData.access_token}`
+                        }
+                    });
+                    const userInfoData = await userInfoResponse.json();
+                    showUserInfo(userInfoData);
+                }
+
+            } catch (error) {
+                showError(`Network error: ${error.message}`);
+            }
+
+            btn.innerHTML = 'Exchange Code for Google Tokens';
+            btn.disabled = false;
+        }
+
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function showSuccess(data) {
+            const resultBox = document.getElementById('result-box');
+            const resultContent = document.getElementById('result-content');
+            resultBox.classList.remove('error');
+            resultBox.classList.add('success');
+            resultBox.style.display = 'block';
+            resultContent.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showError(message) {
+            const resultBox = document.getElementById('result-box');
+            const resultContent = document.getElementById('result-content');
+            resultBox.classList.remove('success');
+            resultBox.classList.add('error');
+            resultBox.style.display = 'block';
+            resultContent.textContent = message;
+
+            const btn = document.getElementById('exchange-btn');
+            btn.innerHTML = 'Exchange Code for Google Tokens';
+            btn.disabled = false;
+        }
+
+        function showUserInfo(userInfo) {
+            const card = document.getElementById('user-info-card');
+            card.style.display = 'block';
+
+            if (userInfo.picture) {
+                document.getElementById('user-picture').src = userInfo.picture;
+            }
+            if (userInfo.name) {
+                document.getElementById('user-name').textContent = userInfo.name;
+            }
+            if (userInfo.email) {
+                document.getElementById('user-email').textContent = userInfo.email;
+            }
+        }
+
+        // Verify state on load
+        window.onload = function() {
+            const urlState = "{{ state }}";
+            const storedState = localStorage.getItem('oauth_state');
+
+            if (urlState && storedState && urlState !== storedState) {
+                showError('CSRF Warning: State parameter mismatch! This could be a security attack.');
+            }
+        };
+    </script>
+</body>
+</html>

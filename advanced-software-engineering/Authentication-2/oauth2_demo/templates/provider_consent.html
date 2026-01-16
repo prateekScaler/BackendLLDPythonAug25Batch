@@ -202,16 +202,28 @@
             <h2><strong>{{ client_name }}</strong> wants to:</h2>
         </div>
 
+        {% if 'openid' in scope_list %}
+        <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border: 2px solid #4caf50; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+            <h4 style="color: #2e7d32; margin: 0 0 8px 0;">🪪 OpenID Connect (OIDC) Request</h4>
+            <p style="color: #1b5e20; font-size: 0.9em; margin: 0;">
+                This app is using <strong>OIDC</strong> - it will receive your identity (name, email) directly in a signed JWT token called <code>id_token</code>.
+            </p>
+        </div>
+        {% endif %}
+
         <div class="permissions">
             <h4>This will allow the app to:</h4>
 
             {% for s in scope_list %}
-            <div class="permission-item">
-                <div class="permission-icon">
-                    {% if s == 'profile' %}👤{% elif s == 'email' %}📧{% elif s == 'read' %}📖{% elif s == 'write' %}✏️{% else %}🔑{% endif %}
+            <div class="permission-item" {% if s == 'openid' %}style="background: #e8f5e9; border-radius: 4px;"{% endif %}>
+                <div class="permission-icon" {% if s == 'openid' %}style="background: #4caf50;"{% endif %}>
+                    {% if s == 'openid' %}🪪{% elif s == 'profile' %}👤{% elif s == 'email' %}📧{% elif s == 'read' %}📖{% elif s == 'write' %}✏️{% else %}🔑{% endif %}
                 </div>
                 <div class="permission-text">
-                    {% if s == 'profile' %}
+                    {% if s == 'openid' %}
+                    <strong style="color: #2e7d32;">Verify your identity (OIDC)</strong>
+                    <span>App will know WHO you are via signed JWT</span>
+                    {% elif s == 'profile' %}
                     <strong>View your basic profile info</strong>
                     <span>Name, profile picture</span>
                     {% elif s == 'email' %}

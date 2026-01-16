@@ -1,14 +1,23 @@
 """
-OAuth2 In-Memory Store for Demo
+OAuth2 + OIDC In-Memory Store for Demo
 
-This simulates what a real OAuth2 provider would have in a database.
+This simulates what a real OAuth2/OIDC provider would have in a database.
+Now supports OpenID Connect (OIDC) with id_token generation!
+
 In production, use a proper database with proper security!
 """
 
 import secrets
 import hashlib
+import hmac
+import base64
+import json
 from datetime import datetime, timedelta, timezone
 from django.contrib.auth.hashers import make_password, check_password
+
+# Secret key for signing JWTs (in production, use a secure key!)
+JWT_SECRET = 'demo-jwt-secret-for-oidc-DO-NOT-USE-IN-PRODUCTION'
+ISSUER = 'http://localhost:8003'  # The OAuth/OIDC provider URL
 
 # ============================================
 # OAUTH2 PROVIDER DATA (Simulating Google/GitHub)
@@ -22,24 +31,26 @@ REGISTERED_CLIENTS = {
         'redirect_uris': [
             'http://localhost:8000/callback/',
             'http://127.0.0.1:8000/callback/',
+            'http://localhost:8003/callback/',
+            'http://127.0.0.1:8003/callback/',
         ],
-        'allowed_scopes': ['profile', 'email', 'read', 'write'],
+        'allowed_scopes': ['openid', 'profile', 'email', 'read', 'write'],
     }
 }
 
 # Users on the OAuth Provider (like Google accounts)
 PROVIDER_USERS = {
-    'alice@example.com': {
+    'prateek@example.com': {
         'password': make_password('password123'),
-        'name': 'Alice Smith',
-        'email': 'alice@example.com',
-        'picture': 'https://i.pravatar.cc/150?u=alice',
+        'name': 'Prateek Kumar',
+        'email': 'prateek@example.com',
+        'picture': 'https://i.pravatar.cc/150?u=prateek',
     },
-    'bob@example.com': {
+    'deepak@example.com': {
         'password': make_password('secret456'),
-        'name': 'Bob Jones',
-        'email': 'bob@example.com',
-        'picture': 'https://i.pravatar.cc/150?u=bob',
+        'name': 'Deepak Sharma',
+        'email': 'deepak@example.com',
+        'picture': 'https://i.pravatar.cc/150?u=deepak',
     },
 }
 
@@ -68,6 +79,73 @@ def generate_code():
 def generate_token():
     """Generate a random access/refresh token."""
     return secrets.token_urlsafe(48)
+
+
+def base64url_encode(data):
+    """Base64 URL-safe encoding without padding."""
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode('utf-8')
+
+
+def generate_id_token(user_email, client_id, scope):
+    """
+    Generate an OIDC ID Token (JWT) for the user.
+
+    This is what makes OIDC different from plain OAuth2!
+    The id_token is a JWT that contains user identity information.
+    """
+    user = PROVIDER_USERS.get(user_email)
+    if not user:
+        return None
+
+    now = datetime.now(timezone.utc)
+
+    # JWT Header
+    header = {
+        'alg': 'HS256',
+        'typ': 'JWT'
+    }
+
+    # JWT Payload (Claims)
+    # Standard OIDC claims
+    payload = {
+        'iss': ISSUER,                          # Issuer (the provider)
+        'sub': user_email,                       # Subject (unique user identifier)
+        'aud': client_id,                        # Audience (the client app)
+        'exp': int((now + timedelta(hours=1)).timestamp()),  # Expiration
+        'iat': int(now.timestamp()),             # Issued at
+        'auth_time': int(now.timestamp()),       # Time of authentication
+    }
+
+    # Add profile claims if 'profile' scope was requested
+    scope_list = scope.split() if isinstance(scope, str) else scope
+    if 'profile' in scope_list:
+        payload['name'] = user['name']
+        payload['picture'] = user['picture']
+
+    # Add email claim if 'email' scope was requested
+    if 'email' in scope_list:
+        payload['email'] = user['email']
+        payload['email_verified'] = True
+
+    # Encode header and payload
+    header_b64 = base64url_encode(json.dumps(header, separators=(',', ':')))
+    payload_b64 = base64url_encode(json.dumps(payload, separators=(',', ':')))
+
+    # Create signature
+    message = f"{header_b64}.{payload_b64}"
+    signature = hmac.new(
+        JWT_SECRET.encode('utf-8'),
+        message.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    signature_b64 = base64url_encode(signature)
+
+    # Combine to form JWT
+    id_token = f"{header_b64}.{payload_b64}.{signature_b64}"
+
+    return id_token
 
 
 def validate_client(client_id, client_secret=None, redirect_uri=None):
@@ -168,13 +246,27 @@ def exchange_code_for_tokens(code, client_id, client_secret, redirect_uri):
         'expires_at': datetime.now(timezone.utc) + timedelta(days=30),
     }
 
-    return True, {
+    # Build token response
+    token_response = {
         'access_token': access_token,
         'token_type': 'Bearer',
         'expires_in': 3600,  # 1 hour in seconds
         'refresh_token': refresh_token,
         'scope': code_data['scope'],
     }
+
+    # OIDC: If 'openid' scope was requested, include id_token
+    scope_list = code_data['scope'].split() if isinstance(code_data['scope'], str) else code_data['scope']
+    if 'openid' in scope_list:
+        id_token = generate_id_token(
+            user_email=code_data['user_email'],
+            client_id=client_id,
+            scope=code_data['scope']
+        )
+        if id_token:
+            token_response['id_token'] = id_token
+
+    return True, token_response
 
 
 def validate_access_token(token):

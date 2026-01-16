@@ -15,6 +15,7 @@ urlpatterns = [
 
     # Client Application Callback
     path('callback/', views.client_callback, name='callback'),
+    path('google/callback/', views.google_callback, name='google_callback'),
 
     # API endpoints for demo UI
     path('api/exchange/', views.api_exchange_code, name='api_exchange'),

@@ -41,8 +41,8 @@ def home(request):
         'client_id': 'demo-client-id',
         'client_secret': 'demo-client-secret-12345',
         'users': [
-            {'email': 'alice@example.com', 'password': 'password123'},
-            {'email': 'bob@example.com', 'password': 'secret456'},
+            {'email': 'prateek@example.com', 'password': 'password123'},
+            {'email': 'deepak@example.com', 'password': 'secret456'},
         ]
     })
 
@@ -393,6 +393,31 @@ def client_callback(request):
     })
 
 
+def google_callback(request):
+    """
+    Google OAuth2 Callback Handler
+
+    Handles the redirect from Google after user authentication.
+    Shows the authorization code and allows token exchange.
+    """
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+    error_description = request.GET.get('error_description')
+
+    if error:
+        return render(request, 'google_callback.html', {
+            'error': error,
+            'error_description': error_description,
+        })
+
+    return render(request, 'google_callback.html', {
+        'code': code,
+        'state': state,
+        'is_google': True,
+    })
+
+
 # ============================================
 # API ENDPOINTS FOR DEMO UI
 # ============================================
@@ -421,18 +446,29 @@ def api_exchange_code(request):
     )
 
     if success:
+        # Check if OIDC (id_token present)
+        if 'id_token' in result:
+            teaching = (
+                'SUCCESS! OIDC Token Response received!\n\n'
+                '- id_token: JWT containing user identity (THIS IS OIDC!)\n'
+                '- access_token: Use this to access protected resources\n'
+                '- refresh_token: Use this to get new access tokens\n\n'
+                'The id_token is a signed JWT. Decode it to see the user\'s '
+                'name, email, and other identity claims!'
+            )
+        else:
+            teaching = (
+                'SUCCESS! OAuth Token Response received!\n\n'
+                '- access_token: Use this to access protected resources (short-lived)\n'
+                '- refresh_token: Use this to get new access tokens (long-lived)\n'
+                '- NO id_token: You requested OAuth only (no openid scope)\n\n'
+                'To get user identity, you need to call the /userinfo endpoint.'
+            )
+
         return JsonResponse({
             'success': True,
             'tokens': result,
-            'teaching_point': (
-                'SUCCESS! The authorization code was exchanged for tokens.\n\n'
-                '- access_token: Use this to access protected resources (short-lived)\n'
-                '- refresh_token: Use this to get new access tokens (long-lived)\n'
-                '- expires_in: Seconds until access_token expires\n\n'
-                'SECURITY: This exchange happens server-to-server. The code is '
-                'one-time use and expires quickly, so even if intercepted, '
-                'it\'s useless without the client_secret.'
-            )
+            'teaching_point': teaching
         })
     else:
         return JsonResponse({
