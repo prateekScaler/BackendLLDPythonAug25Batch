@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .cheat-section {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .cheat-section h3 {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn nav-btn-active">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>JWT & OAuth 2.0 Cheat Sheet</h1>
+            <p class="subtitle">Quick reference for token-based authentication</p>
+        </header>
+
+        <div class="cheat-section">
+            <h3>🍪 Sessions vs 🎟️ Tokens</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Session-Based</th>
+                        <th>Token-Based (JWT)</th>
+                    </tr>
+                    <tr>
+                        <td>Server stores</td>
+                        <td>Session data</td>
+                        <td>Nothing (stateless)</td>
+                    </tr>
+                    <tr>
+                        <td>Client stores</td>
+                        <td>Session ID (cookie)</td>
+                        <td>JWT token</td>
+                    </tr>
+                    <tr>
+                        <td>Sent via</td>
+                        <td>Cookie (auto)</td>
+                        <td>Authorization header</td>
+                    </tr>
+                    <tr>
+                        <td>Scaling</td>
+                        <td>Needs shared store</td>
+                        <td>Easy</td>
+                    </tr>
+                    <tr>
+                        <td>Revocation</td>
+                        <td>Easy</td>
+                        <td>Hard</td>
+                    </tr>
+                    <tr>
+                        <td>Best for</td>
+                        <td>Traditional web</td>
+                        <td>Mobile, SPAs, APIs</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🎟️ JWT Structure</h3>
+            <div class="diagram">
+<pre>
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTYifQ.signature
+└────────┬────────┘ └────────┬────────┘ └───┬───┘
+      HEADER              PAYLOAD       SIGNATURE
+
+Header:  {"alg": "HS256", "typ": "JWT"}
+Payload: {"sub": "123", "exp": 1234567890, "role": "admin"}
+Signature: HMAC-SHA256(header.payload, secret)
+</pre>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🐍 JWT Python Code</h3>
+            <pre><code class="language-python">import jwt
+from datetime import datetime, timedelta
+
+SECRET_KEY = "your-secret-key"
+
+# Create token
+token = jwt.encode({
+    "sub": "user_123",
+    "role": "admin",
+    "exp": datetime.utcnow() + timedelta(hours=1)
+}, SECRET_KEY, algorithm="HS256")
+
+# Verify token
+try:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+except jwt.ExpiredSignatureError:
+    print("Token expired")
+except jwt.InvalidTokenError:
+    print("Invalid token")
+
+# Send in header:
+# Authorization: Bearer eyJhbGc...</code></pre>
+        </div>
+
+        <div class="cheat-section">
+            <h3>📊 JWT Standard Claims</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Claim</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>sub</code></td>
+                        <td>Subject</td>
+                        <td>Who the token is about (user ID)</td>
+                    </tr>
+                    <tr>
+                        <td><code>exp</code></td>
+                        <td>Expiration</td>
+                        <td>When token expires (REQUIRED!)</td>
+                    </tr>
+                    <tr>
+                        <td><code>iat</code></td>
+                        <td>Issued At</td>
+                        <td>When token was created</td>
+                    </tr>
+                    <tr>
+                        <td><code>iss</code></td>
+                        <td>Issuer</td>
+                        <td>Who created the token</td>
+                    </tr>
+                    <tr>
+                        <td><code>aud</code></td>
+                        <td>Audience</td>
+                        <td>Who the token is for</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔗 OAuth 2.0 Terminology</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Term</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td>Resource Owner</td>
+                        <td>User who owns data</td>
+                        <td>You</td>
+                    </tr>
+                    <tr>
+                        <td>Client</td>
+                        <td>App wanting access</td>
+                        <td>Photo printing app</td>
+                    </tr>
+                    <tr>
+                        <td>Auth Server</td>
+                        <td>Issues tokens</td>
+                        <td>accounts.google.com</td>
+                    </tr>
+                    <tr>
+                        <td>Resource Server</td>
+                        <td>Has the data</td>
+                        <td>Google Photos API</td>
+                    </tr>
+                    <tr>
+                        <td>Scope</td>
+                        <td>Permissions</td>
+                        <td><code>photos.readonly</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔄 OAuth 2.0 Flows</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Flow</th>
+                        <th>Use Case</th>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><strong>Authorization Code</strong></td>
+                        <td>Web apps with backend server</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><strong>Auth Code + PKCE</strong></td>
+                        <td>Mobile apps, SPAs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client Credentials</strong></td>
+                        <td>Server-to-server (no user)</td>
+                    </tr>
+                    <tr style="background: #ffe3e3;">
+                        <td>Implicit (deprecated)</td>
+                        <td>Don't use</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🐍 OAuth 2.0 Quick Code</h3>
+            <pre><code class="language-python"># Step 1: Redirect to auth URL
+auth_url = (
+    "https://accounts.google.com/o/oauth2/v2/auth?"
+    f"client_id={CLIENT_ID}&"
+    f"redirect_uri={REDIRECT_URI}&"
+    "response_type=code&"
+    "scope=email profile"
+)
+
+# Step 2: Exchange code for tokens
+response = requests.post("https://oauth2.googleapis.com/token", data={
+    "client_id": CLIENT_ID,
+    "client_secret": CLIENT_SECRET,
+    "code": authorization_code,
+    "grant_type": "authorization_code",
+    "redirect_uri": REDIRECT_URI
+})
+tokens = response.json()
+
+# Step 3: Use access token
+user_info = requests.get(
+    "https://www.googleapis.com/oauth2/v2/userinfo",
+    headers={"Authorization": f"Bearer {tokens['access_token']}"}
+).json()</code></pre>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🕐 Token Lifetimes</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Token Type</th>
+                        <th>Lifetime</th>
+                        <th>Purpose</th>
+                    </tr>
+                    <tr>
+                        <td>Access Token</td>
+                        <td>15-60 minutes</td>
+                        <td>API access</td>
+                    </tr>
+                    <tr>
+                        <td>Refresh Token</td>
+                        <td>1-30 days</td>
+                        <td>Get new access tokens</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>✅ Security Rules</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>DO</h4>
+                    <ul>
+                        <li>Always set <code>exp</code> in JWT</li>
+                        <li>Specify <code>algorithms=["HS256"]</code></li>
+                        <li>Use HTTPS always</li>
+                        <li>Use PKCE for mobile/SPA</li>
+                        <li>Store secrets in env vars</li>
+                        <li>Use <code>state</code> parameter in OAuth</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>DON'T</h4>
+                    <ul>
+                        <li>Put sensitive data in JWT payload</li>
+                        <li>Accept <code>alg: none</code></li>
+                        <li>Use weak secrets</li>
+                        <li>Store tokens in localStorage (XSS)</li>
+                        <li>Skip redirect_uri validation</li>
+                        <li>Use Implicit flow</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="cheat-section">
+            <h3>🔗 Useful Links</h3>
+            <div class="card-grid">
+                <a href="https://jwt.io/" target="_blank" class="card">
+                    <div class="card-icon">🔍</div>
+                    <h3>jwt.io</h3>
+                    <p>JWT Debugger - decode and verify tokens</p>
+                </a>
+                <a href="https://bcrypt-generator.com/" target="_blank" class="card">
+                    <div class="card-icon">🔐</div>
+                    <h3>BCrypt Generator</h3>
+                    <p>Test BCrypt hashing online</p>
+                </a>
+                <a href="https://oauth.net/2/" target="_blank" class="card">
+                    <div class="card-icon">📚</div>
+                    <h3>OAuth 2.0</h3>
+                    <p>Official OAuth 2.0 documentation</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Golden Rules Summary</h2>
+
+            <div class="success-box">
+                <ol style="margin: 0; padding-left: 1.5rem;">
+                    <li><strong>Sessions for traditional web</strong>, tokens for mobile/APIs</li>
+                    <li><strong>JWT payload is NOT encrypted</strong> - only signed!</li>
+                    <li><strong>Always set exp</strong> in JWT tokens</li>
+                    <li><strong>Always specify algorithms</strong> when verifying</li>
+                    <li><strong>Use PKCE</strong> for mobile apps and SPAs</li>
+                    <li><strong>OAuth is authorization</strong>, not authentication</li>
+                    <li><strong>Short access tokens + refresh flow</strong> for security</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="07_oauth_flows.html">← OAuth Flows</a>
+            <a href="index.html">Back to Home →</a>
+        </div>
+
+        <footer>
+            <p>Page 9 of 9 - Auth Guide 2</p>
+            <p style="margin-top: 0.5rem; opacity: 0.7;">Stay Secure! 🔐</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: JWT Mastery - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .quiz-wrapper { max-width: 900px; margin: 0 auto; }
+        .progress-container { background: var(--bg-secondary); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 2rem; border: 1px solid var(--border-color); }
+        .progress-bar-bg { background: var(--border-color); border-radius: 10px; height: 10px; margin-bottom: 0.5rem; overflow: hidden; }
+        .progress-bar-fill { background: linear-gradient(90deg, #f59f00, #ff6b6b); height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+        .progress-text { text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+        .question-card { background: var(--bg-primary); border-radius: 16px; padding: 2rem; border: 2px solid var(--border-color); display: none; animation: fadeIn 0.3s ease; }
+        .question-card.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number { display: inline-block; background: #f59f00; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+        .question-title { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.5rem; }
+
+        .code-block { background: #f8f9fa; border-radius: 8px; margin: 1rem 0; overflow: hidden; border: 1px solid var(--border-color); }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code { font-family: 'Fira Code', monospace; font-size: 0.85rem; }
+
+        .options-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .option-item { background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; }
+        .option-item:hover { border-color: #f59f00; background: #fff9db; }
+        .option-item.selected { border-color: #f59f00; background: #fff9db; }
+        .option-item.correct { border-color: #51cf66; background: #d3f9d8; }
+        .option-item.incorrect { border-color: #ff6b6b; background: #ffe3e3; }
+
+        .answer-reveal { margin-top: 1.5rem; }
+        .reveal-btn { background: linear-gradient(135deg, #f59f00, #e67700); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s, box-shadow 0.2s; width: 100%; justify-content: center; }
+        .reveal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245, 159, 0, 0.4); }
+        .reveal-btn.revealed { background: linear-gradient(135deg, #51cf66, #40c057); }
+
+        .answer-content { display: none; margin-top: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%); border-radius: 12px; border: 2px solid #69db7c; animation: slideDown 0.3s ease; }
+        .answer-content.visible { display: block; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-content h3 { color: #2f9e44; margin-bottom: 1rem; }
+
+        .navigation { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+        .nav-btn { background: var(--bg-primary); border: 2px solid var(--border-color); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-btn:hover:not(:disabled) { border-color: #f59f00; color: #f59f00; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn.primary { background: #f59f00; border-color: #f59f00; color: white; }
+        .nav-btn.primary:hover:not(:disabled) { background: #e67700; border-color: #e67700; color: white; }
+
+        .question-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.2s; }
+        .dot:hover { background: var(--text-muted); }
+        .dot.active { background: #f59f00; transform: scale(1.2); }
+        .dot.answered { background: #51cf66; }
+
+        .results-card { text-align: center; padding: 3rem; }
+        .results-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .results-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .score-display { font-size: 3rem; font-weight: 700; color: #f59f00; margin: 1rem 0; }
+
+        .key-takeaways { background: #fff9db; border: 2px solid #fab005; border-radius: 12px; padding: 1.5rem; margin-top: 2rem; text-align: left; }
+        .key-takeaways h3 { color: #e67700; margin-bottom: 1rem; }
+        .key-takeaways ol { margin: 0; padding-left: 1.5rem; }
+        .key-takeaways li { margin-bottom: 0.5rem; }
+
+        .restart-btn { background: #f59f00; color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; }
+
+        .tip-box { background: #e7f5ff; border: 1px solid #74c0fc; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.9rem; }
+        .tip-box strong { color: #1971c2; }
+
+        .think-box { background: #fff3bf; border: 2px solid #ffd43b; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.95rem; }
+        .think-box strong { color: #e67700; }
+
+        .bridge-box { background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%); border: 2px solid #339af0; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+        .bridge-box h4 { color: #1971c2; margin-bottom: 0.75rem; }
+
+        .diagram { background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: 'Fira Code', monospace; font-size: 0.8rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎯</div>
+            <h1>JWT Mastery Quiz</h1>
+            <p class="subtitle">Test your JWT understanding before we tackle production patterns!</p>
+        </header>
+
+        <div class="quiz-wrapper">
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar" style="width: 7%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Question 1 of 14</div>
+            </div>
+
+            <!-- Question 1: JWT Structure -->
+            <div class="question-card active" data-question="1">
+                <span class="question-number">Question 1</span>
+                <h2 class="question-title">JWT Structure</h2>
+                <p>A JWT has three parts separated by dots. What are they?</p>
+
+                <div class="code-block">
+                    <pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Username.Password.Timestamp</li>
+                    <li class="option-item" data-option="b">B) Header.Payload.Signature</li>
+                    <li class="option-item" data-option="c">C) Key.Data.Hash</li>
+                    <li class="option-item" data-option="d">D) Algorithm.Claims.Secret</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(1, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-1">
+                        <h3>Answer: B - Header.Payload.Signature</h3>
+                        <div class="diagram">
+<pre>
+JWT ANATOMY
+═══════════
+eyJhbGci...  .  eyJzdWIi...  .  SflKxwR...
+└─────┬────┘   └─────┬────┘    └────┬────┘
+    HEADER        PAYLOAD       SIGNATURE
+  (algorithm)    (claims)     (verification)
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> Why is the signature at the END? What would happen if someone tampered with the payload?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 2: Base64 vs Encryption -->
+            <div class="question-card" data-question="2">
+                <span class="question-number">Question 2</span>
+                <h2 class="question-title">JWT Encoding</h2>
+                <p>The header and payload in a JWT are Base64 encoded. This means:</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) They are encrypted and secure from prying eyes</li>
+                    <li class="option-item" data-option="b">B) Anyone can decode and read them - they're NOT secret!</li>
+                    <li class="option-item" data-option="c">C) Only the server can read them</li>
+                    <li class="option-item" data-option="d">D) They require a key to decode</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(2, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-2">
+                        <h3>Answer: B - Anyone can decode them!</h3>
+                        <div class="code-block">
+                            <pre><code class="language-python"># Anyone can do this!
+import base64
+payload = "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ"
+decoded = base64.b64decode(payload + "==")
+print(decoded)  # {"sub":"1234567890","name":"Praveen"}</code></pre>
+                        </div>
+                        <div class="tip-box">
+                            <strong>Golden Rule:</strong> NEVER put sensitive data (passwords, credit cards, secrets) in a JWT payload!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 3: Signature Purpose -->
+            <div class="question-card" data-question="3">
+                <span class="question-number">Question 3</span>
+                <h2 class="question-title">What Does the Signature Prove?</h2>
+                <p>The signature in a JWT guarantees:</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) The data is encrypted</li>
+                    <li class="option-item" data-option="b">B) The token was created by someone with the secret key AND hasn't been modified</li>
+                    <li class="option-item" data-option="c">C) The user's identity has been verified by a third party</li>
+                    <li class="option-item" data-option="d">D) The token will never expire</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(3, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-3">
+                        <h3>Answer: B - Authenticity + Integrity</h3>
+                        <div class="diagram">
+<pre>
+HOW SIGNATURE WORKS
+═══════════════════
+
+CREATE:
+HMAC-SHA256(header + "." + payload, SECRET) = signature
+
+VERIFY:
+1. Server receives token
+2. Recalculates: HMAC-SHA256(header + "." + payload, SECRET)
+3. Compares with received signature
+4. Match? Token is valid and untampered!
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> If an attacker changes the payload (e.g., changes user_id from 5 to 1), what happens when the server verifies?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 4: Stateless -->
+            <div class="question-card" data-question="4">
+                <span class="question-number">Question 4</span>
+                <h2 class="question-title">JWT is "Stateless"</h2>
+                <p>When we say JWT authentication is "stateless", we mean:</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) The token doesn't contain any data</li>
+                    <li class="option-item" data-option="b">B) The server doesn't need to store session data - all info is in the token</li>
+                    <li class="option-item" data-option="c">C) The token can only be used once</li>
+                    <li class="option-item" data-option="d">D) The user's state is saved in a database</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(4, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-4">
+                        <h3>Answer: B - Server stores nothing!</h3>
+                        <div class="diagram">
+<pre>
+SESSION-BASED (Stateful)          JWT (Stateless)
+════════════════════════          ═══════════════
+
+Server stores:                    Server stores:
+┌─────────────────────┐           ┌─────────────────────┐
+│ session_abc → user1 │           │      NOTHING!       │
+│ session_xyz → user2 │           │   (just the secret) │
+│ session_123 → user3 │           └─────────────────────┘
+│    ...millions...   │
+└─────────────────────┘           Token carries all info:
+                                  {user_id, role, exp...}
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> Why is this a big deal for microservices? What if you have 100 servers?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 5: exp claim -->
+            <div class="question-card" data-question="5">
+                <span class="question-number">Question 5</span>
+                <h2 class="question-title">The 'exp' Claim</h2>
+                <p>What happens if you create a JWT WITHOUT an 'exp' (expiration) claim?</p>
+
+                <div class="code-block">
+                    <pre><code class="language-python">token = jwt.encode({
+    'sub': 'user123',
+    'role': 'admin'
+    # No 'exp' claim!
+}, SECRET, algorithm='HS256')</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) The library will add a default 1-hour expiration</li>
+                    <li class="option-item" data-option="b">B) The token is valid FOREVER - a huge security risk!</li>
+                    <li class="option-item" data-option="c">C) The token will be rejected by the server</li>
+                    <li class="option-item" data-option="d">D) The token expires after 24 hours by default</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(5, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-5">
+                        <h3>Answer: B - Valid forever!</h3>
+                        <p>Without 'exp', the token never expires. If stolen, the attacker has permanent access!</p>
+                        <div class="code-block">
+                            <pre><code class="language-python"># ALWAYS set expiration!
+token = jwt.encode({
+    'sub': 'user123',
+    'role': 'admin',
+    'exp': datetime.utcnow() + timedelta(hours=1)  # Expires in 1 hour
+}, SECRET, algorithm='HS256')</code></pre>
+                        </div>
+                        <div class="tip-box">
+                            <strong>Rule:</strong> ALWAYS set 'exp'. The question is: how LONG should it be?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 6: Token Theft Scenario -->
+            <div class="question-card" data-question="6">
+                <span class="question-number">Question 6</span>
+                <h2 class="question-title">Token Theft Scenario</h2>
+                <p>An attacker steals a user's JWT via XSS. The token expires in 24 hours. What can the server do RIGHT NOW to stop the attacker?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Change the secret key (invalidates ALL tokens for ALL users)</li>
+                    <li class="option-item" data-option="b">B) Nothing - JWT is stateless, server can't invalidate individual tokens easily</li>
+                    <li class="option-item" data-option="c">C) Delete the token from the database</li>
+                    <li class="option-item" data-option="d">D) Send a message to the token asking it to expire</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(6, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-6">
+                        <h3>Answer: B - This is JWT's biggest weakness!</h3>
+                        <div class="diagram">
+<pre>
+THE REVOCATION PROBLEM
+══════════════════════
+
+Token stolen at 10:00 AM
+Token expires at 10:00 PM (24h later)
+
+Options:
+1. Wait 24 hours          → Attacker has 24h of access!
+2. Change secret key      → Logs out EVERYONE!
+3. Maintain a blacklist   → Adds state (defeats stateless benefit)
+4. Use SHORT expiration   → Less damage window, but...
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> If we use a 15-minute expiration, users would need to re-login every 15 minutes. How can we solve this UX problem while keeping security?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 7: Algorithm Specification -->
+            <div class="question-card" data-question="7">
+                <span class="question-number">Question 7</span>
+                <h2 class="question-title">The "Algorithm None" Attack</h2>
+                <p>Why is this code DANGEROUS?</p>
+
+                <div class="code-block">
+                    <pre><code class="language-python"># Verifying a JWT
+payload = jwt.decode(token, SECRET)  # No algorithms specified!</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) It's slower without specifying the algorithm</li>
+                    <li class="option-item" data-option="b">B) Attacker can set alg:"none" in header, bypassing signature verification entirely!</li>
+                    <li class="option-item" data-option="c">C) It uses too much memory</li>
+                    <li class="option-item" data-option="d">D) It's not dangerous, this is fine</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(7, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-7">
+                        <h3>Answer: B - Algorithm None Attack</h3>
+                        <div class="diagram">
+<pre>
+ATTACK: "Algorithm None"
+════════════════════════
+
+Attacker creates token with header:
+{"alg": "none", "typ": "JWT"}
+
+Server without algorithm check:
+"Oh, alg is 'none'? No signature needed!"
+→ Attacker's forged token is accepted!
+
+FIX: Always specify allowed algorithms
+jwt.decode(token, SECRET, algorithms=['HS256'])
+</pre>
+                        </div>
+                        <div class="tip-box">
+                            <strong>Always:</strong> <code>jwt.decode(token, SECRET, algorithms=['HS256'])</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 8: Why Algorithm in Header -->
+            <div class="question-card" data-question="8">
+                <span class="question-number">Question 8</span>
+                <h2 class="question-title">Why Algorithm in the Header?</h2>
+                <p>The JWT header contains <code>{"alg": "HS256"}</code>. But wait - doesn't the server ALREADY know which algorithm it uses? Why put it in the token?</p>
+
+                <div class="code-block">
+                    <pre><code class="language-python"># Header contains:
+{"alg": "HS256", "typ": "JWT"}
+
+# But server already has:
+SECRET_KEY = "my-secret"
+jwt.decode(token, SECRET, algorithms=['HS256'])  # Server knows!</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) It's a design mistake - the header algorithm should be trusted by the server</li>
+                    <li class="option-item" data-option="b">B) Historical design for flexibility, but server should NEVER blindly trust it - always specify expected algorithms!</li>
+                    <li class="option-item" data-option="c">C) The server doesn't know the algorithm, it must read from header</li>
+                    <li class="option-item" data-option="d">D) It's required for encryption to work</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(8, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-8">
+                        <h3>Answer: B - Historical design, but NEVER trust it blindly!</h3>
+                        <div class="diagram">
+<pre>
+WHY IS ALGORITHM IN HEADER?
+═══════════════════════════
+
+Historical Reason:
+- JWT spec designed for flexibility
+- Systems might support multiple algorithms
+- Header tells which one THIS token uses
+
+THE PROBLEM:
+┌─────────────────────────────────────────────┐
+│ Attacker: "Let me change alg to 'none'..."  │
+│ Naive server: "Oh, alg says none? OK!"      │
+│ → Token accepted without verification! 💀    │
+└─────────────────────────────────────────────┘
+
+THE FIX:
+Server should ALWAYS specify allowed algorithms:
+jwt.decode(token, SECRET, algorithms=['HS256'])
+             ↑
+Server's expectation overrides header!
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> This is like asking a visitor "What's the password?" and they say "No password needed!" - you shouldn't trust their answer! The server must enforce its own rules.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 9: Bearer Token -->
+            <div class="question-card" data-question="9">
+                <span class="question-number">Question 9</span>
+                <h2 class="question-title">Why "Bearer" Token?</h2>
+                <p>JWTs are sent in the Authorization header as:</p>
+                <div class="code-block">
+                    <pre><code>Authorization: Bearer eyJhbGciOiJIUzI1NiIs...</code></pre>
+                </div>
+                <p>Why is it called "Bearer"? And what's the connection to Indian currency notes?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) "Bearer" is the name of the inventor of JWT</li>
+                    <li class="option-item" data-option="b">B) Whoever "bears" (possesses) the token can use it - like cash! Just like RBI's "I promise to pay the bearer" on currency notes</li>
+                    <li class="option-item" data-option="c">C) It's short for "bearer of good news"</li>
+                    <li class="option-item" data-option="d">D) Bearer means the token carries (bears) the user's data</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(9, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-9">
+                        <h3>Answer: B - Like Cash!</h3>
+                        <div class="diagram">
+<pre>
+"BEARER" = WHOEVER HOLDS IT, OWNS IT
+════════════════════════════════════
+
+₹100 Note says:
+┌──────────────────────────────────────┐
+│ "I promise to pay the BEARER         │
+│  the sum of one hundred rupees"      │
+│                     - RBI Governor   │
+└──────────────────────────────────────┘
+
+This means: Whoever HOLDS this note can use it!
+No questions asked. No ID verification.
+
+Bearer Token = Same principle!
+┌──────────────────────────────────────┐
+│ Whoever POSSESSES this token         │
+│ can access the protected resource    │
+│ Server doesn't verify WHO you are,   │
+│ just that you HAVE a valid token     │
+└──────────────────────────────────────┘
+
+OTHER TOKEN TYPES:
+══════════════════
+• Bearer Token  → Just show it, you're in
+• MAC Token     → Must prove you created the request
+• PoP Token     → Proof-of-Possession (bound to your key)
+• DPoP Token    → Like PoP but with your own proof
+</pre>
+                        </div>
+                        <div class="tip-box">
+                            <strong>Security Implication:</strong> If someone STEALS your bearer token, they can use it just like stolen cash. This is why we keep tokens short-lived and store them securely!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 10: JWT Size Problem -->
+            <div class="question-card" data-question="10">
+                <span class="question-number">Question 10</span>
+                <h2 class="question-title">JWT's Hidden Cost</h2>
+                <p>Compare these two approaches:</p>
+
+                <div class="code-block">
+                    <pre><code># Session-based:
+Cookie: session_id=abc123  (6 bytes)
+
+# JWT:
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiw
+icm9sZSI6ImFkbWluIiwiaWF0IjoxNTE2MjM5MDIyfQ.
+POstGetfAytaZS82wHcjoTyoqhMyxXiWdR7Nn7A28nn  (~300+ bytes)</code></pre>
+                </div>
+
+                <p>What's a real-world consequence of JWT's larger size?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Nothing, 300 bytes is negligible</li>
+                    <li class="option-item" data-option="b">B) JWTs are sent with EVERY request - at scale, this bandwidth adds up significantly</li>
+                    <li class="option-item" data-option="c">C) Larger tokens are more secure</li>
+                    <li class="option-item" data-option="d">D) The server can't process large tokens</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(10, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-10">
+                        <h3>Answer: B - Bandwidth cost at scale!</h3>
+                        <div class="diagram">
+<pre>
+JWT SIZE MATTERS AT SCALE
+═════════════════════════
+
+Session ID: ~10 bytes
+JWT Token:  ~300-500 bytes (or more with claims!)
+
+Per Request:
+Session: 10 bytes × 1 request = 10 bytes
+JWT:     400 bytes × 1 request = 400 bytes
+                                  → 40x more!
+
+At Scale (1 million requests/second):
+Session: 10 MB/second
+JWT:     400 MB/second  → That's REAL bandwidth cost!
+
+ALSO CONSIDER:
+• Mobile users on slow networks
+• Cookies have 4KB limit (can hit with big JWTs!)
+• More data to parse on every request
+</pre>
+                        </div>
+                        <div class="think-box">
+                            <strong>Think:</strong> This is why you shouldn't stuff too many claims into your JWT. Keep it lean! Only include what you actually need for authorization decisions.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 11: When NOT to use JWT -->
+            <div class="question-card" data-question="11">
+                <span class="question-number">Question 11</span>
+                <h2 class="question-title">When to NOT Use JWT</h2>
+                <p>Which scenario is JWT LEAST suitable for?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Mobile app authentication</li>
+                    <li class="option-item" data-option="b">B) Microservices communication</li>
+                    <li class="option-item" data-option="c">C) Application requiring instant logout/session termination</li>
+                    <li class="option-item" data-option="d">D) Single Page Application (SPA)</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(11, 'c')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-11">
+                        <h3>Answer: C - Instant logout is hard with JWT</h3>
+                        <div class="diagram">
+<pre>
+JWT vs SESSIONS: Choose Based on Needs
+══════════════════════════════════════
+
+Need instant logout?        → Sessions (or JWT + blacklist)
+Need to scale easily?       → JWT
+Building mobile app?        → JWT
+Building microservices?     → JWT
+Simple web app, one server? → Sessions work fine!
+
+Banking app (security first) → Sessions or short-lived JWT
+Social media (scale first)   → JWT
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 12: The Expiration Dilemma -->
+            <div class="question-card" data-question="12">
+                <span class="question-number">Question 12</span>
+                <h2 class="question-title">The Expiration Dilemma</h2>
+                <p>You're designing a banking app. Which JWT expiration strategy is BEST?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) 30-day expiration (great user experience!)</li>
+                    <li class="option-item" data-option="b">B) 15-minute expiration (user must login every 15 min)</li>
+                    <li class="option-item" data-option="c">C) 15-minute ACCESS token + 7-day REFRESH token</li>
+                    <li class="option-item" data-option="d">D) No expiration (users never have to login again!)</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(12, 'c')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-12">
+                        <h3>Answer: C - Two-Token System!</h3>
+                        <div class="bridge-box">
+                            <h4>This is the solution to our dilemma!</h4>
+                            <p>Use TWO tokens:</p>
+                            <ul>
+                                <li><strong>Access Token</strong> (15 min): Used for API calls, short-lived = limited damage if stolen</li>
+                                <li><strong>Refresh Token</strong> (7-30 days): Used ONLY to get new access tokens, kept extra safe</li>
+                            </ul>
+                        </div>
+                        <div class="diagram">
+<pre>
+SHORT ACCESS + LONG REFRESH = Best of Both Worlds!
+══════════════════════════════════════════════════
+
+Security: If access token stolen → only 15 min of damage
+UX:       User doesn't re-login → refresh happens silently
+
+This is what we'll learn next!
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 13: Bridge to Access/Refresh Tokens -->
+            <div class="question-card" data-question="13">
+                <span class="question-number">Question 13</span>
+                <h2 class="question-title">The Two-Token Question</h2>
+                <p>If we use a 15-minute access token and 7-day refresh token, what happens when the access token expires?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) User must login again with username/password</li>
+                    <li class="option-item" data-option="b">B) User is automatically logged out</li>
+                    <li class="option-item" data-option="c">C) Client sends refresh token to get a NEW access token (silently!)</li>
+                    <li class="option-item" data-option="d">D) The access token automatically extends itself</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(13, 'c')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-13">
+                        <h3>Answer: C - Silent Refresh!</h3>
+                        <div class="diagram">
+<pre>
+THE REFRESH FLOW
+════════════════
+
+1. Access token expires (after 15 min)
+2. API returns 401 Unauthorized
+3. Client automatically sends refresh token to /refresh endpoint
+4. Server validates refresh token → issues NEW access token
+5. Client retries original request with new access token
+6. User never notices anything!
+
+This is what Netflix, Spotify, and every modern app does!
+</pre>
+                        </div>
+                        <div class="bridge-box">
+                            <h4>Ready to Learn More?</h4>
+                            <p>You've discovered the <strong>Access & Refresh Token pattern</strong> - the industry-standard solution for balancing security and user experience!</p>
+                            <p>Questions to explore next:</p>
+                            <ul>
+                                <li>Where should we STORE these tokens safely?</li>
+                                <li>What if the REFRESH token is stolen?</li>
+                                <li>How does "refresh token rotation" add extra security?</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 14: Custom Tokens vs JWT (Zerodha) -->
+            <div class="question-card" data-question="14">
+                <span class="question-number">Question 14</span>
+                <h2 class="question-title">Real World: Why Zerodha Doesn't Use JWT</h2>
+                <p>Zerodha (India's largest stock broker) uses their own custom token system called "Kite Connect" instead of standard JWT. Why might a financial trading platform prefer custom tokens?</p>
+
+                <div class="code-block">
+                    <pre><code class="language-python"># Zerodha's Kite Connect API uses:
+headers = {
+    "Authorization": "token api_key:access_token"
+}
+# NOT: "Bearer eyJhbGci..."</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) JWT is too new and unproven for financial apps</li>
+                    <li class="option-item" data-option="b">B) Custom tokens allow instant revocation, tighter session control, and security tailored to trading (where milliseconds and instant logout matter!)</li>
+                    <li class="option-item" data-option="c">C) JWT doesn't work with Python</li>
+                    <li class="option-item" data-option="d">D) Custom tokens are always more secure than JWT</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(14, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-14">
+                        <h3>Answer: B - Trading needs instant control!</h3>
+                        <div class="diagram">
+<pre>
+WHY ZERODHA USES CUSTOM TOKENS
+══════════════════════════════
+
+TRADING PLATFORM REQUIREMENTS:
+┌────────────────────────────────────────────┐
+│ 1. INSTANT LOGOUT                          │
+│    User logs out → ALL sessions dead NOW   │
+│    (Can't wait for JWT to expire!)         │
+│                                            │
+│ 2. SESSION CONTROL                         │
+│    "Only 1 device at a time"               │
+│    "Logout all other sessions"             │
+│    (Hard with stateless JWT)               │
+│                                            │
+│ 3. AUDIT TRAIL                             │
+│    Track every session in database         │
+│    Know exactly who is logged in where     │
+│                                            │
+│ 4. RISK MANAGEMENT                         │
+│    Suspicious activity? Kill session NOW!  │
+│    Large trade? Re-verify immediately!     │
+└────────────────────────────────────────────┘
+
+JWT LIMITATIONS FOR TRADING:
+• Can't revoke individual tokens easily
+• Stateless = no server-side session control
+• Token theft = damage until expiry
+
+LESSON: JWT is NOT a panacea!
+═════════════════════════════
+Banks, trading platforms, and high-security apps
+often prefer custom tokens or sessions because
+CONTROL > CONVENIENCE for them.
+</pre>
+                        </div>
+                        <div class="bridge-box">
+                            <h4>Key Insight</h4>
+                            <p><strong>JWT is a tool, not a religion.</strong> Choose based on your needs:</p>
+                            <ul>
+                                <li><strong>Need scalability?</strong> → JWT works well</li>
+                                <li><strong>Need instant revocation?</strong> → Sessions or custom tokens</li>
+                                <li><strong>Building trading/banking app?</strong> → Custom might be better</li>
+                                <li><strong>Building social media/SaaS?</strong> → JWT is probably fine</li>
+                            </ul>
+                            <p>Great engineers pick the right tool for the job, not the trendiest one!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="question-card results-card" data-question="results">
+                <div class="results-icon">🏆</div>
+                <h2 class="results-title">JWT Quiz Complete!</h2>
+                <p>You've mastered the core JWT concepts!</p>
+                <div class="score-display" id="scoreDisplay">0/14</div>
+
+                <div class="key-takeaways">
+                    <h3>Key Takeaways</h3>
+                    <ol>
+                        <li><strong>JWT = Header.Payload.Signature</strong> - All Base64 encoded</li>
+                        <li><strong>Payload is NOT secret</strong> - Anyone can decode it!</li>
+                        <li><strong>Signature = Integrity</strong> - Proves token wasn't tampered</li>
+                        <li><strong>Stateless = No server storage</strong> - Great for scaling</li>
+                        <li><strong>ALWAYS set 'exp'</strong> - Tokens without expiry are dangerous</li>
+                        <li><strong>Revocation is hard</strong> - JWT's main weakness</li>
+                        <li><strong>Always specify algorithms</strong> - Prevent "alg:none" attack, never trust header blindly</li>
+                        <li><strong>Bearer = Whoever has it can use it</strong> - Like cash notes!</li>
+                        <li><strong>JWT adds bandwidth overhead</strong> - ~40x larger than session IDs</li>
+                        <li><strong>Two-token pattern</strong> - Access (short) + Refresh (long)</li>
+                        <li><strong>JWT is NOT a panacea</strong> - Trading/banking apps often prefer custom tokens for instant control</li>
+                    </ol>
+                </div>
+
+                <div class="bridge-box" style="margin-top: 2rem;">
+                    <h4>Next Up: Access & Refresh Tokens</h4>
+                    <p>Now that you understand WHY we need two tokens, let's learn HOW to implement this pattern in production!</p>
+                </div>
+
+                <button class="restart-btn" onclick="restartQuiz()">🔄 Start Over</button>
+            </div>
+
+            <div class="navigation">
+                <button class="nav-btn" id="prevBtn" onclick="changeQuestion(-1)" disabled>← Previous</button>
+                <div class="question-dots" id="questionDots"></div>
+                <button class="nav-btn primary" id="nextBtn" onclick="changeQuestion(1)">Next →</button>
+            </div>
+        </div>
+
+        <div class="page-nav" style="margin-top: 3rem;">
+            <a href="05_jwt_implementation.html">← JWT Implementation</a>
+            <a href="04b_access_refresh_tokens.html">Next: Access & Refresh Tokens →</a>
+        </div>
+
+        <footer>
+            <p>Quiz: JWT Mastery - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        const totalQuestions = 14;
+        let currentQuestion = 1;
+        let answeredQuestions = new Set();
+        let correctAnswers = 0;
+        const answers = {};
+
+        function initDots() {
+            const dotsContainer = document.getElementById('questionDots');
+            dotsContainer.innerHTML = '';
+            for (let i = 1; i <= totalQuestions; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot' + (i === 1 ? ' active' : '');
+                dot.onclick = () => goToQuestion(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateUI() {
+            const progress = (currentQuestion / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent =
+                currentQuestion <= totalQuestions
+                    ? `Question ${currentQuestion} of ${totalQuestions}`
+                    : 'Quiz Complete!';
+
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            const targetQuestion = currentQuestion <= totalQuestions ? currentQuestion : 'results';
+            document.querySelector(`[data-question="${targetQuestion}"]`).classList.add('active');
+
+            document.getElementById('prevBtn').disabled = currentQuestion <= 1;
+
+            if (currentQuestion >= totalQuestions) {
+                document.getElementById('nextBtn').textContent = 'Finish →';
+            } else if (currentQuestion > totalQuestions) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('prevBtn').textContent = '← Back to Questions';
+                document.getElementById('scoreDisplay').textContent = `${correctAnswers}/${totalQuestions}`;
+            } else {
+                document.getElementById('nextBtn').textContent = 'Next →';
+                document.getElementById('nextBtn').style.display = 'block';
+            }
+
+            document.querySelectorAll('.dot').forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index + 1 === currentQuestion && currentQuestion <= totalQuestions) {
+                    dot.classList.add('active');
+                }
+                if (answeredQuestions.has(index + 1)) {
+                    dot.classList.add('answered');
+                }
+            });
+
+            Prism.highlightAll();
+        }
+
+        function changeQuestion(delta) {
+            const newQuestion = currentQuestion + delta;
+            if (newQuestion >= 1 && newQuestion <= totalQuestions + 1) {
+                currentQuestion = newQuestion;
+                updateUI();
+            }
+        }
+
+        function goToQuestion(num) {
+            if (num >= 1 && num <= totalQuestions) {
+                currentQuestion = num;
+                updateUI();
+            }
+        }
+
+        function revealAnswer(questionNum, correctOption) {
+            const answerContent = document.getElementById(`answer-${questionNum}`);
+            const btn = answerContent.previousElementSibling;
+
+            answerContent.classList.add('visible');
+            btn.innerHTML = '<span>✅</span> Answer Revealed';
+            btn.classList.add('revealed');
+            answeredQuestions.add(questionNum);
+
+            // Check if user selected correct answer
+            if (answers[questionNum] === correctOption) {
+                correctAnswers++;
+            }
+
+            updateUI();
+        }
+
+        // Handle option selection
+        document.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const questionCard = this.closest('.question-card');
+                const questionNum = parseInt(questionCard.dataset.question);
+
+                // Remove previous selection in this question
+                questionCard.querySelectorAll('.option-item').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+
+                // Select this option
+                this.classList.add('selected');
+                answers[questionNum] = this.dataset.option;
+            });
+        });
+
+        function restartQuiz() {
+            currentQuestion = 1;
+            answeredQuestions.clear();
+            correctAnswers = 0;
+            Object.keys(answers).forEach(key => delete answers[key]);
+
+            document.querySelectorAll('.answer-content').forEach(el => {
+                el.classList.remove('visible');
+            });
+            document.querySelectorAll('.reveal-btn').forEach(btn => {
+                btn.innerHTML = '<span>💡</span> Reveal Answer';
+                btn.classList.remove('revealed');
+            });
+            document.querySelectorAll('.option-item').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.classList.remove('answered');
+            });
+
+            updateUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        initDots();
+        updateUI();
+    </script>
+</body>
+</html>

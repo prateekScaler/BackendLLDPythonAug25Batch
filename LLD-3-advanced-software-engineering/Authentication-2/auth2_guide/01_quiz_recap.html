@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Auth-1 Recap - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .quiz-wrapper { max-width: 900px; margin: 0 auto; }
+        .progress-container { background: var(--bg-secondary); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 2rem; border: 1px solid var(--border-color); }
+        .progress-bar-bg { background: var(--border-color); border-radius: 10px; height: 10px; margin-bottom: 0.5rem; overflow: hidden; }
+        .progress-bar-fill { background: linear-gradient(90deg, var(--accent-color), #51cf66); height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+        .progress-text { text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+        .question-card { background: var(--bg-primary); border-radius: 16px; padding: 2rem; border: 2px solid var(--border-color); display: none; animation: fadeIn 0.3s ease; }
+        .question-card.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number { display: inline-block; background: var(--accent-color); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }
+        .question-title { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.5rem; }
+
+        .code-block { background: #f8f9fa; border-radius: 8px; margin: 1rem 0; overflow: hidden; border: 1px solid var(--border-color); }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code { font-family: 'Fira Code', monospace; font-size: 0.85rem; }
+
+        .options-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .option-item { background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; }
+        .option-item:hover { border-color: var(--accent-color); background: #e7f5ff; }
+        .option-item.selected { border-color: var(--accent-color); background: #e7f5ff; }
+        .option-item.correct { border-color: #51cf66; background: #d3f9d8; }
+        .option-item.incorrect { border-color: #ff6b6b; background: #ffe3e3; }
+
+        .answer-reveal { margin-top: 1.5rem; }
+        .reveal-btn { background: linear-gradient(135deg, #228be6, #1c7ed6); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s, box-shadow 0.2s; width: 100%; justify-content: center; }
+        .reveal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34, 139, 230, 0.4); }
+        .reveal-btn.revealed { background: linear-gradient(135deg, #51cf66, #40c057); }
+
+        .answer-content { display: none; margin-top: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%); border-radius: 12px; border: 2px solid #69db7c; animation: slideDown 0.3s ease; }
+        .answer-content.visible { display: block; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-content h3 { color: #2f9e44; margin-bottom: 1rem; }
+
+        .navigation { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+        .nav-btn { background: var(--bg-primary); border: 2px solid var(--border-color); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-btn:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-btn.primary { background: var(--accent-color); border-color: var(--accent-color); color: white; }
+        .nav-btn.primary:hover:not(:disabled) { background: #1c7ed6; border-color: #1c7ed6; color: white; }
+
+        .question-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.2s; }
+        .dot:hover { background: var(--text-muted); }
+        .dot.active { background: var(--accent-color); transform: scale(1.2); }
+        .dot.answered { background: #51cf66; }
+
+        .results-card { text-align: center; padding: 3rem; }
+        .results-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .results-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .score-display { font-size: 3rem; font-weight: 700; color: var(--accent-color); margin: 1rem 0; }
+
+        .key-takeaways { background: #fff9db; border: 2px solid #fab005; border-radius: 12px; padding: 1.5rem; margin-top: 2rem; text-align: left; }
+        .key-takeaways h3 { color: #e67700; margin-bottom: 1rem; }
+        .key-takeaways ol { margin: 0; padding-left: 1.5rem; }
+        .key-takeaways li { margin-bottom: 0.5rem; }
+
+        .restart-btn { background: var(--accent-color); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; }
+
+        .tip-box { background: #e7f5ff; border: 1px solid #74c0fc; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: 0.9rem; }
+        .tip-box strong { color: #1971c2; }
+
+        .diagram { background: #f8f9fa; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-family: 'Fira Code', monospace; font-size: 0.8rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🧠</div>
+            <h1>Quiz: Authentication-1 Recap</h1>
+            <p class="subtitle">Test your knowledge from last class!</p>
+        </header>
+
+        <div class="quiz-wrapper">
+            <div class="progress-container">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar" style="width: 10%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Question 1 of 10</div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="question-card active" data-question="1">
+                <span class="question-number">Question 1</span>
+                <h2 class="question-title">Encoding vs Encryption</h2>
+                <p>What is the key difference between encoding and encryption?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Encoding is faster than encryption</li>
+                    <li class="option-item" data-option="b">B) Encoding is reversible by anyone; encryption requires a key</li>
+                    <li class="option-item" data-option="c">C) Encoding is more secure than encryption</li>
+                    <li class="option-item" data-option="d">D) There is no difference</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(1, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-1">
+                        <h3>Answer: B</h3>
+                        <p><strong>Encoding</strong> (like Base64) is just format conversion - anyone can decode it without any key.</p>
+                        <p><strong>Encryption</strong> requires a secret key to decrypt the data.</p>
+                        <div class="tip-box">
+                            <strong>Remember:</strong> Base64 is NOT security - it's just translation!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="question-card" data-question="2">
+                <span class="question-number">Question 2</span>
+                <h2 class="question-title">Password Storage Mistake</h2>
+                <p>A developer stores passwords like this:</p>
+
+                <div class="code-block">
+                    <pre><code class="language-python">stored_password = base64.b64encode(password.encode())</code></pre>
+                </div>
+
+                <p>What's wrong with this approach?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Base64 is too slow</li>
+                    <li class="option-item" data-option="b">B) Base64 is encoding, not hashing - anyone can decode it</li>
+                    <li class="option-item" data-option="c">C) Base64 uses too much storage</li>
+                    <li class="option-item" data-option="d">D) Nothing wrong, this is secure</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(2, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-2">
+                        <h3>Answer: B</h3>
+                        <div class="code-block">
+                            <pre><code class="language-python"># This is NOT secure!
+encoded = base64.b64encode(b"password123")  # cGFzc3dvcmQxMjM=
+decoded = base64.b64decode(encoded)          # password123
+
+# Anyone can reverse it instantly!</code></pre>
+                        </div>
+                        <div class="tip-box">
+                            <strong>Never use encoding for passwords!</strong> Use hashing (BCrypt) instead.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="question-card" data-question="3">
+                <span class="question-number">Question 3</span>
+                <h2 class="question-title">Hashing Properties</h2>
+                <p>Which statement about hashing is <strong>FALSE</strong>?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Same input always produces same output (deterministic)</li>
+                    <li class="option-item" data-option="b">B) You can recover the original input from the hash (reversible)</li>
+                    <li class="option-item" data-option="c">C) Small input change produces completely different hash (avalanche effect)</li>
+                    <li class="option-item" data-option="d">D) It's a one-way function</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(3, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-3">
+                        <h3>Answer: B (This is FALSE)</h3>
+                        <p>Hashing is <strong>ONE-WAY</strong>. You CANNOT reverse a hash to get the original input.</p>
+                        <div class="diagram">
+<pre>
+Input: "password" → Hash: 5f4dcc3b5aa765d61d8327deb882cf99
+                         ↓
+              Cannot go backwards!
+                         ↓
+                  Hash: 5f4dcc3b... → ???
+</pre>
+                        </div>
+                        <p>That's why hashing is used for passwords - even if the database is stolen, attackers can't directly recover passwords.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="question-card" data-question="4">
+                <span class="question-number">Question 4</span>
+                <h2 class="question-title">Rainbow Table Attack</h2>
+                <p>What is a rainbow table attack?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) An attack using colorful UI to trick users</li>
+                    <li class="option-item" data-option="b">B) A pre-computed table mapping common passwords to their hashes</li>
+                    <li class="option-item" data-option="c">C) An attack that intercepts network traffic</li>
+                    <li class="option-item" data-option="d">D) A brute force attack trying random passwords</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(4, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-4">
+                        <h3>Answer: B</h3>
+                        <div class="diagram">
+<pre>
+RAINBOW TABLE (Pre-computed)
+════════════════════════════
+password     → 5f4dcc3b5aa765d61d8327deb882cf99
+123456       → e10adc3949ba59abbe56e057f20f883e
+qwerty       → d8578edf8458ce06fbc5bb76a58c5ca4
+iloveyou     → f25a2fc72690b780b2a14e140ef6a9e0
+...millions more...
+
+Attacker finds hash in DB: 5f4dcc3b...
+Looks up in table → password = "password"
+Instant crack!
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="question-card" data-question="5">
+                <span class="question-number">Question 5</span>
+                <h2 class="question-title">Purpose of Salt</h2>
+                <p>What does "salting" a password prevent?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) SQL injection attacks</li>
+                    <li class="option-item" data-option="b">B) Cross-site scripting (XSS)</li>
+                    <li class="option-item" data-option="c">C) Rainbow table attacks and identifying users with same password</li>
+                    <li class="option-item" data-option="d">D) Brute force attacks</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(5, 'c')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-5">
+                        <h3>Answer: C</h3>
+                        <div class="diagram">
+<pre>
+WITHOUT SALT:
+  Jawahar:   "password" → 5f4dcc3b...
+  Sri Surya: "password" → 5f4dcc3b...  (SAME HASH!)
+
+  Attacker knows: Jawahar and Sri Surya have same password!
+  Rainbow table works for both!
+
+WITH SALT:
+  Jawahar:   "RANDOM1" + "password" → a7b9c2d1...
+  Sri Surya: "RANDOM2" + "password" → e3f4g5h6...  (DIFFERENT!)
+
+  Each user needs separate attack!
+  Rainbow tables are useless!
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="question-card" data-question="6">
+                <span class="question-number">Question 6</span>
+                <h2 class="question-title">BCrypt Advantage</h2>
+                <p>Why is BCrypt preferred over SHA-256 for password hashing?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) BCrypt produces shorter hashes</li>
+                    <li class="option-item" data-option="b">B) BCrypt is intentionally slow and has adaptive cost factor</li>
+                    <li class="option-item" data-option="c">C) BCrypt is newer than SHA-256</li>
+                    <li class="option-item" data-option="d">D) BCrypt doesn't require a salt</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(6, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-6">
+                        <h3>Answer: B</h3>
+                        <div class="diagram">
+<pre>
+SHA-256 (Fast - BAD for passwords!)
+═══════════════════════════════════
+Attacker can try: 1 billion hashes/second
+Password cracked in: seconds to minutes
+
+BCrypt (Slow - GOOD for passwords!)
+═══════════════════════════════════
+With cost=12: ~250ms per hash
+Attacker can try: ~4 hashes/second
+Password cracked in: years to centuries
+</pre>
+                        </div>
+                        <p>BCrypt's cost factor can be increased as computers get faster!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="question-card" data-question="7">
+                <span class="question-number">Question 7</span>
+                <h2 class="question-title">BCrypt Hash Structure</h2>
+                <p>What information is contained in this BCrypt hash?</p>
+                <div class="code-block">
+                    <pre><code>$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.fqfWS8YX.qoZGK</code></pre>
+                </div>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Just the hash</li>
+                    <li class="option-item" data-option="b">B) Algorithm version, cost factor, salt, and hash</li>
+                    <li class="option-item" data-option="c">C) Only the salt and hash</li>
+                    <li class="option-item" data-option="d">D) The original password (encrypted)</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(7, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-7">
+                        <h3>Answer: B</h3>
+                        <div class="diagram">
+<pre>
+$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.fqfWS8YX.qoZGK
+ │   │  └──────────┬──────────┘└──────────────┬──────────────┘
+ │   │             │                          │
+ │   │       SALT (22 chars)            HASH (31 chars)
+ │   │
+ │   └── Cost factor (12 = 2^12 = 4096 iterations)
+ │
+ └── Algorithm version (2b = BCrypt)
+</pre>
+                        </div>
+                        <p>This is why you don't need to store the salt separately - it's embedded in the hash!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="question-card" data-question="8">
+                <span class="question-number">Question 8</span>
+                <h2 class="question-title">Session-Based Authentication</h2>
+                <p>In session-based authentication, what does the <strong>server</strong> store?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) The user's password</li>
+                    <li class="option-item" data-option="b">B) Session data (user ID, login time, etc.) mapped to a session ID</li>
+                    <li class="option-item" data-option="c">C) Nothing - it's stateless</li>
+                    <li class="option-item" data-option="d">D) The user's JWT token</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(8, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-8">
+                        <h3>Answer: B</h3>
+                        <div class="diagram">
+<pre>
+SESSION-BASED AUTHENTICATION
+════════════════════════════
+
+Server stores (in Redis/Database):
+┌─────────────────────────────────────────┐
+│ session_abc123 → {user_id: 42, ...}     │
+│ session_xyz789 → {user_id: 15, ...}     │
+└─────────────────────────────────────────┘
+
+Client stores: Just the session ID (in cookie)
+┌─────────────────────────────────────────┐
+│ Cookie: session_id=abc123               │
+└─────────────────────────────────────────┘
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="question-card" data-question="9">
+                <span class="question-number">Question 9</span>
+                <h2 class="question-title">Session Scaling Challenge</h2>
+                <p>Why might sessions be challenging when scaling to multiple servers?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Sessions use too much bandwidth</li>
+                    <li class="option-item" data-option="b">B) Each server has its own session store; user's session might not exist on another server</li>
+                    <li class="option-item" data-option="c">C) Sessions expire too quickly</li>
+                    <li class="option-item" data-option="d">D) Sessions don't support HTTPS</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(9, 'b')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-9">
+                        <h3>Answer: B</h3>
+                        <div class="diagram">
+<pre>
+PROBLEM: Multiple Servers
+═════════════════════════
+           ┌── Server 1 (has session abc123)
+User ────► │
+ (Load     │
+ Balancer) └── Server 2 (doesn't know abc123!) ❌
+
+SOLUTION: Shared Session Store
+══════════════════════════════
+           ┌── Server 1 ──┐
+User ────► │              ├──► Redis (all sessions)
+           └── Server 2 ──┘
+</pre>
+                        </div>
+                        <p>This is why Redis is so popular for session storage!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="question-card" data-question="10">
+                <span class="question-number">Question 10</span>
+                <h2 class="question-title">Cookie Security</h2>
+                <p>Which cookie flag prevents JavaScript from accessing the session cookie?</p>
+
+                <ul class="options-list">
+                    <li class="option-item" data-option="a">A) Secure</li>
+                    <li class="option-item" data-option="b">B) SameSite</li>
+                    <li class="option-item" data-option="c">C) HttpOnly</li>
+                    <li class="option-item" data-option="d">D) Path</li>
+                </ul>
+
+                <div class="answer-reveal">
+                    <button class="reveal-btn" onclick="revealAnswer(10, 'c')">
+                        <span>💡</span> Reveal Answer
+                    </button>
+                    <div class="answer-content" id="answer-10">
+                        <h3>Answer: C</h3>
+                        <div class="diagram">
+<pre>
+Set-Cookie: session_id=abc123; HttpOnly; Secure; SameSite=Strict
+                               ────────  ──────  ──────────────
+                                  │         │          │
+HttpOnly → JS cannot read         │         │          │
+           (prevents XSS)         │         │          │
+                                  │         │          │
+Secure ───────────────────────────┘         │          │
+           Only sent over HTTPS             │          │
+                                            │          │
+SameSite ───────────────────────────────────┘          │
+           Prevents CSRF attacks ──────────────────────┘
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="question-card results-card" data-question="results">
+                <div class="results-icon">🏆</div>
+                <h2 class="results-title">Quiz Complete!</h2>
+                <p>You've reviewed all 10 questions on Authentication-1 concepts.</p>
+                <div class="score-display" id="scoreDisplay">0/10</div>
+
+                <div class="key-takeaways">
+                    <h3>Key Takeaways</h3>
+                    <ol>
+                        <li><strong>Encoding ≠ Security</strong> - Base64 is not encryption!</li>
+                        <li><strong>Hashing is one-way</strong> - You can't unhash</li>
+                        <li><strong>Always salt passwords</strong> - Defeats rainbow tables</li>
+                        <li><strong>BCrypt > SHA for passwords</strong> - Intentionally slow</li>
+                        <li><strong>Sessions need shared storage</strong> - For multiple servers</li>
+                        <li><strong>Use HttpOnly cookies</strong> - Prevent XSS attacks</li>
+                    </ol>
+                </div>
+
+                <button class="restart-btn" onclick="restartQuiz()">🔄 Start Over</button>
+            </div>
+
+            <div class="navigation">
+                <button class="nav-btn" id="prevBtn" onclick="changeQuestion(-1)" disabled>← Previous</button>
+                <div class="question-dots" id="questionDots"></div>
+                <button class="nav-btn primary" id="nextBtn" onclick="changeQuestion(1)">Next →</button>
+            </div>
+        </div>
+
+        <div class="page-nav" style="margin-top: 3rem;">
+            <a href="index.html">← Home</a>
+            <a href="02_bcrypt_recap.html">Next: BCrypt Recap →</a>
+        </div>
+
+        <footer>
+            <p>Quiz: Authentication-1 Recap</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        const totalQuestions = 10;
+        let currentQuestion = 1;
+        let answeredQuestions = new Set();
+        let correctAnswers = 0;
+        const answers = {};
+
+        function initDots() {
+            const dotsContainer = document.getElementById('questionDots');
+            dotsContainer.innerHTML = '';
+            for (let i = 1; i <= totalQuestions; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot' + (i === 1 ? ' active' : '');
+                dot.onclick = () => goToQuestion(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateUI() {
+            const progress = (currentQuestion / totalQuestions) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent =
+                currentQuestion <= totalQuestions
+                    ? `Question ${currentQuestion} of ${totalQuestions}`
+                    : 'Quiz Complete!';
+
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.classList.remove('active');
+            });
+
+            const targetQuestion = currentQuestion <= totalQuestions ? currentQuestion : 'results';
+            document.querySelector(`[data-question="${targetQuestion}"]`).classList.add('active');
+
+            document.getElementById('prevBtn').disabled = currentQuestion <= 1;
+
+            if (currentQuestion >= totalQuestions) {
+                document.getElementById('nextBtn').textContent = 'Finish →';
+            } else if (currentQuestion > totalQuestions) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('prevBtn').textContent = '← Back to Questions';
+                document.getElementById('scoreDisplay').textContent = `${correctAnswers}/${totalQuestions}`;
+            } else {
+                document.getElementById('nextBtn').textContent = 'Next →';
+                document.getElementById('nextBtn').style.display = 'block';
+            }
+
+            document.querySelectorAll('.dot').forEach((dot, index) => {
+                dot.classList.remove('active');
+                if (index + 1 === currentQuestion && currentQuestion <= totalQuestions) {
+                    dot.classList.add('active');
+                }
+                if (answeredQuestions.has(index + 1)) {
+                    dot.classList.add('answered');
+                }
+            });
+
+            Prism.highlightAll();
+        }
+
+        function changeQuestion(delta) {
+            const newQuestion = currentQuestion + delta;
+            if (newQuestion >= 1 && newQuestion <= totalQuestions + 1) {
+                currentQuestion = newQuestion;
+                updateUI();
+            }
+        }
+
+        function goToQuestion(num) {
+            if (num >= 1 && num <= totalQuestions) {
+                currentQuestion = num;
+                updateUI();
+            }
+        }
+
+        function revealAnswer(questionNum, correctOption) {
+            const answerContent = document.getElementById(`answer-${questionNum}`);
+            const btn = answerContent.previousElementSibling;
+
+            answerContent.classList.add('visible');
+            btn.innerHTML = '<span>✅</span> Answer Revealed';
+            btn.classList.add('revealed');
+            answeredQuestions.add(questionNum);
+
+            // Check if user selected correct answer
+            if (answers[questionNum] === correctOption) {
+                correctAnswers++;
+            }
+
+            updateUI();
+        }
+
+        // Handle option selection
+        document.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const questionCard = this.closest('.question-card');
+                const questionNum = parseInt(questionCard.dataset.question);
+
+                // Remove previous selection in this question
+                questionCard.querySelectorAll('.option-item').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+
+                // Select this option
+                this.classList.add('selected');
+                answers[questionNum] = this.dataset.option;
+            });
+        });
+
+        function restartQuiz() {
+            currentQuestion = 1;
+            answeredQuestions.clear();
+            correctAnswers = 0;
+            Object.keys(answers).forEach(key => delete answers[key]);
+
+            document.querySelectorAll('.answer-content').forEach(el => {
+                el.classList.remove('visible');
+            });
+            document.querySelectorAll('.reveal-btn').forEach(btn => {
+                btn.innerHTML = '<span>💡</span> Reveal Answer';
+                btn.classList.remove('revealed');
+            });
+            document.querySelectorAll('.option-item').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            document.querySelectorAll('.dot').forEach(dot => {
+                dot.classList.remove('answered');
+            });
+
+            updateUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        initDots();
+        updateUI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Guide 2 - JWT & OAuth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn nav-btn-active">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔐</div>
+            <h1>Authentication Guide 2</h1>
+            <p class="subtitle">JWT, OAuth 2.0 & Token-Based Authentication</p>
+        </header>
+
+        <div class="section">
+            <h2>Welcome to Part 2!</h2>
+            <p>In the last class, we covered password security, encoding vs hashing, and session-based authentication. Today we're moving to <strong>token-based authentication</strong> - the modern approach used by mobile apps, SPAs, and APIs.</p>
+
+            <div class="info-box">
+                <strong>What You'll Learn:</strong>
+                <ul>
+                    <li>Why tokens solve session scaling problems</li>
+                    <li>JWT structure and implementation</li>
+                    <li>OAuth 2.0 - "Login with Google" explained</li>
+                    <li>Access tokens vs refresh tokens</li>
+                    <li>Security best practices for token-based auth</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Start Here: Last Class Recap</h2>
+
+            <div class="card-grid">
+                <a href="01_quiz_recap.html" class="card" style="border: 2px solid #fab005; background: linear-gradient(135deg, #fff9db 0%, #ffec99 100%);">
+                    <div class="card-icon">🧠</div>
+                    <h3>Quiz: Auth-1 Recap</h3>
+                    <p>10 questions on encoding, hashing, BCrypt & sessions</p>
+                </a>
+
+                <a href="02_bcrypt_recap.html" class="card">
+                    <div class="card-icon">🛡️</div>
+                    <h3>BCrypt Quick Recap</h3>
+                    <p>5-minute refresher on password hashing</p>
+                </a>
+            </div>
+        </div>
+
+        <h2 style="margin: 2rem 0 1rem; text-align: center;">Today's Topics</h2>
+
+        <div class="card-grid">
+            <a href="03_sessions_to_tokens.html" class="card">
+                <div class="card-icon">🍪 → 🎟️</div>
+                <h3>1. Sessions to Tokens</h3>
+                <p>Why we need a new approach for modern apps</p>
+            </a>
+
+            <a href="04_jwt_intro.html" class="card">
+                <div class="card-icon">🎟️</div>
+                <h3>2. JWT Introduction</h3>
+                <p>What is JWT? Structure and verification</p>
+            </a>
+
+            <a href="05_jwt_implementation.html" class="card">
+                <div class="card-icon">🐍</div>
+                <h3>3. JWT Implementation</h3>
+                <p>Django code for creating and verifying JWTs</p>
+            </a>
+
+            <a href="05b_jwt_quiz.html" class="card" style="border: 2px solid #f59f00; background: linear-gradient(135deg, #fff9db 0%, #ffec99 100%);">
+                <div class="card-icon">🎯</div>
+                <h3>4. JWT Mastery Quiz</h3>
+                <p>10 questions to test your JWT understanding</p>
+            </a>
+
+            <a href="04b_access_refresh_tokens.html" class="card">
+                <div class="card-icon">🔄</div>
+                <h3>5. Access & Refresh Tokens</h3>
+                <p>Two-token system for secure authentication</p>
+            </a>
+
+            <a href="06_oauth_intro.html" class="card">
+                <div class="card-icon">🔗</div>
+                <h3>6. OAuth 2.0 Introduction</h3>
+                <p>The protocol behind "Login with Google"</p>
+            </a>
+
+            <a href="06b_oauth_tokens_explained.html" class="card" style="border: 2px solid #8b5cf6; background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);">
+                <div class="card-icon">🎫</div>
+                <h3>7. OAuth Tokens Explained</h3>
+                <p>ID Token vs Access Token - what, where, how?</p>
+            </a>
+
+            <a href="07_oauth_flows.html" class="card">
+                <div class="card-icon">🔄</div>
+                <h3>8. OAuth 2.0 Flows</h3>
+                <p>Authorization Code, PKCE & more with diagrams</p>
+            </a>
+
+            <a href="08_cheatsheet.html" class="card">
+                <div class="card-icon">📋</div>
+                <h3>9. Cheat Sheet</h3>
+                <p>Quick reference for JWT & OAuth</p>
+            </a>
+        </div>
+
+        <div class="section">
+            <h2>The Journey</h2>
+
+            <div class="diagram">
+<pre>
+AUTHENTICATION EVOLUTION
+════════════════════════
+
+Last Class (Auth-1)                    This Class (Auth-2)
+┌────────────────────┐                ┌────────────────────┐
+│  Passwords         │                │  JWT Tokens        │
+│  Hashing (BCrypt)  │ ─────────────► │  Access + Refresh  │
+│  Sessions          │                │  OAuth 2.0         │
+└────────────────────┘                └────────────────────┘
+
+Sessions = Server remembers you (stateful)
+Tokens = You carry your identity (stateless)
+OAuth = Delegated authorization ("Login with...")
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Concepts Preview</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🎟️</div>
+                    <h3>JWT</h3>
+                    <p>Self-contained tokens with user info + signature. No server-side storage needed.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔗</div>
+                    <h3>OAuth 2.0</h3>
+                    <p>Authorization framework. Let apps access your data without your password.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔄</div>
+                    <h3>Refresh Tokens</h3>
+                    <p>Long-lived tokens to get new access tokens without re-login.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Warm-Up</div>
+            <p style="margin-bottom: 1rem;">In session-based auth, what does the server store?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) The user's password
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Session data (user ID, etc.) mapped to session ID
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Nothing - it's stateless
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) The user's JWT token
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <span></span>
+            <a href="01_quiz_recap.html">Start: Last Class Quiz →</a>
+        </div>
+
+        <footer>
+            <p>Authentication Guide 2 - JWT & OAuth</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Sessions require server-side storage. Today we\'ll learn about stateless tokens that don\'t need server storage!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Review from last class: Sessions store user data on the server. Today\'s tokens are different - they\'re stateless!';
+            }
+        }
+    </script>
+</body>
+</html>

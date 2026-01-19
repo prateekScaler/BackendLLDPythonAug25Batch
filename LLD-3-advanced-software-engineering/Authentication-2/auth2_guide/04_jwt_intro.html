@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Introduction - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .jwt-structure {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            font-family: 'Fira Code', monospace;
+            overflow-x: auto;
+        }
+        .jwt-part {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin: 0.25rem;
+        }
+        .jwt-header { background: #ff6b6b; color: white; }
+        .jwt-payload { background: #cc5de8; color: white; }
+        .jwt-signature { background: #339af0; color: white; }
+        .jwt-dot { color: var(--text-muted); font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎟️</div>
+            <h1>JWT (JSON Web Tokens)</h1>
+            <p class="subtitle">Stateless authentication for modern apps</p>
+        </header>
+
+        <!-- Pre-JWT History -->
+        <div class="section">
+            <h2>Before JWT: A History of Tokens</h2>
+
+            <div class="info-box">
+                <strong>The word "token" causes confusion!</strong> Let's clarify what we mean.
+            </div>
+
+            <h3>Common Misconceptions About "Tokens"</h3>
+
+            <div class="danger-box">
+                <h4>Misconception 1: "Token = JWT"</h4>
+                <p>NO! JWT is just ONE TYPE of token. The word "token" is generic - like saying "vehicle" instead of "car".</p>
+            </div>
+
+            <div class="danger-box">
+                <h4>Misconception 2: "Tokens are encrypted"</h4>
+                <p>NO! Most tokens (including JWT) are NOT encrypted. They're signed, not encrypted. Anyone can read the contents!</p>
+            </div>
+
+            <div class="danger-box">
+                <h4>Misconception 3: "Tokens = Secure by default"</h4>
+                <p>NO! Tokens can be stolen, just like session IDs. They need proper handling (HTTPS, secure storage, expiry).</p>
+            </div>
+
+            <h3>Types of Tokens Used Before JWT</h3>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Token Type</th>
+                        <th>Era</th>
+                        <th>How It Works</th>
+                        <th>Problems</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Opaque Tokens</strong></td>
+                        <td>1990s+</td>
+                        <td>Random string (like session ID). Server looks up in DB to validate.</td>
+                        <td>Requires DB lookup every time. Same as sessions basically!</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SAML Tokens</strong></td>
+                        <td>2002</td>
+                        <td>XML-based tokens for enterprise SSO. Self-contained with signatures.</td>
+                        <td>HUGE (XML is verbose), complex to implement, not web-friendly.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Simple Web Tokens (SWT)</strong></td>
+                        <td>2009</td>
+                        <td>URL-encoded key-value pairs with HMAC signature.</td>
+                        <td>No standard structure, limited to symmetric signing.</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><strong>JWT</strong></td>
+                        <td>2010-2015</td>
+                        <td>JSON-based, Base64 encoded, supports symmetric & asymmetric signing.</td>
+                        <td>Became the standard! Compact, web-friendly, well-supported.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>SAML vs JWT: Why JWT Won</h3>
+
+            <div class="diagram">
+<pre>
+SAML TOKEN (Actual Example - Simplified)
+════════════════════════════════════════
+
+&lt;saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+    Version="2.0" IssueInstant="2024-01-15T10:00:00Z"&gt;
+  &lt;saml:Issuer&gt;https://idp.company.com&lt;/saml:Issuer&gt;
+  &lt;saml:Subject&gt;
+    &lt;saml:NameID&gt;sumit@company.com&lt;/saml:NameID&gt;
+  &lt;/saml:Subject&gt;
+  &lt;saml:Conditions NotBefore="2024-01-15T10:00:00Z"
+                   NotOnOrAfter="2024-01-15T11:00:00Z"&gt;
+  &lt;/saml:Conditions&gt;
+  &lt;ds:Signature&gt;...hundreds of bytes...&lt;/ds:Signature&gt;
+&lt;/saml:Assertion&gt;
+
+Size: ~2000+ bytes 😰
+
+
+JWT TOKEN (Same Information)
+════════════════════════════
+
+eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2lkcC5jb21wY
+W55LmNvbSIsInN1YiI6ImpvaG5AY29tcGFueS5jb20iLCJleHAiOj
+E3MDUzMTI0MDB9.signature...
+
+Size: ~300 bytes 🎉
+
+JWT is 6-7x smaller and JSON is easier to parse!
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What is JWT?</h2>
+
+            <p>JWT (JSON Web Token) is a compact, URL-safe way to represent claims between two parties. It's a <strong>self-contained</strong> token that includes user information and a signature to verify authenticity.</p>
+
+            <div class="info-box">
+                <strong>Pronunciation:</strong> "jot" (rhymes with "dot")
+            </div>
+
+            <h3>JWT Timeline</h3>
+            <div class="diagram">
+<pre>
+JWT HISTORY
+═══════════
+
+2010: JWT concept introduced by Microsoft & others
+2011: Initial draft specification
+2015: JWT becomes RFC 7519 (official internet standard!)
+2024: Most widely used token format for web authentication
+
+Key Contributors:
+• Microsoft (original concept)
+• Google (adoption & promotion)
+• Auth0 (major advocate & tooling)
+</pre>
+            </div>
+        </div>
+
+        <!-- Why Base64 Encoding -->
+        <div class="section">
+            <h2>Why is JWT Encoded (Base64)?</h2>
+
+            <div class="info-box">
+                <strong>Common Question:</strong> "Why encode JWT if it's not for security?"
+            </div>
+
+            <h3>Reason 1: URL Safety</h3>
+
+            <div class="diagram">
+<pre>
+THE PROBLEM: JSON has characters that break URLs
+═══════════════════════════════════════════════
+
+JSON payload:
+{"user": "sumit", "role": "admin"}
+
+If you put this directly in a URL:
+https://api.com/verify?token={"user": "sumit", "role": "admin"}
+                              ↑     ↑      ↑     ↑
+                              Curly braces, quotes, colons, spaces
+                              ALL break URLs!
+
+Base64 encoding produces URL-safe characters:
+https://api.com/verify?token=eyJ1c2VyIjoiam9obiIsInJvbGUiOiJhZG1pbiJ9
+                              ↑
+                              Only letters, numbers, +, /, =
+                              (Base64URL uses - and _ instead of + and /)
+</pre>
+            </div>
+
+            <h3>Reason 2: Header Compatibility</h3>
+
+            <div class="diagram">
+<pre>
+HTTP HEADERS DON'T LIKE SPECIAL CHARACTERS
+══════════════════════════════════════════
+
+Raw JSON in header:
+Authorization: Bearer {"user":"sumit","exp":1234567890}
+               ↑ Fails! Headers have character restrictions
+
+Base64 encoded:
+Authorization: Bearer eyJ1c2VyIjoiam9obiIsImV4cCI6MTIzNDU2Nzg5MH0
+               ✓ Works! All safe characters
+</pre>
+            </div>
+
+            <h3>Reason 3: Binary Safety</h3>
+
+            <pre><code class="language-python"># The signature is BINARY data (hash output)
+# Binary can't be displayed as text directly
+
+signature_bytes = b'\x8f\x12\xab\x03\xff...'  # Raw binary
+
+# Base64 converts binary to printable characters
+import base64
+signature_b64 = base64.urlsafe_b64encode(signature_bytes)
+# Result: "jxKrA_8..." - now it's text!</code></pre>
+
+            <div class="warning-box">
+                <strong>Remember:</strong> Base64 encoding is NOT encryption! It's like writing your message in a different alphabet - anyone who knows Base64 can decode it instantly. The signature provides integrity, not secrecy.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>JWT Structure</h2>
+
+            <p>A JWT consists of three parts separated by dots (<code>.</code>):</p>
+
+            <div class="jwt-structure">
+                <span class="jwt-part jwt-header">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span>
+                <span class="jwt-dot">.</span>
+                <span class="jwt-part jwt-payload">eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ</span>
+                <span class="jwt-dot">.</span>
+                <span class="jwt-part jwt-signature">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span>
+            </div>
+
+            <div class="diagram">
+<pre>
+xxxxx.yyyyy.zzzzz
+  │      │      │
+  │      │      └── <span style="color: #339af0;">SIGNATURE</span> (verification)
+  │      │
+  │      └── <span style="color: #cc5de8;">PAYLOAD</span> (data/claims)
+  │
+  └── <span style="color: #ff6b6b;">HEADER</span> (algorithm info)
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Three Parts Explained</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #ff6b6b; background: #ffe3e3;">
+                    <div class="card-icon">1️⃣</div>
+                    <h3>Header</h3>
+                    <pre style="font-size: 0.75rem; background: white; padding: 0.5rem; border-radius: 4px;"><code>{
+  "alg": "HS256",
+  "typ": "JWT"
+}</code></pre>
+                    <p>Algorithm used & token type</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #cc5de8; background: #f3d9fa;">
+                    <div class="card-icon">2️⃣</div>
+                    <h3>Payload</h3>
+                    <pre style="font-size: 0.75rem; background: white; padding: 0.5rem; border-radius: 4px;"><code>{
+  "sub": "123",
+  "name": "Sumit",
+  "role": "admin",
+  "exp": 1516242622
+}</code></pre>
+                    <p>User data & claims</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #339af0; background: #e7f5ff;">
+                    <div class="card-icon">3️⃣</div>
+                    <h3>Signature</h3>
+                    <pre style="font-size: 0.75rem; background: white; padding: 0.5rem; border-radius: 4px;"><code>HMACSHA256(
+  base64(header) + "."
+  + base64(payload),
+  secret
+)</code></pre>
+                    <p>Verification hash</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Standard Claims</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Claim</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>iss</code></td>
+                        <td>Issuer</td>
+                        <td>Who created the token</td>
+                    </tr>
+                    <tr>
+                        <td><code>sub</code></td>
+                        <td>Subject</td>
+                        <td>Who the token is about (user ID)</td>
+                    </tr>
+                    <tr>
+                        <td><code>aud</code></td>
+                        <td>Audience</td>
+                        <td>Who the token is for</td>
+                    </tr>
+                    <tr style="background: #fff3bf;">
+                        <td><code>exp</code></td>
+                        <td>Expiration</td>
+                        <td><strong>When the token expires (IMPORTANT!)</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>iat</code></td>
+                        <td>Issued At</td>
+                        <td>When the token was created</td>
+                    </tr>
+                    <tr>
+                        <td><code>nbf</code></td>
+                        <td>Not Before</td>
+                        <td>Token not valid before this time</td>
+                    </tr>
+                    <tr>
+                        <td><code>jti</code></td>
+                        <td>JWT ID</td>
+                        <td>Unique identifier for the token</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <strong>Always set <code>exp</code>!</strong> A token without expiration is valid forever - a huge security risk.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How JWT Verification Works</h2>
+
+            <div class="diagram">
+<pre>
+JWT VERIFICATION
+════════════════
+
+1. Receive token: eyJhbGc.eyJzdWI.signature
+                     │        │        │
+                     ▼        ▼        │
+                [Header] [Payload]     │
+                     │        │        │
+                     └────┬───┘        │
+                          │            │
+                          ▼            │
+2. Recalculate:   HMAC-SHA256(        │
+                    base64(header) +   │
+                    "." +              │
+                    base64(payload),   │
+                    SECRET_KEY         │
+                  )                    │
+                          │            │
+                          ▼            ▼
+3. Compare:     [Computed Sig] == [Received Sig]?
+                          │
+               ┌──────────┴──────────┐
+               │                     │
+               ▼                     ▼
+          ✅ VALID              ❌ INVALID
+        Trust the payload      Reject token
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Key Insight:</strong> The server doesn't need to look up anything in a database! It just:
+                <ol>
+                    <li>Recalculates the signature using its secret key</li>
+                    <li>Compares with the received signature</li>
+                    <li>If they match, the payload is trustworthy</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Try It Yourself!</h2>
+
+            <div class="info-box">
+                <strong>JWT Debugger:</strong><br>
+                <a href="https://jwt.io/" target="_blank">https://jwt.io/</a>
+                <p style="margin-top: 0.5rem;">Paste a JWT and see it decoded in real-time. Try changing the payload and watch the signature change!</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Critical Security Point</h2>
+
+            <div class="danger-box">
+                <h4>⚠️ The Payload is NOT Encrypted!</h4>
+                <p>It's only Base64 encoded. Anyone can decode and read it!</p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Never Put in Payload</h4>
+                    <ul>
+                        <li>Passwords</li>
+                        <li>Credit card numbers</li>
+                        <li>Social security numbers</li>
+                        <li>Any sensitive PII</li>
+                    </ul>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ Safe for Payload</h4>
+                    <ul>
+                        <li>User ID</li>
+                        <li>Email (if not sensitive)</li>
+                        <li>Role/permissions</li>
+                        <li>Expiration time</li>
+                    </ul>
+                </div>
+            </div>
+
+            <pre><code class="language-python"># Anyone can decode the payload!
+import base64
+import json
+
+token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.signature"
+payload_b64 = token.split('.')[1]
+payload = json.loads(base64.urlsafe_b64decode(payload_b64 + '=='))
+print(payload)  # {'sub': '123'} - visible to anyone!</code></pre>
+        </div>
+
+        <!-- JWT Token Theft Scenarios -->
+        <div class="section">
+            <h2>What If Someone Steals a JWT Token?</h2>
+
+            <div class="danger-box">
+                <strong>This is JWT's biggest weakness!</strong> Unlike sessions, you can't easily invalidate a stolen JWT.
+            </div>
+
+            <h3>How JWT Tokens Get Stolen</h3>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Attack Vector</th>
+                        <th>How It Happens</th>
+                        <th>Prevention</th>
+                    </tr>
+                    <tr>
+                        <td><strong>XSS Attack</strong></td>
+                        <td>Malicious JavaScript reads token from localStorage</td>
+                        <td>Store in httpOnly cookie, use Content Security Policy</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Man-in-the-Middle</strong></td>
+                        <td>Token intercepted on unencrypted connection</td>
+                        <td>Always use HTTPS, HSTS headers</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Browser Extension</strong></td>
+                        <td>Malicious extension reads localStorage/headers</td>
+                        <td>Store tokens securely, short expiration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shared Computer</strong></td>
+                        <td>Token left in browser on public computer</td>
+                        <td>Short expiration, logout clears tokens</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>The Problem: You Can't "Delete" a JWT</h3>
+
+            <div class="diagram">
+<pre>
+JWT THEFT SCENARIO
+══════════════════
+
+1. Attacker steals your JWT token (valid for 24 hours)
+
+2. You realize it's stolen at hour 2
+
+3. With Sessions:
+   DELETE FROM sessions WHERE user_id = 123
+   ✓ Attacker is IMMEDIATELY locked out!
+
+4. With JWT:
+   You can't "unvalidate" the token!
+   The signature is still valid
+   Attacker has 22 more hours of access! 😱
+
+The JWT contains everything needed to verify it.
+Server doesn't "remember" which tokens it issued.
+</pre>
+            </div>
+
+            <h3>Solutions for JWT Revocation</h3>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #e7f5ff; border: 2px solid #339af0;">
+                    <h4>Solution 1: Short Expiration</h4>
+                    <ul>
+                        <li>Access token: 15-30 minutes</li>
+                        <li>Refresh token: 7-30 days</li>
+                        <li>If stolen, damage is time-limited</li>
+                    </ul>
+                    <p><strong>Tradeoff:</strong> More frequent refresh needed</p>
+                </div>
+                <div class="comparison-item" style="background: #d3f9d8; border: 2px solid #51cf66;">
+                    <h4>Solution 2: Token Blacklist</h4>
+                    <ul>
+                        <li>Maintain list of revoked tokens</li>
+                        <li>Check blacklist on each request</li>
+                        <li>Store in Redis for speed</li>
+                    </ul>
+                    <p><strong>Tradeoff:</strong> Loses stateless benefit!</p>
+                </div>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #fff3bf; border: 2px solid #fab005;">
+                    <h4>Solution 3: Token Versioning</h4>
+                    <ul>
+                        <li>Store token_version in user table</li>
+                        <li>Include version in JWT payload</li>
+                        <li>Bump version on logout/compromise</li>
+                    </ul>
+                    <p><strong>Tradeoff:</strong> Needs DB lookup for version</p>
+                </div>
+                <div class="comparison-item" style="background: #f3d9fa; border: 2px solid #cc5de8;">
+                    <h4>Solution 4: Refresh Token Rotation</h4>
+                    <ul>
+                        <li>Each refresh invalidates old refresh token</li>
+                        <li>If attacker uses token, you know immediately</li>
+                        <li>Used by Auth0, Okta, etc.</li>
+                    </ul>
+                    <p><strong>Tradeoff:</strong> More complex implementation</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Demo Sites -->
+        <div class="section">
+            <h2>Live Demo: Try JWT Yourself!</h2>
+
+            <div class="success-box">
+                <strong>For Class Demonstration:</strong> These tools help you show JWT concepts live!
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0;">
+                    <div class="card-icon">🔧</div>
+                    <h3>jwt.io</h3>
+                    <p><a href="https://jwt.io" target="_blank">jwt.io</a></p>
+                    <p>Decode, verify, and generate JWTs. See live encoding/decoding!</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🔐</div>
+                    <h3>jwt.ms</h3>
+                    <p><a href="https://jwt.ms" target="_blank">jwt.ms</a></p>
+                    <p>Microsoft's JWT decoder. Shows claims in nice format.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">🎮</div>
+                    <h3>token.dev</h3>
+                    <p><a href="https://token.dev" target="_blank">token.dev</a></p>
+                    <p>Generate and test tokens with different algorithms.</p>
+                </div>
+            </div>
+
+            <h3>Class Demo: Tampering with JWT</h3>
+
+            <div class="diagram">
+<pre>
+LIVE DEMO STEPS
+═══════════════
+
+1. Go to jwt.io
+
+2. In the "Encoded" box, you'll see a sample JWT
+   Header.Payload.Signature (color-coded!)
+
+3. In "Decoded" section, try changing:
+   • Change "name": "Sumit Mishra" to your name
+   • Change "admin": false to "admin": true
+
+4. Watch the signature turn RED!
+   This shows tampering is DETECTED.
+
+5. Now enter the correct secret key
+   Watch the signature turn BLUE (valid again)
+
+KEY INSIGHT: Without the secret key, you can change
+the payload but the signature will be INVALID!
+</pre>
+            </div>
+
+            <h3>Getting Real JWT Tokens for Demo</h3>
+
+            <pre><code class="language-python"># Quick Python script to generate JWT for demo
+
+import jwt
+import datetime
+
+SECRET_KEY = "demo-secret-key-12345"
+
+# Create a token
+payload = {
+    "user_id": 123,
+    "name": "Prateek",
+    "role": "instructor",
+    "iat": datetime.datetime.utcnow(),
+    "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+}
+
+token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+print("Generated Token:")
+print(token)
+print("\n" + "="*50 + "\n")
+
+# Decode and show payload
+decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+print("Decoded Payload:")
+print(decoded)
+
+# Now copy this token to jwt.io!</code></pre>
+
+            <div class="info-box">
+                <strong>Real World Tokens:</strong> Open your browser DevTools (F12) → Application → Storage → Cookies or Local Storage. Many sites store JWTs there. Copy one to jwt.io to inspect!
+            </div>
+        </div>
+
+        <!-- JWT vs Sessions Comparison -->
+        <div class="section">
+            <h2>JWT vs Sessions: When to Use What?</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Best Choice</th>
+                        <th>Why</th>
+                    </tr>
+                    <tr style="background: #e7f5ff;">
+                        <td>E-commerce site (Amazon-like)</td>
+                        <td><strong>Sessions</strong></td>
+                        <td>Need instant logout, cart state, fraud detection</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td>Mobile app</td>
+                        <td><strong>JWT</strong></td>
+                        <td>No browser cookies, easier header-based auth</td>
+                    </tr>
+                    <tr style="background: #e7f5ff;">
+                        <td>Banking application</td>
+                        <td><strong>Sessions</strong></td>
+                        <td>Critical need for instant session termination</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td>Microservices API</td>
+                        <td><strong>JWT</strong></td>
+                        <td>Stateless verification, no shared DB needed</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td>Public API (Stripe, Razorpay)</td>
+                        <td><strong>JWT/API Keys</strong></td>
+                        <td>External clients can't share session store</td>
+                    </tr>
+                    <tr style="background: #e7f5ff;">
+                        <td>Admin dashboard</td>
+                        <td><strong>Sessions</strong></td>
+                        <td>Need to track active admins, revoke instantly</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td>SPA + Separate API</td>
+                        <td><strong>JWT</strong></td>
+                        <td>Simpler than CORS + cookies configuration</td>
+                    </tr>
+                    <tr style="background: #fff3bf;">
+                        <td>Hybrid (best of both)</td>
+                        <td><strong>JWT + Redis blacklist</strong></td>
+                        <td>Stateless scaling + ability to revoke</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="success-box">
+                <strong>Real World:</strong> Many companies use BOTH! Sessions for web app, JWT for mobile app and APIs. Choose based on your specific requirements.
+            </div>
+        </div>
+
+        <!-- Quiz 1 -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz 1: JWT Basics</div>
+            <p style="margin-bottom: 1rem;">What does the signature in a JWT verify?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) That the payload is encrypted
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) That the header and payload haven't been tampered with
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) That the user's password is correct
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) That the token is stored in the database
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Quiz 2 -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz 2: JWT Security</div>
+            <p style="margin-bottom: 1rem;">An attacker steals a user's JWT token (valid for 24 hours). The user realizes immediately and wants to revoke the token. What's the problem with JWT?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    A) JWT tokens can be easily deleted from the database
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, true)">
+                    B) JWT tokens are self-contained and can't be invalidated without extra infrastructure
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    C) JWT tokens automatically expire when stolen
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    D) JWT tokens require the attacker to know the password
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback-2"></div>
+        </div>
+
+        <script>
+        function checkAnswer2(element, isCorrect) {
+            const container = element.closest('.quiz-container');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = container.querySelector('.quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! This is JWT\'s main weakness. The server doesn\'t "remember" which tokens it issued, so you can\'t just delete it. Solutions include token blacklists, short expiration, or token versioning.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. JWT tokens are stateless - the server verifies them using only the signature. Without extra mechanisms (blacklist, versioning), stolen tokens remain valid until they expire!';
+            }
+        }
+        </script>
+
+        <div class="page-nav">
+            <a href="03_sessions_to_tokens.html">← Sessions to Tokens</a>
+            <a href="05_jwt_implementation.html">Next: JWT Implementation →</a>
+        </div>
+
+        <footer>
+            <p>Page 4 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! The signature proves the header and payload haven\'t been modified. If anyone changes even one character, the signature won\'t match.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. The signature is a hash of the header + payload using the secret key. It verifies integrity, not encryption.';
+            }
+        }
+    </script>
+</body>
+</html>

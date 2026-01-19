@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Implementation - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🐍</div>
+            <h1>JWT Implementation</h1>
+            <p class="subtitle">Python code for creating and verifying JWTs</p>
+        </header>
+
+        <div class="section">
+            <h2>Setup</h2>
+
+            <pre><code class="language-bash"># Install PyJWT library
+pip install PyJWT</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Creating a JWT</h2>
+
+            <pre><code class="language-python">import jwt
+from datetime import datetime, timedelta
+
+SECRET_KEY = "your-super-secret-key-keep-it-safe"  # In production: use env variable!
+
+def create_access_token(user_id: int, role: str) -> str:
+    """Create a JWT access token."""
+    payload = {
+        "sub": str(user_id),      # Subject (user ID)
+        "role": role,              # Custom claim
+        "iat": datetime.utcnow(),  # Issued at
+        "exp": datetime.utcnow() + timedelta(hours=1)  # Expires in 1 hour
+    }
+
+    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return token
+
+
+# Usage
+token = create_access_token(user_id=42, role="admin")
+print(token)
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIs...</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Verifying a JWT</h2>
+
+            <pre><code class="language-python">def verify_token(token: str) -> dict:
+    """Verify and decode a JWT token."""
+    try:
+        # Decode and verify the token
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=["HS256"]  # IMPORTANT: Always specify allowed algorithms!
+        )
+        return payload
+
+    except jwt.ExpiredSignatureError:
+        raise Exception("Token has expired")
+
+    except jwt.InvalidTokenError:
+        raise Exception("Invalid token")
+
+
+# Usage
+try:
+    payload = verify_token(token)
+    print(f"User ID: {payload['sub']}")
+    print(f"Role: {payload['role']}")
+except Exception as e:
+    print(f"Error: {e}")</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Complete Django Example</h2>
+
+            <pre><code class="language-python"># views.py
+import jwt
+from datetime import datetime, timedelta
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from functools import wraps
+import json
+
+SECRET_KEY = settings.SECRET_KEY  # Use Django's secret key
+
+# Decorator to protect views
+def token_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        # Get token from header
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header:
+            return JsonResponse({'error': 'Token is missing'}, status=401)
+
+        # Format: "Bearer <token>"
+        try:
+            token = auth_header.split(' ')[1]
+        except IndexError:
+            return JsonResponse({'error': 'Invalid token format'}, status=401)
+
+        # Verify token
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            request.user_data = payload  # Attach user info to request
+        except jwt.ExpiredSignatureError:
+            return JsonResponse({'error': 'Token has expired'}, status=401)
+        except jwt.InvalidTokenError:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@csrf_exempt
+def login(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    data = json.loads(request.body)
+    username = data.get('username')
+    password = data.get('password')
+
+    # TODO: Verify credentials against database
+    # For demo, accept any user
+    if username and password:
+        token = jwt.encode({
+            'sub': username,
+            'role': 'user',
+            'iat': datetime.utcnow(),
+            'exp': datetime.utcnow() + timedelta(hours=1)
+        }, SECRET_KEY, algorithm='HS256')
+
+        return JsonResponse({'token': token})
+
+    return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+
+@token_required
+def protected(request):
+    return JsonResponse({
+        'message': 'This is protected!',
+        'user': request.user_data['sub'],
+        'role': request.user_data['role']
+    })</code></pre>
+
+            <pre><code class="language-python"># urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('login/', views.login, name='login'),
+    path('protected/', views.protected, name='protected'),
+]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Testing with cURL</h2>
+
+            <pre><code class="language-bash"># 1. Login to get token
+curl -X POST http://localhost:8000/api/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "sumit", "password": "secret"}'
+
+# Response: {"token": "eyJhbGciOiJIUzI1NiIs..."}
+
+# 2. Access protected route with token
+curl http://localhost:8000/api/protected/ \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+
+# Response: {"message": "This is protected!", "user": "sumit", "role": "user"}</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Access Token + Refresh Token Pattern</h2>
+
+            <div class="diagram">
+<pre>
+TOKEN REFRESH FLOW
+══════════════════
+
+Client                    Server
+  │                          │
+  │── Login ────────────────►│
+  │◄── access_token (15min) ─│
+  │    refresh_token (7days) │
+  │                          │
+  │  ... 15 minutes later ...│
+  │                          │
+  │── API Request ──────────►│
+  │◄── 401 Token Expired ────│
+  │                          │
+  │── Refresh Token ────────►│
+  │◄── New access_token ─────│
+  │                          │
+  │── API Request ──────────►│
+  │◄── 200 OK ───────────────│
+</pre>
+            </div>
+
+            <pre><code class="language-python"># utils.py - Create both tokens
+def create_tokens(user_id: int) -> dict:
+    """Create access and refresh tokens."""
+    access_token = jwt.encode({
+        'sub': str(user_id),
+        'type': 'access',
+        'exp': datetime.utcnow() + timedelta(minutes=15)
+    }, settings.SECRET_KEY, algorithm='HS256')
+
+    refresh_token = jwt.encode({
+        'sub': str(user_id),
+        'type': 'refresh',
+        'exp': datetime.utcnow() + timedelta(days=7)
+    }, settings.SECRET_KEY, algorithm='HS256')
+
+    return {
+        'access_token': access_token,
+        'refresh_token': refresh_token
+    }
+
+
+# views.py - Refresh endpoint
+@csrf_exempt
+def refresh(request):
+    """Get new access token using refresh token."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    data = json.loads(request.body)
+    refresh_token = data.get('refresh_token')
+
+    try:
+        payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=['HS256'])
+
+        if payload.get('type') != 'refresh':
+            return JsonResponse({'error': 'Invalid token type'}, status=401)
+
+        # Create new access token
+        new_access = jwt.encode({
+            'sub': payload['sub'],
+            'type': 'access',
+            'exp': datetime.utcnow() + timedelta(minutes=15)
+        }, settings.SECRET_KEY, algorithm='HS256')
+
+        return JsonResponse({'access_token': new_access})
+
+    except jwt.InvalidTokenError:
+        return JsonResponse({'error': 'Invalid refresh token'}, status=401)</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Security Best Practices</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Common Mistakes</h4>
+                    <pre><code class="language-python"># Weak secret
+SECRET = "secret"
+
+# No algorithm specification
+jwt.decode(token, SECRET)
+
+# No expiration
+jwt.encode({'sub': '1'}, SECRET)
+
+# Sensitive data in payload
+{'password': 'secret123'}</code></pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ Best Practices</h4>
+                    <pre><code class="language-python"># Strong secret (256+ bits)
+SECRET = os.environ['JWT_SECRET']
+
+# Specify algorithm
+jwt.decode(token, SECRET,
+           algorithms=['HS256'])
+
+# Always set expiration
+{'sub': '1', 'exp': ...}
+
+# Only non-sensitive data
+{'sub': '1', 'role': 'user'}</code></pre>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>Never hardcode secrets!</strong> Use environment variables or a secrets manager.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common JWT Attacks & Prevention</h2>
+
+            <div class="think-prompt">
+                <div class="think-prompt-icon">🤔</div>
+                <div class="think-prompt-content">
+                    <strong>Think First!</strong>
+                    <p>For each attack, try to guess the description and prevention before clicking to reveal. What would an attacker try? How would you stop them?</p>
+                </div>
+            </div>
+
+            <button class="reveal-all-btn" onclick="revealAllCells('jwt-attacks-table')">
+                👁️ Reveal All Answers
+            </button>
+
+            <div class="table-container">
+                <table class="interactive-table" id="jwt-attacks-table">
+                    <tr>
+                        <th>Attack</th>
+                        <th>Description (Click to reveal)</th>
+                        <th>Prevention (Click to reveal)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Algorithm None</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Setting <code>alg: none</code> to bypass signature</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Always specify <code>algorithms=['HS256']</code></span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Weak Secret</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Brute-forcing short secrets</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Use 256+ bit random secret</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Token Stealing</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">XSS stealing from localStorage</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Use httpOnly cookies or memory</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>No Expiration</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Tokens valid forever</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Always set <code>exp</code> claim</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Check</div>
+            <p style="margin-bottom: 1rem;">Why should you always specify <code>algorithms=['HS256']</code> when decoding?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) It makes decoding faster
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) To prevent "algorithm none" attacks that bypass signature verification
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) HS256 is the only algorithm that works
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) It's optional, just a style preference
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="04_jwt_intro.html">← JWT Introduction</a>
+            <a href="05b_jwt_quiz.html">Next: JWT Mastery Quiz →</a>
+        </div>
+
+        <footer>
+            <p>Page 5 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script>
+        // Interactive Table Functions
+        function revealCell(cell) {
+            if (!cell.classList.contains('revealed')) {
+                cell.classList.add('revealed');
+            }
+        }
+
+        function revealAllCells(tableId) {
+            const table = document.getElementById(tableId);
+            const cells = table.querySelectorAll('.hidden-cell');
+            let delay = 0;
+            cells.forEach(cell => {
+                setTimeout(() => {
+                    cell.classList.add('revealed');
+                }, delay);
+                delay += 150;
+            });
+
+            // Update button
+            const btn = event.target;
+            btn.innerHTML = '✅ All Revealed';
+            btn.classList.add('revealed');
+        }
+
+        // Quiz Functions
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Without specifying algorithms, an attacker could send a token with "alg": "none" and the library might accept it without signature verification!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ This is a critical security measure. The "algorithm none" attack works by setting alg to "none" in the header, making the server skip signature verification entirely.';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sessions to Tokens - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🍪 → 🎟️</div>
+            <h1>From Sessions to Tokens</h1>
+            <p class="subtitle">Why we need a new approach for modern apps</p>
+        </header>
+
+        <div class="section">
+            <h2>Session-Based Authentication (Recap)</h2>
+
+            <div class="diagram">
+<pre>
+SESSION-BASED AUTHENTICATION
+════════════════════════════
+
+Browser          Server           Session Store (Redis)
+   │                │                    │
+   │── Login ──────►│                    │
+   │                │── Create session ─►│
+   │                │   {user_id: 42}    │
+   │                │◄── session_id ─────│
+   │◄── Cookie ─────│                    │
+   │   (session_id) │                    │
+   │                │                    │
+   │── Request ────►│                    │
+   │   + Cookie     │── Lookup ─────────►│
+   │                │◄── User data ──────│
+   │◄── Response ───│                    │
+</pre>
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">✅</div>
+                    <h3>Pros</h3>
+                    <ul style="text-align: left; font-size: 0.9rem;">
+                        <li>Easy to invalidate (delete session)</li>
+                        <li>Server has full control</li>
+                        <li>Smaller cookie size</li>
+                    </ul>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">❌</div>
+                    <h3>Cons</h3>
+                    <ul style="text-align: left; font-size: 0.9rem;">
+                        <li>Server must store all sessions</li>
+                        <li>Scaling needs shared store</li>
+                        <li>DB lookup on every request</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Modern Challenge</h2>
+
+            <div class="info-box">
+                <strong>New requirements that sessions struggle with:</strong>
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📱</div>
+                    <h3>Mobile Apps</h3>
+                    <p>Cookies don't work naturally in mobile. Apps prefer tokens in headers.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔌</div>
+                    <h3>Microservices</h3>
+                    <p>Multiple services need to verify users. Sharing session store is complex.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🌐</div>
+                    <h3>SPAs (Single Page Apps)</h3>
+                    <p>React/Vue apps often have separate backend. CORS + cookies = pain.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔗</div>
+                    <h3>Third-Party APIs</h3>
+                    <p>Your API consumed by others. They can't use your session store.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Apps Deep Dive -->
+        <div class="section">
+            <h2>Challenge 1: Mobile Apps</h2>
+
+            <div class="diagram">
+<pre>
+WHY COOKIES DON'T WORK WELL ON MOBILE
+═════════════════════════════════════
+
+Web Browser:
+┌────────────────────────────────────────┐
+│ Browser has built-in "Cookie Jar"      │
+│                                        │
+│ Cookies are:                           │
+│ • Automatically stored                 │
+│ • Automatically sent with requests     │
+│ • Managed by browser (expiry, domain)  │
+└────────────────────────────────────────┘
+
+Mobile App (iOS/Android):
+┌────────────────────────────────────────┐
+│ NO built-in cookie handling!           │
+│                                        │
+│ Developers must:                       │
+│ • Manually store cookies (KeyChain/SP) │
+│ • Manually attach to requests          │
+│ • Handle cookie parsing themselves     │
+│ • Worry about cookie domains manually  │
+└────────────────────────────────────────┘
+
+MUCH EASIER: Just send a token in the header!
+
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+</pre>
+            </div>
+
+            <h3>Real Example: Swiggy App</h3>
+
+            <div class="diagram">
+<pre>
+SWIGGY MOBILE APP ARCHITECTURE
+══════════════════════════════
+
+When you open Swiggy app:
+
+1. Login with phone number
+   App ──► POST /login {phone, otp}
+       ◄── {"access_token": "eyJ...", "refresh_token": "..."}
+
+2. Store token securely
+   iOS: Keychain (encrypted storage)
+   Android: Encrypted SharedPreferences
+
+3. Every API call includes token:
+   App ──► GET /restaurants
+          Header: Authorization: Bearer eyJ...
+       ◄── [restaurant list]
+
+   App ──► POST /order
+          Header: Authorization: Bearer eyJ...
+       ◄── {"order_id": "12345"}
+
+No cookies! Just headers with tokens.
+Works seamlessly across app restarts.
+</pre>
+            </div>
+        </div>
+
+        <!-- Microservices Deep Dive -->
+        <div class="section">
+            <h2>Challenge 2: Microservices Architecture</h2>
+
+            <div class="diagram">
+<pre>
+MONOLITH (Sessions Work Fine)
+═════════════════════════════
+
+┌─────────────────────────────────────────────┐
+│              SINGLE SERVER                   │
+│                                             │
+│  User ──► API Gateway ──► Session Store     │
+│                              ↓               │
+│                         User Service         │
+│                         Order Service        │
+│                         Payment Service      │
+│                                             │
+│  ONE session store, ALL services access it  │
+└─────────────────────────────────────────────┘
+
+
+MICROSERVICES (Sessions Get Complicated)
+════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  User ──► API Gateway                                   │
+│              │                                          │
+│     ┌────────┼────────┐                                │
+│     ↓        ↓        ↓                                │
+│  ┌──────┐ ┌──────┐ ┌──────┐                           │
+│  │User  │ │Order │ │Payment│                           │
+│  │Svc   │ │Svc   │ │Svc   │                           │
+│  └──────┘ └──────┘ └──────┘                           │
+│     │        │        │                                │
+│     └────────┴────────┴──────► Session Store ???       │
+│                                                         │
+│  Each service needs to verify "Is this user logged in?"│
+│  Should all services access the same Redis?            │
+│  What if services are in different data centers?       │
+└─────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>The Session Problem with Microservices</h3>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Challenge</th>
+                        <th>With Sessions</th>
+                        <th>With Tokens (JWT)</th>
+                    </tr>
+                    <tr>
+                        <td>Cross-service auth</td>
+                        <td>Every service needs Redis access</td>
+                        <td>Each service verifies token locally</td>
+                    </tr>
+                    <tr>
+                        <td>Network latency</td>
+                        <td>Redis call on EVERY request</td>
+                        <td>No network call (verify signature)</td>
+                    </tr>
+                    <tr>
+                        <td>Single point of failure</td>
+                        <td>Redis down = all services affected</td>
+                        <td>No dependency, services work independently</td>
+                    </tr>
+                    <tr>
+                        <td>Scaling</td>
+                        <td>Redis cluster needed</td>
+                        <td>Just share the secret key</td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>Real Example: Netflix Architecture</h3>
+
+            <div class="diagram">
+<pre>
+NETFLIX MICROSERVICES (Simplified)
+══════════════════════════════════
+
+User opens Netflix:
+                         ┌─────────────────┐
+                    ┌───►│ Content Service │ (What can you watch?)
+                    │    └─────────────────┘
+┌──────┐   Token    │    ┌─────────────────┐
+│ User │───────────►├───►│ Profile Service │ (Who's watching?)
+└──────┘            │    └─────────────────┘
+                    │    ┌─────────────────┐
+                    └───►│ Playback Service│ (Stream the video)
+                         └─────────────────┘
+
+Each service receives the JWT token
+Each service verifies the signature independently
+Each service extracts user_id from payload
+NO shared session store needed!
+</pre>
+            </div>
+        </div>
+
+        <!-- SPA Deep Dive -->
+        <div class="section">
+            <h2>Challenge 3: Single Page Applications (SPAs)</h2>
+
+            <div class="diagram">
+<pre>
+TRADITIONAL WEB APP (Sessions Easy)
+═══════════════════════════════════
+
+Same origin - cookies work automatically:
+
+┌───────────────────────────────────────┐
+│  https://myapp.com                    │
+│  ┌─────────────┐  ┌─────────────────┐ │
+│  │   Frontend  │  │    Backend      │ │
+│  │   (HTML)    │──│    (API)        │ │
+│  └─────────────┘  └─────────────────┘ │
+│        Cookie flows automatically     │
+└───────────────────────────────────────┘
+
+
+MODERN SPA (Sessions Problematic)
+═════════════════════════════════
+
+Different origins - CORS + Cookies = headache:
+
+┌───────────────────────┐     ┌───────────────────────┐
+│ https://app.mysite.com│     │ https://api.mysite.com│
+│ ┌───────────────────┐ │     │ ┌───────────────────┐ │
+│ │   React/Vue App   │ │────►│ │    REST API       │ │
+│ │   (Frontend)      │ │     │ │    (Backend)      │ │
+│ └───────────────────┘ │     │ └───────────────────┘ │
+└───────────────────────┘     └───────────────────────┘
+       Different subdomain = Different origin!
+
+Problems:
+• Need CORS configuration
+• Need credentials: 'include'
+• SameSite cookie restrictions
+• Can't use wildcard origins with credentials
+</pre>
+            </div>
+
+            <h3>Real Example: React + Flask Setup</h3>
+
+            <pre><code class="language-javascript">// React Frontend (app.mysite.com)
+
+// WITH SESSIONS - Complex setup
+fetch('https://api.mysite.com/data', {
+    method: 'GET',
+    credentials: 'include',  // Required for cookies!
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// WITH TOKENS - Simple and clean
+fetch('https://api.mysite.com/data', {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+});
+
+// Token approach: No credentials config, no CORS cookie headaches!</code></pre>
+        </div>
+
+        <!-- Third-Party APIs Deep Dive -->
+        <div class="section">
+            <h2>Challenge 4: Third-Party API Access</h2>
+
+            <div class="diagram">
+<pre>
+YOUR API CONSUMED BY EXTERNAL CLIENTS
+═════════════════════════════════════
+
+You build an API like Razorpay:
+
+┌────────────────────────────────────────────────────┐
+│  External developers want to use your API:         │
+│                                                    │
+│  • E-commerce sites (process payments)             │
+│  • Mobile apps (in-app purchases)                  │
+│  • Backend services (subscription billing)         │
+│  • IoT devices (smart POS terminals)               │
+└────────────────────────────────────────────────────┘
+
+With Sessions:
+┌─────────────────────────────────────────────────────┐
+│  External App ──► "Here's my session cookie"        │
+│                                                     │
+│  Your API: "What session? You don't have access    │
+│             to MY Redis server!"                    │
+│                                                     │
+│  Sessions are SERVER-SIDE. External apps can't     │
+│  share your session store!                          │
+└─────────────────────────────────────────────────────┘
+
+With Tokens (JWT or API Key):
+┌─────────────────────────────────────────────────────┐
+│  External App ──► "Here's my API token"             │
+│                   Authorization: Bearer rzp_xxx     │
+│                                                     │
+│  Your API: Verifies token signature ✓               │
+│            Extracts merchant_id ✓                   │
+│            Processes request ✓                      │
+│                                                     │
+│  No shared state needed!                            │
+└─────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>How Razorpay/Stripe APIs Work</h3>
+
+            <pre><code class="language-python"># External developer using Razorpay API
+
+import requests
+
+# API Key acts as a token - no sessions involved!
+api_key = "rzp_test_xxxxxxxxxxxxx"
+secret = "yyyyyyyyyyyyyy"
+
+response = requests.post(
+    "https://api.razorpay.com/v1/orders",
+    auth=(api_key, secret),  # Token in header (Basic Auth)
+    json={
+        "amount": 50000,  # Amount in paise
+        "currency": "INR",
+        "receipt": "order_123"
+    }
+)
+
+# Razorpay verifies the API key
+# No session lookup needed
+# Works from anywhere in the world!</code></pre>
+
+            <div class="success-box">
+                <strong>Key Insight:</strong> Public APIs almost NEVER use sessions. They use API keys, JWT tokens, or OAuth tokens because external clients can't share your session store.
+            </div>
+        </div>
+
+        <!-- Quiz: Modern Challenges -->
+        <div class="quiz-container">
+            <div class="quiz-title">🤔 Think About It</div>
+            <p style="margin-bottom: 1rem;">A company is building a food delivery platform with:</p>
+            <ul style="margin-bottom: 1rem; padding-left: 1.5rem;">
+                <li>iOS and Android mobile apps</li>
+                <li>Web dashboard for restaurant owners</li>
+                <li>Separate microservices for orders, payments, delivery tracking</li>
+                <li>Public API for restaurant POS integration</li>
+            </ul>
+            <p style="margin-bottom: 1rem;">Should they use session-based or token-based authentication?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    A) Session-based - it's more secure
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, true)">
+                    B) Token-based (JWT) - fits all their use cases
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    C) Basic authentication with username/password
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    D) No authentication needed
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback-2"></div>
+        </div>
+
+        <script>
+        function checkAnswer2(element, isCorrect) {
+            const container = element.closest('.quiz-container');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = container.querySelector('.quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Tokens are ideal because: Mobile apps need headers not cookies, microservices can verify tokens independently, and public APIs need stateless authentication.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Token-based auth (JWT) is better for this scenario. Mobile apps, microservices, and public APIs all benefit from stateless, token-based authentication.';
+            }
+        }
+        </script>
+
+        <div class="section">
+            <h2>The Token-Based Solution</h2>
+
+            <div class="diagram">
+<pre>
+TOKEN-BASED AUTHENTICATION
+══════════════════════════
+
+Browser/App          Server
+   │                    │
+   │── Login ──────────►│
+   │                    │  Generate signed token
+   │                    │  (contains user data)
+   │◄── Token ──────────│
+   │   (store locally)  │
+   │                    │
+   │── Request ────────►│
+   │   + Token          │  Verify signature
+   │   (in header)      │  (NO DB lookup!)
+   │◄── Response ───────│
+
+Server stores: NOTHING! (Stateless)
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Key Insight:</strong> The token itself contains all the information the server needs. No lookup required!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Side-by-Side Comparison</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Session-Based</th>
+                        <th>Token-Based (JWT)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Server stores</strong></td>
+                        <td>Session data</td>
+                        <td>Nothing (stateless)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client stores</strong></td>
+                        <td>Session ID (cookie)</td>
+                        <td>Full token</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sent via</strong></td>
+                        <td>Cookie (automatic)</td>
+                        <td>Header (Authorization: Bearer)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scaling</strong></td>
+                        <td>Needs shared store (Redis)</td>
+                        <td>Easy (no shared state)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Revocation</strong></td>
+                        <td>Easy (delete session)</td>
+                        <td>Hard (token is self-contained)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mobile-friendly</strong></td>
+                        <td>Not naturally</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cross-origin</strong></td>
+                        <td>Complex (CORS)</td>
+                        <td>Easy</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>When to Use What?</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #e7f5ff; border: 2px solid #339af0;">
+                    <h4>🍪 Use Sessions When</h4>
+                    <ul>
+                        <li>Traditional server-rendered web app</li>
+                        <li>Need instant session revocation</li>
+                        <li>Single server or easy Redis setup</li>
+                        <li>Browser-only access</li>
+                    </ul>
+                    <p style="margin-top: 1rem; font-style: italic;">Examples: Scaler, Amazon, most e-commerce sites</p>
+                </div>
+                <div class="comparison-item" style="background: #d3f9d8; border: 2px solid #51cf66;">
+                    <h4>🎟️ Use Tokens (JWT) When</h4>
+                    <ul>
+                        <li>Mobile apps</li>
+                        <li>SPAs with separate API</li>
+                        <li>Microservices architecture</li>
+                        <li>Public API for third parties</li>
+                    </ul>
+                    <p style="margin-top: 1rem; font-style: italic;">Examples: GitHub API, Stripe, Auth0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Journey Ahead</h2>
+
+            <div class="diagram">
+<pre>
+TODAY'S ROADMAP
+═══════════════
+
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Sessions   │────►│    JWT      │────►│  OAuth 2.0  │
+│  (Recap)    │     │  (Tokens)   │     │  (Delegation)│
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │                   │
+       ▼                   ▼                   ▼
+   "Server              "Stateless        "Login with
+    remembers"          authentication"    Google/GitHub"
+</pre>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Check</div>
+            <p style="margin-bottom: 1rem;">A mobile app needs to authenticate users. What's the better approach?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Session-based with cookies
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Token-based (JWT) with Authorization header
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Send username/password with every request
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) No authentication needed for mobile
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="02_bcrypt_recap.html">← BCrypt Recap</a>
+            <a href="04_jwt_intro.html">Next: JWT Introduction →</a>
+        </div>
+
+        <footer>
+            <p>Page 3 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Mobile apps work better with tokens sent in headers (Authorization: Bearer). Cookies are awkward on mobile.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. Token-based auth with JWT is the standard for mobile apps since they can easily store and send tokens in request headers.';
+            }
+        }
+    </script>
+</body>
+</html>

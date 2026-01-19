@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCrypt Recap - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🛡️</div>
+            <h1>BCrypt Recap</h1>
+            <p class="subtitle">Quick refresher from last class</p>
+        </header>
+
+        <div class="section">
+            <h2>Why BCrypt?</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ SHA-256 (Too Fast!)</h4>
+                    <ul>
+                        <li>Designed to be fast</li>
+                        <li>~1 billion hashes/second on GPU</li>
+                        <li>Passwords cracked in minutes</li>
+                        <li>No built-in salt</li>
+                    </ul>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ BCrypt (Intentionally Slow)</h4>
+                    <ul>
+                        <li>Designed for passwords</li>
+                        <li>~4 hashes/second (cost=12)</li>
+                        <li>Passwords safe for years</li>
+                        <li>Salt built-in</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>BCrypt Hash Anatomy</h2>
+
+            <div class="diagram">
+<pre>
+$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.fqfWS8YX.qoZGK
+ │   │  └──────────┬──────────┘└──────────────┬──────────────┘
+ │   │             │                          │
+ │   │        SALT (22 chars)            HASH (31 chars)
+ │   │
+ │   └── COST FACTOR: 12 (means 2^12 = 4,096 iterations)
+ │
+ └── ALGORITHM: 2b (BCrypt variant)
+
+Total: 60 characters always
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>Key Insight:</strong> The salt is embedded in the hash itself! No need to store it separately.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Python Code</h2>
+
+            <h3>Hashing a Password</h3>
+            <pre><code class="language-python">import bcrypt
+
+# Hash a password (registration)
+password = "mysecretpassword"
+hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+# Store 'hashed' in database
+
+print(hashed)
+# b'$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.fqfWS8YX.qoZGK'</code></pre>
+
+            <h3>Verifying a Password</h3>
+            <pre><code class="language-python"># Verify a password (login)
+password_attempt = "mysecretpassword"
+stored_hash = b'$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/...'
+
+if bcrypt.checkpw(password_attempt.encode(), stored_hash):
+    print("Password correct!")
+else:
+    print("Password incorrect!")</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Cost Factor Guidelines</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Cost</th>
+                        <th>Iterations</th>
+                        <th>~Time</th>
+                        <th>Recommendation</th>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>1,024</td>
+                        <td>~65ms</td>
+                        <td>Minimum for production</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><strong>12</strong></td>
+                        <td>4,096</td>
+                        <td>~250ms</td>
+                        <td><strong>Recommended default</strong></td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>16,384</td>
+                        <td>~1s</td>
+                        <td>High security</td>
+                    </tr>
+                    <tr>
+                        <td>16</td>
+                        <td>65,536</td>
+                        <td>~4s</td>
+                        <td>Very high security (slow UX)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="warning-box">
+                <strong>Rule of thumb:</strong> Target 250ms-1s per hash. Increase cost every few years as hardware improves.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Try It Yourself!</h2>
+
+            <div class="success-box">
+                <strong>Online BCrypt Generator:</strong><br>
+                <a href="https://bcrypt-generator.com/" target="_blank">https://bcrypt-generator.com/</a>
+                <p style="margin-top: 0.5rem;">Try hashing different passwords and see how the output changes!</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Mistakes</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Wrong</h4>
+                    <pre><code class="language-python"># Using MD5
+import hashlib
+hashlib.md5(password).hexdigest()
+
+# Storing plaintext
+user.password = password
+
+# Low cost factor
+bcrypt.gensalt(rounds=4)</code></pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ Correct</h4>
+                    <pre><code class="language-python"># Using BCrypt
+import bcrypt
+bcrypt.hashpw(password.encode(),
+              bcrypt.gensalt(rounds=12))
+
+# Cost 12 or higher
+bcrypt.gensalt(rounds=12)</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Quick Reference</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔑</div>
+                    <h3>Hash</h3>
+                    <p><code>bcrypt.hashpw(pw.encode(), bcrypt.gensalt())</code></p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">✅</div>
+                    <h3>Verify</h3>
+                    <p><code>bcrypt.checkpw(pw.encode(), hash)</code></p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">⚙️</div>
+                    <h3>Cost</h3>
+                    <p><code>bcrypt.gensalt(rounds=12)</code></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="01_quiz_recap.html">← Quiz: Recap</a>
+            <a href="03_sessions_to_tokens.html">Next: Sessions to Tokens →</a>
+        </div>
+
+        <footer>
+            <p>Page 2 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Tokens Explained - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .scenario-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border: 2px solid var(--border-color);
+        }
+        .scenario-card.identity {
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        }
+        .scenario-card.permission {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+        .token-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+        }
+        .token-part {
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin: 0.25rem 0;
+            font-size: 0.85rem;
+        }
+        .token-header { background: #fee2e2; color: #991b1b; }
+        .token-payload { background: #fef3c7; color: #92400e; }
+        .token-signature { background: #dbeafe; color: #1e40af; }
+        .flow-step {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-left: 4px solid var(--accent-color);
+        }
+        .flow-step.highlight {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        @media (max-width: 768px) {
+            .comparison-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🎫</div>
+            <h1>OAuth Tokens Explained</h1>
+            <p class="subtitle">What tokens? Where stored? How used?</p>
+        </header>
+
+        <!-- The Two Scenarios -->
+        <div class="section">
+            <h2>Two Different Scenarios, Two Different Tokens</h2>
+
+            <div class="info-box">
+                <strong>Key Insight:</strong> OAuth can be used for two very different things, and each uses different tokens!
+            </div>
+
+            <div class="comparison-grid">
+                <div style="background: #f5f3ff; border: 2px solid #8b5cf6; border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: #7c3aed; margin-top: 0;">🪪 Scenario 1: "Login with Google"</h3>
+                    <p><strong>Goal:</strong> Find out WHO the user is</p>
+                    <p><strong>Token used:</strong> ID Token (JWT)</p>
+                    <p><strong>Example:</strong> Zomato lets you login with Google</p>
+                </div>
+                <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: #d97706; margin-top: 0;">🔑 Scenario 2: "Access my data"</h3>
+                    <p><strong>Goal:</strong> Get PERMISSION to access user's data</p>
+                    <p><strong>Token used:</strong> Access Token</p>
+                    <p><strong>Example:</strong> INDmoney reads your Zerodha holdings</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenario 1: OIDC / Login with Google -->
+        <div class="scenario-card identity">
+            <h2 style="color: #7c3aed; margin-top: 0;">🪪 Scenario 1: "Login with Google" (OIDC)</h2>
+            <p>You click "Login with Google" on Zomato. What happens?</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.9rem;">
+WHAT ZOMATO RECEIVES FROM GOOGLE
+════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     GOOGLE'S RESPONSE                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  {                                                              │
+│    "access_token": "ya29.a0AfH6SMBx...",     ← For API calls   │
+│    "token_type": "Bearer",                                      │
+│    "expires_in": 3600,                                          │
+│    "refresh_token": "1//0eXvL9...",          ← For renewal     │
+│                                                                 │
+│    "id_token": "eyJhbGciOiJSUzI1NiIs..."     ← THIS IS THE KEY!│
+│  }                                            (It's a JWT!)     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>The ID Token is a JWT!</h3>
+            <p>Zomato decodes the <code>id_token</code> (it's just Base64!) and finds:</p>
+
+            <div class="token-box">
+                <div class="token-part token-header">
+                    <strong>HEADER:</strong> {"alg": "RS256", "typ": "JWT"}
+                </div>
+                <div class="token-part token-payload">
+                    <strong>PAYLOAD (the good stuff!):</strong>
+                    <pre style="margin: 0.5rem 0; font-size: 0.85rem;">{
+  "iss": "https://accounts.google.com",      // Issuer (Google)
+  "sub": "110248495921238986420",            // Unique user ID at Google
+  "email": "sumit.mishra@gmail.com",         // User's email
+  "name": "Sumit Mishra",                    // User's name
+  "picture": "https://lh3.google.com/...",   // Profile photo
+  "email_verified": true,
+  "exp": 1699574400                          // Expiration
+}</pre>
+                </div>
+                <div class="token-part token-signature">
+                    <strong>SIGNATURE:</strong> Google's signature (Zomato verifies this!)
+                </div>
+            </div>
+
+            <div class="success-box">
+                <strong>How Zomato knows WHO you are:</strong>
+                <ol style="margin: 0.5rem 0 0 1rem;">
+                    <li>Decode the ID Token (it's Base64)</li>
+                    <li>Verify the signature using Google's public key</li>
+                    <li>Read the <code>email</code> and <code>name</code> from payload</li>
+                    <li>Create/login user in Zomato's database: "sumit.mishra@gmail.com"</li>
+                </ol>
+            </div>
+
+            <div class="flow-step highlight">
+                <strong>🎯 Key Point:</strong> The ID Token IS a JWT. Zomato doesn't call any Google API to know who you are —
+                the identity info is INSIDE the token itself! Just decode and verify.
+            </div>
+        </div>
+
+        <!-- Scenario 2: Access Token / Permission -->
+        <div class="scenario-card permission">
+            <h2 style="color: #d97706; margin-top: 0;">🔑 Scenario 2: "Access my holdings" (OAuth)</h2>
+            <p>INDmoney wants to read your Zerodha portfolio. What happens?</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.9rem;">
+WHAT INDmoney RECEIVES FROM ZERODHA
+═══════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                     ZERODHA'S RESPONSE                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  {                                                              │
+│    "access_token": "kite_abc123xyz789...",  ← THE KEY TO DATA  │
+│    "token_type": "Bearer",                                      │
+│    "expires_in": 86400,                      (24 hours)         │
+│    "refresh_token": "refresh_xyz..."                            │
+│  }                                                              │
+│                                                                 │
+│  Note: NO id_token here! INDmoney doesn't need to know         │
+│        WHO you are — just needs PERMISSION to read data.        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>What is this Access Token?</h3>
+
+            <div class="info-box">
+                <strong>Access Token can be:</strong>
+                <ul style="margin: 0.5rem 0 0 1rem;">
+                    <li><strong>Opaque string:</strong> Random characters like <code>kite_abc123xyz789</code> (Zerodha's style)</li>
+                    <li><strong>JWT:</strong> Self-contained token with claims (Google's style)</li>
+                </ul>
+                <p style="margin-top: 0.5rem;">The format depends on the provider. Both work the same way!</p>
+            </div>
+
+            <h3>Where does INDmoney store this token?</h3>
+
+            <div class="diagram">
+<pre style="font-size: 0.85rem;">
+TOKEN STORAGE (Server-Side)
+═══════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    INDmoney's DATABASE                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Table: connected_accounts                                      │
+│  ┌──────────┬──────────┬─────────────────┬──────────────────┐  │
+│  │ user_id  │ provider │ access_token    │ refresh_token    │  │
+│  ├──────────┼──────────┼─────────────────┼──────────────────┤  │
+│  │ sumit_42 │ zerodha  │ kite_abc123...  │ refresh_xyz...   │  │
+│  │ sumit_42 │ groww    │ groww_def456... │ refresh_abc...   │  │
+│  │ prateek  │ zerodha  │ kite_789xyz...  │ refresh_123...   │  │
+│  └──────────┴──────────┴─────────────────┴──────────────────┘  │
+│                                                                 │
+│  Tokens are ENCRYPTED before storing!                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>How does INDmoney use the token?</h3>
+
+            <div class="flow-step">
+                <strong>Step 1:</strong> Sumit opens INDmoney app and wants to see Zerodha holdings
+            </div>
+            <div class="flow-step">
+                <strong>Step 2:</strong> INDmoney looks up: "What's Sumit's Zerodha access_token?"
+                <pre style="margin: 0.5rem 0; font-size: 0.85rem; background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">SELECT access_token FROM connected_accounts
+WHERE user_id = 'sumit_42' AND provider = 'zerodha'</pre>
+            </div>
+            <div class="flow-step highlight">
+                <strong>Step 3:</strong> INDmoney calls Zerodha's API with the token:
+                <pre style="margin: 0.5rem 0; font-size: 0.85rem; background: #f8f9fa; padding: 0.5rem; border-radius: 4px;">GET https://api.kite.trade/portfolio/holdings
+Authorization: Bearer kite_abc123xyz789...</pre>
+            </div>
+            <div class="flow-step">
+                <strong>Step 4:</strong> Zerodha sees the token, checks "Is this valid? What permissions does it have?"
+            </div>
+            <div class="flow-step">
+                <strong>Step 5:</strong> Zerodha returns the holdings data to INDmoney
+            </div>
+            <div class="flow-step">
+                <strong>Step 6:</strong> INDmoney displays your portfolio!
+            </div>
+
+            <div class="warning-box">
+                <strong>What if the token expires?</strong>
+                <ol style="margin: 0.5rem 0 0 1rem;">
+                    <li>Zerodha returns <code>401 Unauthorized</code></li>
+                    <li>INDmoney uses the <code>refresh_token</code> to get a new <code>access_token</code></li>
+                    <li>Retries the API call with the new token</li>
+                    <li>Updates the stored token in database</li>
+                </ol>
+                <p style="margin-top: 0.5rem;">This all happens automatically — you never notice!</p>
+            </div>
+        </div>
+
+        <!-- Side by Side Comparison -->
+        <div class="section">
+            <h2>Side-by-Side: ID Token vs Access Token</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Aspect</th>
+                        <th style="background: #f5f3ff;">ID Token (OIDC)</th>
+                        <th style="background: #fffbeb;">Access Token (OAuth)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Purpose</strong></td>
+                        <td>Tells WHO the user is</td>
+                        <td>Grants PERMISSION to access data</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Format</strong></td>
+                        <td>Always a JWT</td>
+                        <td>JWT or opaque string</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contains</strong></td>
+                        <td>User info (email, name, photo)</td>
+                        <td>Permissions/scopes, expiry</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Used for</strong></td>
+                        <td>Creating user account, login</td>
+                        <td>Making API calls</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Who reads it?</strong></td>
+                        <td>Your app (decode JWT)</td>
+                        <td>Resource server (validates)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Example</strong></td>
+                        <td>Zomato reads your Google email</td>
+                        <td>INDmoney fetches Zerodha holdings</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- The Complete Picture -->
+        <div class="section">
+            <h2>The Complete Picture</h2>
+
+            <div class="diagram">
+<pre style="font-size: 0.85rem;">
+WHAT YOU GET DEPENDS ON WHAT YOU ASK FOR (SCOPES)
+═════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│   scope = "openid email profile"                                        │
+│   ─────────────────────────────                                         │
+│   You get: access_token + id_token                                      │
+│   Use case: "Login with Google" (OIDC)                                  │
+│                                                                         │
+│   The "openid" scope triggers OIDC → gives you id_token!                │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   scope = "holdings:read transactions:read"                             │
+│   ─────────────────────────────────────────                             │
+│   You get: access_token only                                            │
+│   Use case: "Read my Zerodha data" (pure OAuth)                         │
+│                                                                         │
+│   No "openid" scope → no id_token, just permission to access data       │
+│                                                                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   scope = "openid email photos.readonly"                                │
+│   ───────────────────────────────────────                               │
+│   You get: access_token + id_token                                      │
+│   Use case: "Login AND access photos" (OIDC + OAuth)                    │
+│                                                                         │
+│   Best of both: Know WHO the user is AND access their data              │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>The magic word is "openid"!</strong>
+                <p style="margin-top: 0.5rem;">
+                    When you include <code>openid</code> in your scopes, the auth server knows you want identity info
+                    and includes an <code>id_token</code> in the response. Without it, you only get an <code>access_token</code>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Mental Model -->
+        <div class="section">
+            <h2>Quick Mental Model</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #8b5cf6; background: #f5f3ff;">
+                    <div class="card-icon">🪪</div>
+                    <h3>ID Token</h3>
+                    <p><strong>Analogy:</strong> Aadhaar Card</p>
+                    <p>Shows WHO you are. You show it once at the door (login), then put it away.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #f59e0b; background: #fffbeb;">
+                    <div class="card-icon">🔑</div>
+                    <h3>Access Token</h3>
+                    <p><strong>Analogy:</strong> Hotel Key Card</p>
+                    <p>Opens specific doors (APIs). You use it repeatedly. Expires and needs renewal.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #10b981; background: #ecfdf5;">
+                    <div class="card-icon">🔄</div>
+                    <h3>Refresh Token</h3>
+                    <p><strong>Analogy:</strong> Booking Confirmation</p>
+                    <p>If key card expires, show this at reception to get a new one. Keep it very safe!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Check</div>
+            <p style="margin-bottom: 1rem;">Zomato uses "Login with Google". To display your name on the app, Zomato:</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Calls Google API every time to get your name
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Decodes the ID Token (JWT) which contains your name
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Uses the access_token to read your name
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Asks you to type your name manually
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="06_oauth_intro.html">← OAuth Introduction</a>
+            <a href="07_oauth_flows.html">Next: OAuth Flows →</a>
+        </div>
+
+        <footer>
+            <p>Page 7 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! The ID Token IS a JWT. Zomato just decodes it (Base64) and reads the name, email, etc. from the payload. No extra API call needed!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Remember: The ID Token contains all identity info inside it (as a JWT). Zomato decodes it locally — no need to call Google again!';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access & Refresh Tokens - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .token-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+        .token-box.access {
+            border: 3px solid #339af0;
+            background: linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%);
+        }
+        .token-box.refresh {
+            border: 3px solid #51cf66;
+            background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%);
+        }
+        .token-box h3 {
+            margin-bottom: 0.5rem;
+        }
+        .token-box .lifetime {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        .flow-step {
+            background: #f8f9fa;
+            border-left: 4px solid #339af0;
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .flow-step.error {
+            border-left-color: #ff6b6b;
+            background: #ffe3e3;
+        }
+        .flow-step.success {
+            border-left-color: #51cf66;
+            background: #d3f9d8;
+        }
+        .flow-step h4 {
+            margin-bottom: 0.5rem;
+            color: #1a1a2e;
+        }
+        .storage-option {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .storage-option h4 {
+            margin-bottom: 0.5rem;
+        }
+        .storage-option.recommended {
+            border-color: #51cf66;
+            background: #d3f9d8;
+        }
+        .storage-option.common {
+            border-color: #fab005;
+            background: #fff9db;
+        }
+        .storage-option.risky {
+            border-color: #ff6b6b;
+            background: #ffe3e3;
+        }
+        .pro-con {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+        .pro-con span {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .pro-con .pro {
+            background: #d3f9d8;
+            color: #2b8a3e;
+        }
+        .pro-con .con {
+            background: #ffe3e3;
+            color: #c92a2a;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔄</div>
+            <h1>Access & Refresh Tokens</h1>
+            <p class="subtitle">The two-token system for secure, convenient authentication</p>
+        </header>
+
+        <!-- Introduction -->
+        <div class="section">
+            <h2>The Problem: Security vs Convenience</h2>
+
+            <div class="diagram">
+<pre>
+THE DILEMMA
+═══════════
+
+Option A: Short-lived token (15 minutes)
+├── ✅ If stolen, attacker has limited time
+├── ❌ User must re-login every 15 minutes
+└── 😠 Terrible user experience!
+
+Option B: Long-lived token (30 days)
+├── ✅ User stays logged in for a month
+├── ❌ If stolen, attacker has 30 days of access!
+└── 😱 Huge security risk!
+
+THE SOLUTION: Use BOTH!
+├── Access Token: Short-lived (15 min) - used frequently
+└── Refresh Token: Long-lived (30 days) - used rarely, kept safe
+</pre>
+            </div>
+        </div>
+
+        <!-- The Two Tokens -->
+        <div class="section">
+            <h2>The Two-Token System</h2>
+
+            <div class="card-grid">
+                <div class="token-box access">
+                    <h3>🎟️ Access Token</h3>
+                    <div class="lifetime">15-30 min</div>
+                    <p><strong>Purpose:</strong> Used for every API request</p>
+                    <p><strong>Exposure:</strong> High (sent frequently)</p>
+                    <p><strong>If stolen:</strong> Limited damage window</p>
+                </div>
+                <div class="token-box refresh">
+                    <h3>🔄 Refresh Token</h3>
+                    <div class="lifetime">7-30 days</div>
+                    <p><strong>Purpose:</strong> Get new access tokens</p>
+                    <p><strong>Exposure:</strong> Low (sent rarely)</p>
+                    <p><strong>If stolen:</strong> More serious, but kept safe</p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>Real-World Analogy:</strong>
+                <ul>
+                    <li><strong>Refresh Token</strong> = Hotel booking confirmation (show once at check-in, kept safe)</li>
+                    <li><strong>Access Token</strong> = Room key card (use for every door, expires daily, replaced easily)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- How They Work Together -->
+        <div class="section">
+            <h2>How They Work Together</h2>
+
+            <h3>Step 1: Initial Login</h3>
+            <div class="flow-step">
+                <h4>User → Server: Login Request</h4>
+                <pre><code class="language-javascript">POST /api/login
+{
+    "username": "debina",
+    "password": "secret123"
+}</code></pre>
+            </div>
+
+            <div class="flow-step success">
+                <h4>Server → User: Both Tokens</h4>
+                <pre><code class="language-javascript">// Server validates credentials and returns:
+{
+    "access_token": "eyJhbG...",   // Expires in 15 min
+    "refresh_token": "eyJhbG...",  // Expires in 30 days
+    "expires_in": 900               // 900 seconds = 15 min
+}</code></pre>
+            </div>
+
+            <h3>Step 2: Normal API Calls (Using Access Token)</h3>
+            <div class="flow-step">
+                <h4>User → Server: API Request</h4>
+                <pre><code class="language-javascript">GET /api/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...  // Access token
+
+// This happens 100s of times per session
+// Access token is exposed with every request</code></pre>
+            </div>
+
+            <div class="flow-step success">
+                <h4>Server → User: Response</h4>
+                <pre><code class="language-javascript">// Server verifies token signature → Returns data
+{
+    "name": "Debina",
+    "email": "debina@example.com"
+}</code></pre>
+            </div>
+
+            <h3>Step 3: Access Token Expires</h3>
+            <div class="flow-step error">
+                <h4>Server → User: 401 Unauthorized</h4>
+                <pre><code class="language-javascript">GET /api/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...  // Expired!
+
+// Server Response:
+{
+    "error": "token_expired",
+    "message": "Access token has expired"
+}
+// HTTP Status: 401</code></pre>
+            </div>
+
+            <h3>Step 4: Refresh Flow (Get New Access Token)</h3>
+            <div class="flow-step">
+                <h4>User → Server: Refresh Request</h4>
+                <pre><code class="language-javascript">POST /api/auth/refresh
+{
+    "refresh_token": "eyJhbGciOiJIUzI1NiIs..."
+}
+
+// Note: NO re-login required!
+// User doesn't even notice this happening</code></pre>
+            </div>
+
+            <div class="flow-step success">
+                <h4>Server → User: New Access Token</h4>
+                <pre><code class="language-javascript">{
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",  // NEW token!
+    "expires_in": 900
+}
+
+// User continues using the app seamlessly</code></pre>
+            </div>
+
+            <div class="diagram">
+<pre>
+THE COMPLETE FLOW VISUALIZED
+════════════════════════════
+
+┌─────────┐                                    ┌─────────┐
+│  User   │                                    │  Server │
+└────┬────┘                                    └────┬────┘
+     │                                              │
+     │  1. POST /login {username, password}        │
+     │ ────────────────────────────────────────────>│
+     │                                              │
+     │  {access_token, refresh_token}              │
+     │ <────────────────────────────────────────────│
+     │                                              │
+     │  2. GET /api/data (access_token)            │
+     │ ────────────────────────────────────────────>│  ✓ Valid
+     │ <────────────────────────────────────────────│
+     │                                              │
+     │  ... 15 minutes later ...                   │
+     │                                              │
+     │  3. GET /api/data (access_token)            │
+     │ ────────────────────────────────────────────>│  ✗ Expired!
+     │  401 Unauthorized                           │
+     │ <────────────────────────────────────────────│
+     │                                              │
+     │  4. POST /refresh (refresh_token)           │
+     │ ────────────────────────────────────────────>│  ✓ Valid
+     │  {new_access_token}                         │
+     │ <────────────────────────────────────────────│
+     │                                              │
+     │  5. GET /api/data (new_access_token)        │
+     │ ────────────────────────────────────────────>│  ✓ Valid
+     │ <────────────────────────────────────────────│
+     │                                              │
+</pre>
+            </div>
+        </div>
+
+        <!-- Security Comparison -->
+        <div class="section">
+            <h2>Why Two Tokens? Security Analysis</h2>
+
+            <div class="think-prompt">
+                <div class="think-prompt-icon">🤔</div>
+                <div class="think-prompt-content">
+                    <strong>Think First!</strong>
+                    <p>For each aspect, try to predict the answer for both tokens. Which one would be longer-lived? Which one is more exposed to theft?</p>
+                </div>
+            </div>
+
+            <button class="reveal-all-btn" onclick="revealAllCells('token-comparison-table')">
+                👁️ Reveal All Answers
+            </button>
+
+            <div class="table-container">
+                <table class="interactive-table" id="token-comparison-table">
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Access Token (Click to reveal)</th>
+                        <th>Refresh Token (Click to reveal)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Lifetime</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">15-30 minutes</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">7-30 days</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Used for</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Every API request</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Only to get new access tokens</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frequency of use</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Hundreds of times/day</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Once every 15-30 min</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Network exposure</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">High (sent often)</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Low (sent rarely)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>If stolen</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">15-30 min of access</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Can generate access tokens!</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Storage</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Memory (safest)</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">HttpOnly cookie / Secure storage</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="danger-box">
+                <h4>Scenario: Access Token Stolen</h4>
+                <p>Attacker steals access token via XSS or network sniffing.</p>
+                <ul>
+                    <li><strong>Damage window:</strong> Only 15-30 minutes</li>
+                    <li><strong>After expiry:</strong> Attacker is locked out</li>
+                    <li><strong>User impact:</strong> Continues normally (refresh token is safe)</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h4>Scenario: Refresh Token Stolen</h4>
+                <p>More serious! Attacker can generate new access tokens.</p>
+                <ul>
+                    <li><strong>Mitigation:</strong> Store in HttpOnly cookie (XSS can't read it)</li>
+                    <li><strong>Detection:</strong> Use refresh token rotation (see below)</li>
+                    <li><strong>Response:</strong> Revoke all refresh tokens for user</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Where to Store Tokens -->
+        <div class="section">
+            <h2>Where to Store Tokens (Production)</h2>
+
+            <div class="storage-option recommended">
+                <h4>🏆 Pattern 1: Memory + HttpOnly Cookie (Recommended)</h4>
+                <p>Access token in JavaScript memory, refresh token in HttpOnly cookie.</p>
+                <div class="pro-con">
+                    <span class="pro">✓ XSS can't steal access token</span>
+                    <span class="pro">✓ XSS can't read refresh token</span>
+                    <span class="pro">✓ Survives page refresh via refresh endpoint</span>
+                    <span class="con">✗ More complex to implement</span>
+                </div>
+                <pre><code class="language-javascript">// Access token in memory (variable)
+let accessToken = response.access_token;
+
+// Refresh token set by server as HttpOnly cookie
+// Set-Cookie: refresh_token=xyz; HttpOnly; Secure; SameSite=Strict
+
+// On page load, call refresh endpoint to get new access token
+async function onPageLoad() {
+    const response = await fetch('/api/auth/refresh', {
+        credentials: 'include'  // Send HttpOnly cookie
+    });
+    accessToken = response.access_token;
+}</code></pre>
+                <p style="margin-top: 0.5rem;"><strong>Used by:</strong> Auth0, Okta, many enterprise apps</p>
+            </div>
+
+            <div class="storage-option common">
+                <h4>⚠️ Pattern 2: localStorage (Common but Less Secure)</h4>
+                <p>Both tokens in localStorage. Simple but vulnerable to XSS.</p>
+                <div class="pro-con">
+                    <span class="pro">✓ Simple to implement</span>
+                    <span class="pro">✓ Survives page refresh</span>
+                    <span class="pro">✓ Works with any API</span>
+                    <span class="con">✗ XSS can steal tokens!</span>
+                </div>
+                <pre><code class="language-javascript">// Storing tokens
+localStorage.setItem('access_token', response.access_token);
+localStorage.setItem('refresh_token', response.refresh_token);
+
+// Using tokens
+const token = localStorage.getItem('access_token');
+fetch('/api/data', {
+    headers: { 'Authorization': `Bearer ${token}` }
+});</code></pre>
+                <p style="margin-top: 0.5rem;"><strong>Acceptable for:</strong> Internal tools, low-risk apps, when combined with strong CSP</p>
+            </div>
+
+            <div class="storage-option">
+                <h4>📱 Pattern 3: Mobile Secure Storage (Best for Mobile)</h4>
+                <p>iOS Keychain or Android Keystore. Hardware-backed encryption.</p>
+                <div class="pro-con">
+                    <span class="pro">✓ Hardware encryption</span>
+                    <span class="pro">✓ Protected by device PIN/biometrics</span>
+                    <span class="pro">✓ Other apps can't access</span>
+                    <span class="pro">✓ No XSS risk</span>
+                </div>
+                <pre><code class="language-swift">// iOS - Keychain
+let keychain = Keychain(service: "com.myapp")
+keychain["access_token"] = accessToken
+keychain["refresh_token"] = refreshToken
+
+// Android - EncryptedSharedPreferences
+val prefs = EncryptedSharedPreferences.create(...)
+prefs.edit().putString("access_token", accessToken).apply()</code></pre>
+                <p style="margin-top: 0.5rem;"><strong>Why JWT shines:</strong> Mobile apps don't have browsers/cookies, making JWT perfect!</p>
+            </div>
+        </div>
+
+        <!-- Refresh Token Rotation -->
+        <div class="section">
+            <h2>Advanced: Refresh Token Rotation</h2>
+
+            <div class="info-box">
+                <strong>Problem:</strong> If a refresh token is stolen, attacker can keep generating access tokens forever (until refresh token expires).
+            </div>
+
+            <div class="success-box">
+                <strong>Solution: Refresh Token Rotation</strong>
+                <p>Every time a refresh token is used, issue a NEW refresh token and invalidate the old one.</p>
+            </div>
+
+            <div class="diagram">
+<pre>
+REFRESH TOKEN ROTATION
+══════════════════════
+
+Normal Flow:
+1. User calls /refresh with refresh_token_v1
+2. Server returns:
+   - New access_token
+   - New refresh_token_v2 (old one invalidated!)
+3. User must use refresh_token_v2 next time
+
+Attack Detection:
+1. Attacker steals refresh_token_v1
+2. Real user refreshes first → gets refresh_token_v2
+3. Attacker tries refresh_token_v1 → REJECTED!
+4. Server detects reuse → Revokes ALL tokens for user
+5. Both attacker AND user must re-login
+   (User is notified of suspicious activity)
+</pre>
+            </div>
+
+            <pre><code class="language-python"># Server-side refresh with rotation
+def refresh_token_endpoint(request):
+    old_refresh_token = request.data['refresh_token']
+
+    # Verify and decode
+    payload = verify_refresh_token(old_refresh_token)
+
+    # Check if token was already used (rotation detection)
+    if is_token_blacklisted(old_refresh_token):
+        # ALERT: Token reuse detected! Possible theft!
+        revoke_all_tokens_for_user(payload['user_id'])
+        raise SecurityException("Refresh token reuse detected")
+
+    # Blacklist the old refresh token
+    blacklist_token(old_refresh_token)
+
+    # Issue new tokens
+    new_access_token = create_access_token(payload['user_id'])
+    new_refresh_token = create_refresh_token(payload['user_id'])
+
+    return {
+        'access_token': new_access_token,
+        'refresh_token': new_refresh_token  # NEW token!
+    }</code></pre>
+        </div>
+
+        <!-- Implementation Code -->
+        <div class="section">
+            <h2>Implementation: Auto-Refresh in Frontend</h2>
+
+            <pre><code class="language-javascript">// API wrapper with automatic token refresh
+class ApiClient {
+    constructor() {
+        this.accessToken = null;
+    }
+
+    async request(url, options = {}) {
+        // Add access token to request
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                ...options.headers,
+                'Authorization': `Bearer ${this.accessToken}`
+            }
+        });
+
+        // If token expired, refresh and retry
+        if (response.status === 401) {
+            const refreshed = await this.refreshToken();
+
+            if (refreshed) {
+                // Retry with new token
+                return fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${this.accessToken}`
+                    }
+                });
+            } else {
+                // Refresh failed - redirect to login
+                window.location.href = '/login';
+            }
+        }
+
+        return response;
+    }
+
+    async refreshToken() {
+        try {
+            const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                credentials: 'include'  // Send refresh token cookie
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.accessToken = data.access_token;
+                return true;
+            }
+        } catch (error) {
+            console.error('Refresh failed:', error);
+        }
+        return false;
+    }
+}
+
+// Usage
+const api = new ApiClient();
+const profile = await api.request('/api/profile');
+// Token refresh happens automatically if needed!</code></pre>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="section">
+            <h2>Quick Reference</h2>
+
+            <div class="interactive-question">
+                <h4>🎯 Quiz Yourself!</h4>
+                <p>Before revealing each answer, ask yourself: "If I were designing this system, what would I choose for this question?"</p>
+            </div>
+
+            <button class="reveal-all-btn" onclick="revealAllCells('quick-ref-table')">
+                👁️ Reveal All Answers
+            </button>
+
+            <div class="table-container">
+                <table class="interactive-table" id="quick-ref-table">
+                    <tr>
+                        <th>Question</th>
+                        <th>Access Token</th>
+                        <th>Refresh Token</th>
+                    </tr>
+                    <tr>
+                        <td>How long does it live?</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">15-30 minutes</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">7-30 days</span></td>
+                    </tr>
+                    <tr>
+                        <td>When do I use it?</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Every API call</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">When access token expires</span></td>
+                    </tr>
+                    <tr>
+                        <td>Where do I store it?</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Memory (best) or localStorage</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">HttpOnly cookie (best) or secure storage</span></td>
+                    </tr>
+                    <tr>
+                        <td>What if it's stolen?</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Limited damage (short life)</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Serious - use rotation to detect</span></td>
+                    </tr>
+                    <tr>
+                        <td>Can I revoke it?</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Just wait for expiry</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Yes, delete from DB/blacklist</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Token Lifetimes</div>
+            <p style="margin-bottom: 1rem;">Why should access tokens have SHORT lifetimes (15-30 min)?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) To force users to login more often
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) To limit the damage window if the token is stolen
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) To reduce server storage requirements
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) To make tokens smaller in size
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz: Token Storage</div>
+            <p style="margin-bottom: 1rem;">What's the most secure way to store tokens in a web browser?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    A) Both tokens in localStorage
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    B) Both tokens in sessionStorage
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, true)">
+                    C) Access token in memory, refresh token in HttpOnly cookie
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    D) Both tokens in regular cookies
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback-2"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="05b_jwt_quiz.html">← JWT Mastery Quiz</a>
+            <a href="06_oauth_intro.html">Next: OAuth 2.0 Introduction →</a>
+        </div>
+
+        <footer>
+            <p>Page 4b of 8 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-swift.min.js"></script>
+    <script>
+        // Interactive Table Functions
+        function revealCell(cell) {
+            if (!cell.classList.contains('revealed')) {
+                cell.classList.add('revealed');
+            }
+        }
+
+        function revealAllCells(tableId) {
+            const table = document.getElementById(tableId);
+            const cells = table.querySelectorAll('.hidden-cell');
+            let delay = 0;
+            cells.forEach(cell => {
+                setTimeout(() => {
+                    cell.classList.add('revealed');
+                }, delay);
+                delay += 150;
+            });
+
+            // Update button
+            const btn = event.target;
+            btn.innerHTML = '✅ All Revealed';
+            btn.classList.add('revealed');
+        }
+
+        function checkAnswer(element, isCorrect) {
+            const container = element.closest('.quiz-container');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = container.querySelector('.quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Short-lived access tokens mean if one is stolen, the attacker only has 15-30 minutes before it expires. The refresh token (kept safe) allows the real user to continue seamlessly.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Not quite. The main reason is security! If a token is stolen (XSS, MITM), the damage is limited to the token\'s lifetime. Short tokens = short attack window.';
+            }
+        }
+
+        function checkAnswer2(element, isCorrect) {
+            const container = element.closest('.quiz-container');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = container.querySelector('.quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Access token in memory can\'t be stolen by XSS (not in any storage). Refresh token in HttpOnly cookie can\'t be read by JavaScript. This is the most secure combination for browsers!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ localStorage, sessionStorage, and regular cookies can all be read by JavaScript - making them vulnerable to XSS attacks. HttpOnly cookies + memory is the safest combo.';
+            }
+        }
+    </script>
+</body>
+</html>

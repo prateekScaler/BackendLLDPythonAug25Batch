@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 2.0 Introduction - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔗</div>
+            <h1>OAuth 2.0 Introduction</h1>
+            <p class="subtitle">The protocol behind "Login with Google"</p>
+        </header>
+
+<!-- Context Quiz: Why do we need OAuth? -->
+<div class="quiz-container" style="background: #fef3c7; border: 2px solid #f59e0b; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);">
+    <div class="quiz-title" style="color: #92400e;">🤔 Think Before You Peek!</div>
+    <p style="margin-bottom: 1rem; color: #78350f;">
+        We already have sessions and JWTs. Before jumping into OAuth, think through these:
+    </p>
+
+    <!-- Q1 -->
+    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+        <p style="color: #1f2937;">
+            <strong>Q1:</strong> You're building a website and want users to log in. Sessions or JWT can do this.
+            Why would you need anything else?
+        </p>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">
+                Click to reveal
+            </summary>
+            <p style="margin-top: 0.5rem; padding: 0.5rem; background: #d1fae5; border-radius: 4px; color: #065f46; border: 1px solid #6ee7b7;">
+                Sessions and JWT work great when users create accounts on <strong>your</strong> site.
+                But OAuth solves a different problem: letting users log in with an <strong>existing identity</strong>
+                (Google, GitHub) without creating yet another password.
+            </p>
+        </details>
+    </div>
+
+    <!-- Q2 -->
+    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+        <p style="color: #1f2937;">
+            <strong>Q2:</strong> <strong>CRED</strong> wants to fetch your credit card statements from HDFC Bank to show your spending patterns.
+            How does CRED get access to your bank data?
+        </p>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">
+                Click to reveal
+            </summary>
+            <p style="margin-top: 0.5rem; padding: 0.5rem; background: #fee2e2; border-radius: 4px; color: #991b1b; border: 1px solid #fca5a5;">
+                Without OAuth, you'd have to share your HDFC netbanking password with CRED 😱
+                OAuth lets HDFC issue a <strong>limited-scope token</strong> to CRED —
+                read credit card statements only, but NOT transfer money or change your PIN.
+            </p>
+        </details>
+    </div>
+
+    <!-- Q3 -->
+    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+        <p style="color: #1f2937;">
+            <strong>Q3:</strong> <strong>INDmoney</strong> wants to show all your mutual fund holdings from Groww, Zerodha, and Coin in one dashboard.
+            How do they fetch your portfolio data safely?
+        </p>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">
+                Click to reveal
+            </summary>
+            <p style="margin-top: 0.5rem; padding: 0.5rem; background: #fef3c7; border-radius: 4px; color: #92400e; border: 1px solid #fcd34d;">
+                OAuth. Groww/Zerodha asks YOU for explicit consent ("Allow INDmoney to view your holdings?") and gives INDmoney a token that
+                <strong>only allows reading portfolio data</strong> — they can't place trades or withdraw money.
+            </p>
+        </details>
+    </div>
+
+    <!-- Q4 -->
+    <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <p style="color: #1f2937;">
+            <strong>Q4:</strong> You use <strong>Buffer</strong> (social media scheduler) to auto-post content to your Twitter/X account at scheduled times.
+            How does Buffer post tweets without knowing your Twitter password?
+        </p>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; color: #1971c2; font-weight: 500;">
+                Click to reveal
+            </summary>
+            <p style="margin-top: 0.5rem; padding: 0.5rem; background: #dbeafe; border-radius: 4px; color: #1e40af; border: 1px solid #93c5fd;">
+                OAuth with <strong>granular scopes</strong>! Twitter shows you: "Buffer wants to: ✅ Post tweets on your behalf, ✅ Read your profile.
+                But NOT: ❌ Read your DMs, ❌ Change your password, ❌ Access your email."
+                You approve only what's needed. Buffer gets a token that can ONLY do those specific things.
+            </p>
+        </details>
+    </div>
+</div>
+
+        <!-- The Pre-OAuth Dark Ages -->
+        <div class="section">
+            <h2>The Pre-OAuth Dark Ages</h2>
+
+            <div class="danger-box">
+                <h4>How Apps Got Access Before OAuth (2005-2007)</h4>
+                <p>This actually happened! Apps would literally ask for your password:</p>
+                <pre style="background: white; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+App: "Enter your Gmail password to import contacts"
+User: "password123"
+App: *stores password in their database*
+App: *logs into Gmail AS the user*
+App: *could read all emails, not just contacts*
+
+Security nightmare! 🔥
+                </pre>
+            </div>
+
+            <details style="background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border: 2px solid #eab308; border-radius: 12px; padding: 1rem 1.5rem; margin: 1rem 0;">
+                <summary style="cursor: pointer; font-weight: 600; color: #a16207; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🤔</span> But wait... Why do Google/Facebook ALLOW other apps to use them for login?
+                </summary>
+                <div style="margin-top: 1rem; color: #854d0e;">
+                    <p style="margin-bottom: 0.75rem;">Great question! It's not charity — it's <strong>strategic business</strong>:</p>
+
+                    <div style="background: white; border-radius: 8px; padding: 1rem; border: 1px solid #fde047;">
+                        <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.9rem;">
+                            <li style="margin-bottom: 0.5rem;">
+                                <strong>📊 Data & Insights:</strong> Google knows which apps you use, when, how often.
+                                <em>"Sumit logged into Zomato 47 times this month"</em> = valuable data for ads!
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <strong>🔒 User Lock-in:</strong> If 50 apps use your Google login, you'll NEVER leave Google.
+                                Switching to a new email = losing access to everything!
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <strong>🌐 Platform Dominance:</strong> More apps using "Login with Google" = Google becomes the internet's ID card.
+                                They become <em>essential infrastructure</em>.
+                            </li>
+                            <li style="margin-bottom: 0.5rem;">
+                                <strong>💰 API Monetization:</strong> Free for small apps, but companies like Uber/Airbnb pay for high-volume API access.
+                            </li>
+                            <li>
+                                <strong>🤝 Trust Transfer:</strong> Users trust "Login with Google" more than "Create account on RandomApp.com".
+                                Google's trust = more signups for apps = apps promote Google login!
+                            </li>
+                        </ul>
+                    </div>
+
+                    <p style="margin-top: 0.75rem; font-size: 0.9rem; background: #fef9c3; padding: 0.5rem; border-radius: 4px;">
+                        <strong>Think about it:</strong> Would you rather be the app that needs Google, or BE Google that everyone needs?
+                        That's why Apple, Microsoft, GitHub all offer OAuth too — it's a platform power play!
+                    </p>
+                </div>
+            </details>
+        </div>
+
+        <!-- OAuth Timeline & History -->
+        <div class="section">
+            <h2>OAuth History & Timeline</h2>
+
+            <div class="info-box">
+                <strong>Is OAuth a Protocol?</strong> Yes! OAuth 2.0 is an open standard/protocol defined by RFC 6749 (2012). It specifies exactly how different parties should communicate to grant access safely.
+            </div>
+
+            <details style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border: 2px solid #c084fc; border-radius: 12px; padding: 1rem 1.5rem; margin: 1rem 0;">
+                <summary style="cursor: pointer; font-weight: 600; color: #7c3aed; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🤓</span> Do you know what RFCs are?
+                </summary>
+                <div style="margin-top: 1rem; color: #4c1d95;">
+                    <p><strong>RFC = Request for Comments</strong></p>
+                    <p style="margin: 0.5rem 0;">Managed by <strong>IETF</strong> (Internet Engineering Task Force) — the folks who standardize how the internet works!</p>
+
+                    <div style="background: white; border-radius: 8px; padding: 0.75rem; margin-top: 0.75rem; border: 1px solid #e9d5ff;">
+                        <strong style="color: #7c3aed;">Fun Trivia:</strong>
+                        <ul style="margin: 0.5rem 0 0 1.25rem; font-size: 0.9rem;">
+                            <li><strong>RFC 1</strong> (1969) — The very first RFC, about ARPANET host software</li>
+                            <li><strong>RFC 2616</strong> — HTTP/1.1 (you use this every day!)</li>
+                            <li><strong>RFC 1149</strong> — "IP over Avian Carriers" 🐦 Yes, sending internet packets via <em>pigeons</em>! (April Fools' joke that was actually tested in 2001 — 55% packet loss 😂)</li>
+                            <li><strong>RFC 2324</strong> — Hyper Text Coffee Pot Control Protocol (HTCPCP) ☕ — Another April Fools' RFC!</li>
+                        </ul>
+                    </div>
+                    <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #6b21a8;">
+                        <em>RFCs are never deleted — they get "obsoleted" by newer RFCs. The internet's history is preserved forever!</em>
+                    </p>
+                </div>
+            </details>
+
+            <div class="diagram">
+<pre>
+OAUTH TIMELINE
+══════════════
+
+2006: Blaine Cook (Twitter) needs a way to let third-party apps
+      access Twitter accounts without storing passwords
+
+2007: OAuth 1.0 draft created by Twitter, Google, and others
+      - Complex signature requirements
+      - Hard to implement correctly
+
+2010: OAuth 1.0a (security fix for session fixation attack)
+
+2012: OAuth 2.0 (RFC 6749) - Complete rewrite!
+      - Simpler implementation
+      - Bearer tokens (no signatures needed)
+      - Multiple grant types for different scenarios
+      - This is what everyone uses today!
+
+2014: OpenID Connect 1.0 - Identity layer ON TOP of OAuth 2.0
+      - OAuth = Authorization (What can this app do?)
+      - OIDC = Authentication (Who is this user?)
+      - "Login with Google" uses OIDC, not just OAuth
+
+2020s: OAuth 2.1 (draft) - Consolidating best practices
+</pre>
+            </div>
+
+            <details style="background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border: 2px solid #d946ef; border-radius: 12px; padding: 1rem 1.5rem; margin: 1rem 0;">
+                <summary style="cursor: pointer; font-weight: 600; color: #a21caf; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🤷</span> OAuth vs OIDC — What's the difference? (Car Analogy)
+                </summary>
+                <div style="margin-top: 1rem; color: #701a75;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div style="background: white; border-radius: 8px; padding: 1rem; border: 1px solid #f0abfc;">
+                            <strong style="color: #a21caf;">OAuth 2.0 = Car Keys</strong><br>
+                            <span style="font-size: 0.9rem;">"Here are my <strong>car keys</strong>. You can drive my car."</span>
+                            <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: #86198f;">
+                                → Grants <strong>permission</strong> to do something<br>
+                                → Doesn't tell you WHO the person is<br>
+                                → Anyone with these keys can drive!
+                            </p>
+                        </div>
+                        <div style="background: white; border-radius: 8px; padding: 1rem; border: 1px solid #f0abfc;">
+                            <strong style="color: #a21caf;">OIDC = Driver's License</strong><br>
+                            <span style="font-size: 0.9rem;">"Here's my <strong>driver's license</strong>. I am Sumit Mishra."</span>
+                            <p style="margin: 0.5rem 0 0; font-size: 0.85rem; color: #86198f;">
+                                → Proves <strong>identity</strong> (who you are)<br>
+                                → Built on top of OAuth 2.0<br>
+                                → Confirms you're allowed to drive!
+                            </p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; background: #fef3c7; padding: 0.75rem; border-radius: 8px; border: 1px solid #fcd34d;">
+                        <strong style="color: #92400e;">Key Insight:</strong>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.9rem; color: #78350f;">
+                            Just because you have a <strong>driver's license</strong> (OIDC/identity) doesn't mean you can drive my car — you still need the <strong>keys</strong> (OAuth/permission)!<br><br>
+                            And just because you have my <strong>car keys</strong> doesn't prove WHO you are — anyone with the keys can drive!
+                        </p>
+                    </div>
+                    <p style="margin-top: 0.75rem; font-size: 0.9rem; background: #fdf4ff; padding: 0.5rem; border-radius: 4px;">
+                        <strong>"Login with Google"</strong> = OIDC (you want to know WHO the user is — like checking their license)<br>
+                        <strong>"Let app access my photos"</strong> = OAuth (you want to grant PERMISSION — like handing over keys)
+                    </p>
+                </div>
+            </details>
+
+            <h3>OAuth vs Authentication</h3>
+
+            <div class="warning-box">
+                <h4>⚠️ Important Distinction!</h4>
+                <p><strong>OAuth 2.0 is for AUTHORIZATION, not AUTHENTICATION!</strong></p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #ffe3e3; border-color: #ff6b6b;">
+                    <h4>OAuth 2.0 Answers:</h4>
+                    <p style="font-size: 1.2rem; font-weight: bold;">"What can this app access?"</p>
+                    <p>Authorization = Permissions</p>
+                </div>
+                <div class="comparison-item" style="background: #d3f9d8; border-color: #51cf66;">
+                    <h4>Authentication Answers:</h4>
+                    <p style="font-size: 1.2rem; font-weight: bold;">"Who is this user?"</p>
+                    <p>For this, use <strong>OpenID Connect (OIDC)</strong><br>(built on top of OAuth)</p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>OpenID Connect (OIDC)</strong> adds an ID Token (a JWT) that contains user identity information. That's what "Login with Google" actually uses!
+            </div>
+        </div>
+
+        <!-- How OAuth Differs from Sessions/Tokens -->
+        <div class="section">
+            <h2>OAuth vs Sessions vs JWT: Different Problems!</h2>
+
+            <div class="warning-box">
+                <strong>Key Insight:</strong> OAuth solves a DIFFERENT problem than sessions or JWT. They're not replacements for each other!
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Technology</th>
+                        <th>What Problem It Solves</th>
+                        <th>Who Uses It</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Sessions</strong></td>
+                        <td>"Remember that this user logged in to MY site"</td>
+                        <td>Your server remembers your users</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JWT</strong></td>
+                        <td>"Verify this user's identity without DB lookup"</td>
+                        <td>Your server issues tokens to your users</td>
+                    </tr>
+                    <tr style="background: #d3f9d8;">
+                        <td><strong>OAuth</strong></td>
+                        <td>"Let a third-party app access MY user's data safely"</td>
+                        <td>Google lets YOUR app access its users' data</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="diagram">
+<pre>
+THE DIFFERENCE VISUALIZED
+═════════════════════════
+
+SESSIONS / JWT:
+┌──────────┐                    ┌──────────┐
+│   User   │ ──── Login ─────► │ Your App │
+│ (Gokula) │ ◄─── Session ──── │          │
+└──────────┘                    └──────────┘
+Gokula creates account ON your app.
+Your app authenticates Gokula directly.
+
+
+OAUTH:
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│   User   │     │ Your App │     │  Google  │
+│ (Gokula) │     │          │     │          │
+└──────────┘     └──────────┘     └──────────┘
+     │                │                │
+     │ 1. Click "Login with Google"    │
+     │───────────────►│                │
+     │                │ 2. Redirect    │
+     │◄───────────────│───────────────►│
+     │                │                │
+     │ 3. "Allow PhotoApp to see your email?"
+     │◄────────────────────────────────│
+     │ 4. Click Allow                  │
+     │────────────────────────────────►│
+     │                │                │
+     │                │ 5. Access Token│
+     │                │◄───────────────│
+     │                │                │
+     │ 6. Welcome Gokula!             │
+     │◄───────────────│                │
+
+Gokula's account is at GOOGLE.
+Your app gets PERMISSION to access Gokula's Google data.
+</pre>
+            </div>
+        </div>
+
+        <!-- Why OAuth After Sessions/Tokens -->
+        <div class="section">
+            <h2>Why Do We Need OAuth After Sessions/Tokens?</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #339af0;">
+                    <div class="card-icon">🚪</div>
+                    <h3>Use Case 1: Social Login</h3>
+                    <p>Let users login with existing Google/Facebook/GitHub accounts instead of creating new passwords.</p>
+                    <p><em>Sessions/JWT can't do this!</em></p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🔌</div>
+                    <h3>Use Case 2: API Access</h3>
+                    <p>Let third-party apps access your users' data with their permission.</p>
+                    <p><em>Like apps posting to your Twitter</em></p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #ff6b6b;">
+                    <div class="card-icon">🎛️</div>
+                    <h3>Use Case 3: Granular Permissions</h3>
+                    <p>Give limited access (read email but not send, view photos but not delete).</p>
+                    <p><em>Scopes provide fine control</em></p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #fab005;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Use Case 4: No Password Sharing</h3>
+                    <p>Apps never see or store user passwords. Much safer!</p>
+                    <p><em>Revoke access without changing password</em></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Problem OAuth Solves</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>❌ Without OAuth (The Bad Old Days)</h4>
+                    <p>You want a photo printing app to access your Google Photos:</p>
+                    <ol>
+                        <li>App asks for your Google password</li>
+                        <li>You give the app your password (yikes!)</li>
+                        <li>App logs into Google AS YOU</li>
+                        <li>App has FULL access to your account</li>
+                    </ol>
+                    <div class="danger-box" style="margin-top: 1rem;">
+                        <strong>Problems:</strong>
+                        <ul style="margin: 0.5rem 0 0 1rem;">
+                            <li>App has your password!</li>
+                            <li>App can do ANYTHING as you</li>
+                            <li>To revoke: change password</li>
+                            <li>No granular permissions</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="comparison-item good">
+                    <h4>✅ With OAuth 2.0</h4>
+                    <p>Same scenario, but with OAuth:</p>
+                    <ol>
+                        <li>App redirects you to Google</li>
+                        <li>Google asks: "Allow app to view photos?"</li>
+                        <li>You click "Allow"</li>
+                        <li>Google gives app a LIMITED token</li>
+                    </ol>
+                    <div class="success-box" style="margin-top: 1rem;">
+                        <strong>Benefits:</strong>
+                        <ul style="margin: 0.5rem 0 0 1rem;">
+                            <li>App NEVER sees your password</li>
+                            <li>App has LIMITED access</li>
+                            <li>Revoke anytime, no password change</li>
+                            <li>Granular permissions (scopes)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real-World Examples You Use Daily</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔵</div>
+                    <h3>Login with Google</h3>
+                    <p>Sign into apps using your Google account</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">⚫</div>
+                    <h3>Login with GitHub</h3>
+                    <p>Authorize apps to access your repos</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔷</div>
+                    <h3>Login with Facebook</h3>
+                    <p>Share profile info with third-party apps</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🎵</div>
+                    <h3>Spotify + Last.fm</h3>
+                    <p>Last.fm tracks your Spotify listening</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Terminology</h2>
+
+            <div class="think-prompt">
+                <div class="think-prompt-icon">🤔</div>
+                <div class="think-prompt-content">
+                    <strong>Quiz Yourself!</strong>
+                    <p>Look at each term and try to guess its description and example before revealing. These terms will appear everywhere in OAuth!</p>
+                </div>
+            </div>
+
+            <button class="reveal-all-btn" onclick="revealAllCells('oauth-terminology-table')">
+                👁️ Reveal All Answers
+            </button>
+
+            <div class="table-container">
+                <table class="interactive-table" id="oauth-terminology-table">
+                    <tr>
+                        <th>Term</th>
+                        <th>Description (Click to reveal)</th>
+                        <th>Example (Click to reveal)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Resource Owner</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">The user who owns the data</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">You (own your Google photos)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">App wanting access to your data</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">A photo printing app</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Authorization Server</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Issues tokens after user consent</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">accounts.google.com</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resource Server</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Holds the protected data</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Google Photos API</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Access Token</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Key to access resources</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">The token given to the app</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Refresh Token</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Used to get new access tokens</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Long-lived token for renewal</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Scope</strong></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">What permissions are granted</span></td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content"><code>photos.readonly</code>, <code>email</code></span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Scopes: Granular Permissions</h2>
+
+            <div class="diagram">
+<pre>
+OAUTH SCOPES
+════════════
+
+App requests: scope=email photos.readonly
+
+What user sees:
+┌─────────────────────────────────────┐
+│  Photo Print App wants to:          │
+│                                     │
+│  ✅ View your email address          │
+│  ✅ View your photos                 │
+│                                     │
+│  [Allow]         [Deny]             │
+└─────────────────────────────────────┘
+
+What app can do:
+  ✅ Read email
+  ✅ View photos
+  ❌ Delete photos (not requested)
+  ❌ Access Drive (not requested)
+  ❌ Send emails (not requested)
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>Least Privilege:</strong> Apps should only request the scopes they actually need. Users are more likely to approve minimal permissions.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Why OAuth Matters for Developers</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🚀</div>
+                    <h3>Easy User Onboarding</h3>
+                    <p>Users don't need to create new accounts - just click "Login with Google"</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔒</div>
+                    <h3>No Password Storage</h3>
+                    <p>You don't store passwords - Google/GitHub handles authentication</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔗</div>
+                    <h3>API Integration</h3>
+                    <p>Access user data from other services (GitHub repos, Google Drive, etc.)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz 1 -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz 1: OAuth Basics</div>
+            <p style="margin-bottom: 1rem;">In OAuth 2.0, what does the third-party app (client) receive after the user authorizes?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) The user's password
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) An access token with limited permissions
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Full access to all user data
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) The user's session cookie
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <!-- Quiz 2 -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quiz 2: OAuth vs Sessions/JWT</div>
+            <p style="margin-bottom: 1rem;">A developer says: "We already use JWT for authentication, so we don't need OAuth." When would this be WRONG?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    A) When building a mobile app
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    B) When using microservices
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, true)">
+                    C) When wanting users to login with their Google/GitHub accounts
+                </div>
+                <div class="quiz-option" onclick="checkAnswer2(this, false)">
+                    D) When scaling to multiple servers
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback-2"></div>
+        </div>
+
+        <script>
+        // Interactive Table Functions
+        function revealCell(cell) {
+            if (!cell.classList.contains('revealed')) {
+                cell.classList.add('revealed');
+            }
+        }
+
+        function revealAllCells(tableId) {
+            const table = document.getElementById(tableId);
+            const cells = table.querySelectorAll('.hidden-cell');
+            let delay = 0;
+            cells.forEach(cell => {
+                setTimeout(() => {
+                    cell.classList.add('revealed');
+                }, delay);
+                delay += 150;
+            });
+
+            // Update button
+            const btn = event.target;
+            btn.innerHTML = '✅ All Revealed';
+            btn.classList.add('revealed');
+        }
+
+        function checkAnswer2(element, isCorrect) {
+            const container = element.closest('.quiz-container');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = container.querySelector('.quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! OAuth solves a different problem than JWT. JWT handles YOUR app\'s authentication. OAuth lets users login via ANOTHER service (Google, GitHub) or lets third-party apps access your users\' data.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Think again. OAuth is specifically needed when you want to integrate with external identity providers (social login) or allow third-party apps to access your API on behalf of users.';
+            }
+        }
+        </script>
+
+        <div class="page-nav">
+            <a href="04b_access_refresh_tokens.html">← Access & Refresh Tokens</a>
+            <a href="06b_oauth_tokens_explained.html">Next: OAuth Tokens Explained →</a>
+        </div>
+
+        <footer>
+            <p>Page 6 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! The app receives an access token with only the permissions (scopes) the user approved. It never sees the password!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ The whole point of OAuth is that the app NEVER gets your password. It only gets a limited access token!';
+            }
+        }
+    </script>
+</body>
+</html>

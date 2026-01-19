@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 2.0 Flows - Auth Guide 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .flow-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border: 2px solid var(--border-color);
+        }
+        .flow-card.recommended {
+            border-color: #51cf66;
+            background: linear-gradient(135deg, #d3f9d8 0%, #b2f2bb 100%);
+        }
+        .flow-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .flow-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-recommended { background: #51cf66; color: white; }
+        .badge-legacy { background: #868e96; color: white; }
+        .badge-machine { background: #339af0; color: white; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">🔐 Auth Guide 2</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="08_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔄</div>
+            <h1>OAuth 2.0 Flows</h1>
+            <p class="subtitle">Different flows for different use cases</p>
+        </header>
+
+        <div class="section">
+            <h2>Which Flow to Use?</h2>
+
+            <div class="think-prompt">
+                <div class="think-prompt-icon">🤔</div>
+                <div class="think-prompt-content">
+                    <strong>Think First!</strong>
+                    <p>For each use case, consider: Does the client have a backend server? Can it keep secrets? Is there a user involved?</p>
+                </div>
+            </div>
+
+            <button class="reveal-all-btn" onclick="revealAllCells('oauth-flows-table')">
+                👁️ Reveal All Answers
+            </button>
+
+            <div class="table-container">
+                <table class="interactive-table" id="oauth-flows-table">
+                    <tr>
+                        <th>Use Case</th>
+                        <th>Recommended Flow (Click to reveal)</th>
+                    </tr>
+                    <tr>
+                        <td>Web app with backend server</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content"><strong>Authorization Code</strong></span></td>
+                    </tr>
+                    <tr>
+                        <td>Mobile app / SPA</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content"><strong>Authorization Code + PKCE</strong></span></td>
+                    </tr>
+                    <tr>
+                        <td>Server-to-server (no user)</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content"><strong>Client Credentials</strong></span></td>
+                    </tr>
+                    <tr>
+                        <td>Legacy/trusted apps only</td>
+                        <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-content">Implicit (deprecated - avoid!)</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Authorization Code Flow -->
+        <div class="flow-card recommended">
+            <div class="flow-title">
+                <h2 style="margin: 0;">1. Authorization Code Flow</h2>
+                <span class="flow-badge badge-recommended">RECOMMENDED</span>
+            </div>
+            <p><strong>Use for:</strong> Web applications with a backend server</p>
+            <p><strong>Real Example:</strong> Zomato's "Login with Google" button</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.9rem; line-height: 1.4;">
+AUTHORIZATION CODE FLOW — Example: Zomato + Google Login
+══════════════════════════════════════════════════════════
+
+     YOU                    ZOMATO                    GOOGLE                  GOOGLE APIs
+   (Browser)            (Backend Server)          (Auth Server)           (Resource Server)
+      │                        │                        │                        │
+      │                        │                        │                        │
+ ┌────┴────┐              ┌────┴────┐              ┌────┴────┐              ┌────┴────┐
+ │  User   │              │ Zomato  │              │ Google  │              │ Google  │
+ │ (Sumit) │              │ Server  │              │ OAuth   │              │ User    │
+ │         │              │         │              │         │              │ Info API│
+ └────┬────┘              └────┬────┘              └────┬────┘              └────┬────┘
+      │                        │                        │                        │
+      │ 1. Click               │                        │                        │
+      │ "Login with Google"    │                        │                        │
+      │───────────────────────►│                        │                        │
+      │                        │                        │                        │
+      │ 2. Redirect to         │                        │                        │
+      │    Google login page   │                        │                        │
+      │◄───────────────────────│                        │                        │
+      │                        │                        │                        │
+      │ 3. You see Google:     │                        │                        │
+      │    "Zomato wants to    │                        │                        │
+      │     see your email"    │                        │                        │
+      │    [Allow] [Deny]      │                        │                        │
+      │───────────────────────────────────────────────►│                        │
+      │                        │                        │                        │
+      │ 4. Google redirects    │                        │                        │
+      │    back with CODE      │                        │                        │
+      │◄───────────────────────────────────────────────│                        │
+      │   zomato.com/callback?code=4xF7g...            │                        │
+      │                        │                        │                        │
+      │ 5. Browser sends       │                        │                        │
+      │    CODE to Zomato      │                        │                        │
+      │───────────────────────►│                        │                        │
+      │                        │                        │                        │
+      │                        │ 6. Zomato exchanges   │                        │
+      │                        │    CODE + secret      │                        │
+      │                        │    for TOKENS         │                        │
+      │                        │───────────────────────►│                        │
+      │                        │                        │                        │
+      │                        │ 7. Google sends       │                        │
+      │                        │    access_token +     │                        │
+      │                        │    id_token (JWT)     │                        │
+      │                        │◄───────────────────────│                        │
+      │                        │                        │                        │
+      │                        │ 8. Zomato decodes     │                        │
+      │                        │    id_token → gets    │                        │
+      │                        │    email, name        │                        │
+      │                        │    (or calls API)     │                        │
+      │                        │───────────────────────────────────────────────►│
+      │                        │◄───────────────────────────────────────────────│
+      │                        │                        │                        │
+      │ 9. "Welcome, Sumit!"   │                        │                        │
+      │◄───────────────────────│                        │                        │
+      │                        │                        │                        │
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Why it's secure:</strong> The <code>client_secret</code> is only sent server-to-server (Step 6),
+                never exposed to the browser. Even if someone intercepts the CODE, they can't get tokens without the secret!
+            </div>
+
+            <!-- Deep Dive: Code and Secret -->
+            <details class="deep-dive" style="margin-top: 1.5rem; background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #69db7c;">
+                <summary style="cursor: pointer; font-weight: 700; font-size: 1.1rem; color: #2f9e44;">
+                    🔍 Deep Dive: What are CODE and SECRET? Who stores what?
+                </summary>
+                <div style="margin-top: 1rem;">
+                    <h4 style="color: #1971c2; margin-bottom: 0.75rem;">The Two Key Players:</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="background: #e7f5ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #339af0;">
+                            <strong style="color: #1971c2;">Authorization CODE</strong>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                                A <strong>one-time, short-lived</strong> ticket (typically expires in 1-10 minutes).<br><br>
+                                <em>Think:</em> Like a movie ticket stub that can only be exchanged once at the counter.
+                            </p>
+                        </div>
+                        <div style="background: #fff3bf; padding: 1rem; border-radius: 8px; border-left: 4px solid #fab005;">
+                            <strong style="color: #e67700;">Client SECRET</strong>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                                A <strong>permanent password</strong> that proves Zomato is really Zomato.<br><br>
+                                <em>Think:</em> Like the company's official stamp/seal that verifies authenticity.
+                            </p>
+                        </div>
+                    </div>
+
+                    <h4 style="color: #1971c2; margin-bottom: 0.75rem;">Who Stores What & Where?</h4>
+                    <div class="diagram" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
+<pre style="margin: 0;">
+WHO STORES WHAT?
+════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              GOOGLE (Auth Provider)                         │
+│                                                                             │
+│   Stores permanently:                                                       │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ client_id: "zomato-12345"                                           │   │
+│   │ client_secret: "super-secret-xyz" (hashed)                          │   │
+│   │ redirect_uri: "https://zomato.com/callback" (whitelisted)           │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   Stores temporarily (1-10 min):                                            │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ code: "4xF7g..." → linked to → user_id: "sumit@gmail.com"           │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            ZOMATO (Your App's Server)                       │
+│                                                                             │
+│   Stores permanently (in environment variables, NOT in code!):              │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ GOOGLE_CLIENT_ID = "zomato-12345"                                   │   │
+│   │ GOOGLE_CLIENT_SECRET = "super-secret-xyz"  ← NEVER in frontend!     │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   After successful auth, stores:                                            │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ user_id: 42                                                         │   │
+│   │ google_access_token: "ya29.xxx" (encrypted)                         │   │
+│   │ google_refresh_token: "1//0eXxx" (encrypted)                        │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            USER'S BROWSER                                   │
+│                                                                             │
+│   Sees temporarily (in URL, for milliseconds):                              │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ zomato.com/callback?code=4xF7g...                                   │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   NEVER sees: client_secret, access_token, refresh_token                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+                    </div>
+
+                    <h4 style="color: #1971c2; margin: 1rem 0 0.75rem 0;">Why This Two-Step Dance?</h4>
+                    <div style="background: #fff9db; padding: 1rem; border-radius: 8px; border: 1px solid #fab005;">
+                        <p style="margin: 0 0 0.75rem 0;"><strong>Why not just send the token directly to the browser?</strong></p>
+                        <div class="diagram" style="background: #fff; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
+<pre style="margin: 0;">
+INSECURE (Implicit Flow - Deprecated):
+═══════════════════════════════════════
+Browser ──► Google ──► Browser gets TOKEN directly in URL!
+                       ↓
+            URL: zomato.com/#access_token=xyz123
+                       ↓
+            Problem: URL is logged in browser history,
+                     can be leaked via Referer header,
+                     visible in network logs!
+
+SECURE (Authorization Code Flow):
+═════════════════════════════════
+Browser ──► Google ──► Browser gets CODE (useless alone)
+                       ↓
+            Zomato Server + SECRET ──► Google ──► Gets TOKEN
+                       ↓
+            Token stays on server, never in browser!
+</pre>
+                        </div>
+                        <p style="margin: 0.75rem 0 0 0; font-size: 0.9rem;">
+                            <strong>Analogy:</strong> CODE is like a coat check ticket.
+                            Anyone can see your ticket number, but only the coat check person (Zomato server)
+                            with the employee badge (SECRET) can exchange it for your coat (TOKEN).
+                        </p>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Authorization Code + PKCE -->
+        <div class="flow-card recommended">
+            <div class="flow-title">
+                <h2 style="margin: 0;">2. Authorization Code + PKCE</h2>
+                <span class="flow-badge badge-recommended">RECOMMENDED FOR MOBILE/SPA</span>
+            </div>
+            <p><strong>Use for:</strong> Mobile apps, Single Page Apps (public clients that can't keep secrets)</p>
+            <p><strong>Real Example:</strong> CRED mobile app using "Login with Google"</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.85rem; line-height: 1.4;">
+PKCE FLOW — Example: CRED Mobile App + Google Login
+════════════════════════════════════════════════════
+
+THE PROBLEM: Mobile apps can't safely store client_secret
+             (anyone can decompile the APK and find it!)
+
+THE SOLUTION: PKCE (Proof Key for Code Exchange)
+              Use a one-time secret generated on the fly!
+
+
+      CRED App                                      GOOGLE
+     (on your phone)                            (Auth Server)
+          │                                           │
+          │                                           │
+          │ 1. Generate random string (kept secret)   │
+          │    code_verifier = "dBjftJeZ4CVP..."      │
+          │                                           │
+          │ 2. Hash it                                │
+          │    code_challenge = SHA256(verifier)      │
+          │                   = "E9Melhoa2OwvFrEMT..."│
+          │                                           │
+          │ 3. Send ONLY the hash with auth request   │
+          │    (code_challenge)                       │
+          │──────────────────────────────────────────►│
+          │    "Here's a puzzle. I'll prove I made it │
+          │     when I come back for tokens."         │
+          │                                           │
+          │◄──────────────────────────────────────────│
+          │    CODE = "4/0AX4XfWh..."                 │
+          │                                           │
+          │ 4. Exchange CODE + original verifier      │
+          │──────────────────────────────────────────►│
+          │    "Here's the CODE and the answer to     │
+          │     the puzzle (code_verifier)"           │
+          │                                           │
+          │    Google checks:                         │
+          │    SHA256("dBjftJeZ4CVP...") ==           │
+          │           "E9Melhoa2OwvFrEMT..." ✓        │
+          │                                           │
+          │◄──────────────────────────────────────────│
+          │    access_token + id_token                │
+          │                                           │
+
+
+WHY IT'S SECURE:
+═══════════════
+• Even if attacker intercepts the CODE, they don't have the verifier
+• The verifier never travels over the network (only the hash does)
+• It's like a sealed envelope: Google saw the sealed answer first,
+  then CRED proves they made it by showing the original
+</pre>
+            </div>
+
+            <div class="info-box">
+                <strong>PKCE in simple terms:</strong> Instead of a pre-shared secret (which mobile apps can't keep safe),
+                CRED creates a one-time puzzle. Google sees the answer in a sealed envelope (the hash).
+                Later, CRED proves they made the puzzle by showing the original answer.
+            </div>
+
+            <!-- Deep Dive: PKCE Explained -->
+            <details class="deep-dive" style="margin-top: 1.5rem; background: white; border-radius: 12px; padding: 1.5rem; border: 2px solid #69db7c;">
+                <summary style="cursor: pointer; font-weight: 700; font-size: 1.1rem; color: #2f9e44;">
+                    🔍 Deep Dive: Who generates what? Step-by-step with analogy
+                </summary>
+                <div style="margin-top: 1rem;">
+                    <h4 style="color: #1971c2; margin-bottom: 0.75rem;">Who Does What in PKCE?</h4>
+
+                    <div class="diagram" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
+<pre style="margin: 0;">
+PKCE: WHO GENERATES WHAT?
+═════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CRED APP (on your phone)                             │
+│                                                                             │
+│   GENERATES (at the start of each login):                                   │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ code_verifier = random_string(43-128 chars)                         │   │
+│   │               = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"       │   │
+│   │                                                                     │   │
+│   │ code_challenge = BASE64URL(SHA256(code_verifier))                   │   │
+│   │                = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   KEEPS SECRET: code_verifier (never sent until token exchange)             │
+│   SENDS TO GOOGLE: code_challenge (the hash - safe to share!)               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              GOOGLE (Auth Server)                           │
+│                                                                             │
+│   RECEIVES & STORES TEMPORARILY:                                            │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ code_challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"      │   │
+│   │ code_challenge_method = "S256" (SHA-256)                            │   │
+│   │ authorization_code = "4/0AX4XfWh..."  → linked to challenge         │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   VERIFICATION (when CRED exchanges code for token):                        │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ 1. CRED sends: code + code_verifier                                 │   │
+│   │ 2. Google computes: SHA256(code_verifier)                           │   │
+│   │ 3. Google checks: computed_hash == stored_code_challenge?           │   │
+│   │ 4. If match → Issue tokens! If not → Reject!                        │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+                    </div>
+
+                    <h4 style="color: #1971c2; margin: 1.5rem 0 0.75rem 0;">Real Code Example:</h4>
+                    <div style="background: #1e1e1e; padding: 1rem; border-radius: 8px; overflow-x: auto;">
+<pre style="margin: 0; color: #d4d4d4; font-family: 'Fira Code', monospace; font-size: 0.85rem;"><span style="color: #6a9955;"># STEP 1: CRED app generates verifier and challenge</span>
+<span style="color: #c586c0;">import</span> <span style="color: #4ec9b0;">secrets</span>, <span style="color: #4ec9b0;">hashlib</span>, <span style="color: #4ec9b0;">base64</span>
+
+<span style="color: #6a9955;"># Generate random string (kept secret on the phone)</span>
+<span style="color: #9cdcfe;">code_verifier</span> = secrets.token_urlsafe(<span style="color: #b5cea8;">64</span>)
+<span style="color: #6a9955;"># → "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"</span>
+
+<span style="color: #6a9955;"># Hash it (this gets sent to Google)</span>
+<span style="color: #9cdcfe;">challenge_bytes</span> = hashlib.sha256(code_verifier.encode()).digest()
+<span style="color: #9cdcfe;">code_challenge</span> = base64.urlsafe_b64encode(challenge_bytes).rstrip(<span style="color: #ce9178;">b'='</span>).decode()
+<span style="color: #6a9955;"># → "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"</span>
+
+<span style="color: #6a9955;"># STEP 2: Send user to Google with the CHALLENGE (not verifier!)</span>
+<span style="color: #9cdcfe;">auth_url</span> = <span style="color: #ce9178;">f"""https://accounts.google.com/o/oauth2/v2/auth?
+    client_id=cred-app-12345
+    &redirect_uri=cred://callback
+    &response_type=code
+    &scope=email profile
+    &code_challenge=<span style="color: #9cdcfe;">{code_challenge}</span>
+    &code_challenge_method=S256"""</span>
+
+<span style="color: #6a9955;"># STEP 3: After user logs in, exchange code WITH the verifier</span>
+<span style="color: #9cdcfe;">token_response</span> = requests.post(<span style="color: #ce9178;">"https://oauth2.googleapis.com/token"</span>, data={
+    <span style="color: #ce9178;">"client_id"</span>: <span style="color: #ce9178;">"cred-app-12345"</span>,
+    <span style="color: #ce9178;">"code"</span>: received_code,
+    <span style="color: #ce9178;">"code_verifier"</span>: code_verifier,  <span style="color: #6a9955;"># ← NOW we send the original!</span>
+    <span style="color: #ce9178;">"grant_type"</span>: <span style="color: #ce9178;">"authorization_code"</span>,
+    <span style="color: #ce9178;">"redirect_uri"</span>: <span style="color: #ce9178;">"cred://callback"</span>
+})</pre>
+                    </div>
+
+                    <h4 style="color: #1971c2; margin: 1.5rem 0 0.75rem 0;">The Exam Answer Analogy:</h4>
+                    <div style="background: #d3f9d8; padding: 1rem; border-radius: 8px; border: 1px solid #69db7c;">
+                        <div class="diagram" style="background: #fff; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
+<pre style="margin: 0;">
+THE SEALED EXAM ANSWER ANALOGY
+══════════════════════════════
+
+Imagine a competitive exam where you need to prove you knew the answer BEFORE seeing the question:
+
+1. BEFORE THE EXAM (Login starts):
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ You write your answer: "42"                                         │
+   │ You put it in a SEALED ENVELOPE (hash it)                           │
+   │ You give the sealed envelope to the examiner (Google)               │
+   │                                                                     │
+   │ You KEEP the original answer ("42") with you                        │
+   └─────────────────────────────────────────────────────────────────────┘
+
+2. DURING THE EXAM (User authenticates):
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ Examiner verifies your identity (Google login)                      │
+   │ Gives you a TICKET saying "this person passed" (authorization code) │
+   └─────────────────────────────────────────────────────────────────────┘
+
+3. CLAIMING YOUR PRIZE (Token exchange):
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │ You show: TICKET + original answer "42"                             │
+   │ Examiner: Opens sealed envelope, checks if "42" matches             │
+   │ If match: "Here's your prize (access_token)!"                       │
+   │                                                                     │
+   │ If attacker stole your TICKET but doesn't know "42":                │
+   │ Examiner: "Wrong answer, no prize for you!"                         │
+   └─────────────────────────────────────────────────────────────────────┘
+
+KEY INSIGHT:
+• The sealed envelope (hash) travels over the network - safe if intercepted
+• The original answer (verifier) stays on your phone until the very end
+• Even if attacker gets the CODE, they can't guess the 64-char random verifier!
+</pre>
+                        </div>
+                    </div>
+
+                    <!-- Similarity to Public Key Cryptography -->
+                    <details style="margin-top: 1.5rem; background: #e7f5ff; border-radius: 8px; padding: 1rem; border: 1px solid #74c0fc;">
+                        <summary style="cursor: pointer; font-weight: 600; color: #1971c2;">
+                            🔐 Is PKCE similar to Public-Private Key Encryption?
+                        </summary>
+                        <div style="margin-top: 1rem;">
+                            <div class="diagram" style="background: #fff; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">
+<pre style="margin: 0;">
+PKCE vs PUBLIC-PRIVATE KEY: Similar Concept, Different Mechanism
+════════════════════════════════════════════════════════════════
+
+SIMILARITIES:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BOTH follow the pattern:                                                    │
+│                                                                             │
+│   "I share something PUBLIC (safe to intercept)                             │
+│    but keep something PRIVATE that proves I'm the owner"                    │
+│                                                                             │
+│ PUBLIC-KEY:                                                                 │
+│   Public key  → Share with everyone                                         │
+│   Private key → Keep secret, proves ownership                               │
+│                                                                             │
+│ PKCE:                                                                       │
+│   code_challenge (hash) → Share with auth server                            │
+│   code_verifier         → Keep secret, proves ownership                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+KEY DIFFERENCES:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PUBLIC-KEY CRYPTO              PKCE                      │
+│ ─────────────────────────────────────────────────────────────────────────── │
+│ Relationship:      Mathematical (RSA/ECDSA)       Hash (SHA-256)            │
+│                    Can encrypt AND sign           One-way only              │
+│                                                                             │
+│ Reusability:       Same keypair for years         One-time per login!       │
+│                                                                             │
+│ Direction:         Bidirectional                  Unidirectional            │
+│                    (encrypt + decrypt)            (only hash → verify)      │
+│                                                                             │
+│ Complexity:        Complex math operations         Simple hash              │
+│                                                                             │
+│ Use case:          General encryption/signing     OAuth code protection     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ANALOGY:
+• Public-Key = A mailbox (anyone can drop mail, only you can open)
+• PKCE = A scratch card (you show the scratched answer first,
+         then prove you had the card by showing the unscratched original)
+
+BOTTOM LINE:
+PKCE is INSPIRED by the same principle as public-key crypto
+(share something public, prove with something private)
+but uses simpler hash functions instead of complex key math.
+
+It's "public-key thinking" without the heavy cryptographic machinery!
+</pre>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </details>
+        </div>
+
+        <!-- Client Credentials Flow -->
+        <div class="flow-card">
+            <div class="flow-title">
+                <h2 style="margin: 0;">3. Client Credentials Flow</h2>
+                <span class="flow-badge badge-machine">MACHINE-TO-MACHINE</span>
+            </div>
+            <p><strong>Use for:</strong> Backend services, cron jobs, server-to-server communication (no user involved)</p>
+            <p><strong>Real Example:</strong> Swiggy's server fetching restaurant data from a partner API at 3 AM</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.9rem; line-height: 1.4;">
+CLIENT CREDENTIALS FLOW — Example: Swiggy Server + Restaurant Partner API
+═══════════════════════════════════════════════════════════════════════════
+
+NO USER INVOLVED! This is server talking to server at 3 AM.
+
+
+    SWIGGY CRON JOB                   PARTNER                    PARTNER
+   (Backend Server)                 AUTH SERVER                 DATA API
+          │                              │                          │
+          │                              │                          │
+     ┌────┴────┐                    ┌────┴────┐                ┌────┴────┐
+     │ Swiggy  │                    │ Partner │                │Restaurant│
+     │ Server  │                    │  OAuth  │                │  Menu    │
+     │(3 AM job)│                   │         │                │   API    │
+     └────┬────┘                    └────┬────┘                └────┬────┘
+          │                              │                          │
+          │ 1. "I'm Swiggy, here's      │                          │
+          │     my credentials"          │                          │
+          │     client_id + secret       │                          │
+          │─────────────────────────────►│                          │
+          │                              │                          │
+          │ 2. "OK, here's your token"   │                          │
+          │◄─────────────────────────────│                          │
+          │     access_token             │                          │
+          │                              │                          │
+          │ 3. Fetch restaurant menus    │                          │
+          │     with token               │                          │
+          │─────────────────────────────────────────────────────────►│
+          │     Authorization: Bearer xyz...                        │
+          │                              │                          │
+          │ 4. Menu data returned        │                          │
+          │◄─────────────────────────────────────────────────────────│
+          │                              │                          │
+
+
+KEY DIFFERENCES FROM OTHER FLOWS:
+═════════════════════════════════
+• NO user login, NO consent screen — it's just machines talking
+• Used for: background jobs, data sync, microservices communication
+• Both client_id AND client_secret are used (server can keep secrets safe)
+</pre>
+            </div>
+        </div>
+
+        <!-- Token Refresh -->
+        <div class="section">
+            <h2>Token Refresh Flow</h2>
+            <p><strong>Real Example:</strong> INDmoney refreshing its Zerodha access token when it expires</p>
+
+            <div class="diagram">
+<pre style="font-size: 0.9rem; line-height: 1.4;">
+REFRESH TOKEN FLOW — Example: INDmoney + Zerodha
+════════════════════════════════════════════════
+
+Access tokens are SHORT-LIVED (15 min - 24 hours)
+Refresh tokens are LONG-LIVED (7-30 days)
+
+
+    INDmoney                        ZERODHA                    ZERODHA
+     Server                       AUTH SERVER                 HOLDINGS API
+       │                               │                           │
+       │                               │                           │
+       │ 1. Sumit opens app,           │                           │
+       │    wants to see holdings      │                           │
+       │                               │                           │
+       │ 2. Try to fetch with          │                           │
+       │    stored access_token        │                           │
+       │───────────────────────────────────────────────────────────►│
+       │                               │                           │
+       │ 3. "401 Unauthorized -        │                           │
+       │     Token Expired!"           │                           │
+       │◄───────────────────────────────────────────────────────────│
+       │                               │                           │
+       │ 4. Use refresh_token          │                           │
+       │    to get new access_token    │                           │
+       │──────────────────────────────►│                           │
+       │    grant_type=refresh_token   │                           │
+       │                               │                           │
+       │ 5. New tokens!                │                           │
+       │◄──────────────────────────────│                           │
+       │    {                          │                           │
+       │      access_token: "new...",  │                           │
+       │      refresh_token: "rotated" │  ← Some providers rotate  │
+       │    }                          │    refresh tokens too!    │
+       │                               │                           │
+       │ 6. Retry with new token       │                           │
+       │───────────────────────────────────────────────────────────►│
+       │                               │                           │
+       │ 7. Holdings data!             │                           │
+       │◄───────────────────────────────────────────────────────────│
+       │                               │                           │
+       │ 8. Show Sumit his portfolio   │                           │
+       │    (he never noticed          │                           │
+       │     the refresh happened!)    │                           │
+       │                               │                           │
+
+
+ALL THIS HAPPENS AUTOMATICALLY — User never sees it!
+</pre>
+            </div>
+
+            <div class="warning-box">
+                <strong>Token Rotation:</strong> Some providers (like Auth0) give you a NEW refresh token each time you use it.
+                If an attacker steals your old refresh token and tries to use it after you've used it, the server knows something is wrong!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Security Best Practices</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Use HTTPS</h3>
+                    <p>Always! Tokens over HTTP can be intercepted.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🛡️</div>
+                    <h3>Validate redirect_uri</h3>
+                    <p>Whitelist allowed URIs. Prevents open redirect attacks.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">🔑</div>
+                    <h3>Use state parameter</h3>
+                    <p>Random token to prevent CSRF attacks.</p>
+                </div>
+                <div class="card" style="cursor: default; border-color: #51cf66;">
+                    <div class="card-icon">📱</div>
+                    <h3>Use PKCE</h3>
+                    <p>Required for mobile apps and SPAs.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">🧠 Quick Check</div>
+            <p style="margin-bottom: 1rem;">A mobile app needs to implement OAuth login. Which flow should it use?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) Authorization Code (without PKCE)
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) Authorization Code with PKCE
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) Client Credentials
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) Implicit Flow
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <a href="06b_oauth_tokens_explained.html">← OAuth Tokens Explained</a>
+            <a href="08_cheatsheet.html">Next: Cheat Sheet →</a>
+        </div>
+
+        <footer>
+            <p>Page 8 of 9 - Auth Guide 2</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        // Interactive Table Functions
+        function revealCell(cell) {
+            if (!cell.classList.contains('revealed')) {
+                cell.classList.add('revealed');
+            }
+        }
+
+        function revealAllCells(tableId) {
+            const table = document.getElementById(tableId);
+            const cells = table.querySelectorAll('.hidden-cell');
+            let delay = 0;
+            cells.forEach(cell => {
+                setTimeout(() => {
+                    cell.classList.add('revealed');
+                }, delay);
+                delay += 150;
+            });
+
+            // Update button
+            const btn = event.target;
+            btn.innerHTML = '✅ All Revealed';
+            btn.classList.add('revealed');
+        }
+
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = '✅ Correct! Mobile apps can\'t securely store client_secret, so PKCE (Proof Key for Code Exchange) is required to secure the flow.';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = '❌ Mobile apps are "public clients" - they can\'t safely store secrets. Authorization Code + PKCE is the recommended and secure approach.';
+            }
+        }
+    </script>
+</body>
+</html>
