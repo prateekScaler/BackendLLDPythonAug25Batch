@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session-Based Auth Implementation Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border-bottom: 3px solid #e94560;
+        }
+        header h1 { color: #e94560; font-size: 2.2em; margin-bottom: 10px; }
+        header p { color: #aaa; }
+
+        .step {
+            background: #0f0f23;
+            border-radius: 12px;
+            margin: 25px 0;
+            border-left: 4px solid #e94560;
+            overflow: hidden;
+        }
+        .step-header {
+            background: #1a1a3e;
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .step-header:hover { background: #252550; }
+        .step-number {
+            background: #e94560;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .step-title { flex: 1; font-size: 1.2em; }
+        .step-content { padding: 25px; display: none; }
+        .step.active .step-content { display: block; }
+        .step-toggle { font-size: 1.5em; transition: transform 0.3s; }
+        .step.active .step-toggle { transform: rotate(45deg); }
+
+        /* Code blocks */
+        pre {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            border: 1px solid #333;
+            margin: 15px 0;
+        }
+        code { color: #ffd700; }
+        .comment { color: #6a9955; }
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .function { color: #dcdcaa; }
+
+        /* Quiz styles */
+        .quiz {
+            background: linear-gradient(135deg, #1a2a4a 0%, #0f1a3a 100%);
+            border: 2px solid #4a6a9e;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .quiz h4 { color: #6eb5ff; margin-bottom: 15px; }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+        .quiz-option {
+            background: #0f0f23;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #333;
+            transition: all 0.3s;
+        }
+        .quiz-option:hover { border-color: #6eb5ff; }
+        .quiz-option.correct { background: #1a3a2a; border-color: #2ed573; }
+        .quiz-option.wrong { background: #3a1a1a; border-color: #ff4757; }
+        .quiz-feedback { margin-top: 15px; padding: 10px; border-radius: 8px; display: none; }
+
+        /* Hideable content */
+        .reveal-box {
+            background: #1a1a3e;
+            border: 2px dashed #4a4a7e;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .reveal-header {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .reveal-header:hover { background: #252550; }
+        .reveal-content {
+            padding: 0 20px 20px;
+            display: none;
+            border-top: 1px solid #333;
+        }
+        .reveal-box.open .reveal-content { display: block; }
+
+        /* Diagram */
+        .diagram {
+            background: #0a0a15;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: monospace;
+            line-height: 1.4;
+            overflow-x: auto;
+        }
+
+        /* Info boxes */
+        .info-box {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+        .info-box.tip { background: #1a3a2a; border-color: #2ed573; }
+        .info-box.warning { background: #3a2a1a; border-color: #ffa502; }
+        .info-box.question { background: #1a2a4a; border-color: #6eb5ff; }
+
+        /* File structure */
+        .file-tree {
+            background: #0a0a15;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .file-tree .folder { color: #ffd700; }
+        .file-tree .file { color: #6eb5ff; }
+        .file-tree .highlight { color: #2ed573; font-weight: bold; }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #e94560; color: white; }
+        .btn-primary:hover { background: #d63050; }
+        .btn-secondary { background: #333; color: #eee; }
+
+        /* Progress bar */
+        .progress-bar {
+            background: #1a1a3e;
+            height: 8px;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        /* Architecture diagram */
+        .arch-diagram {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .arch-box {
+            background: #1a1a3e;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #333;
+        }
+        .arch-box h5 { color: #e94560; margin-bottom: 10px; }
+        .arch-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6eb5ff;
+            font-size: 2em;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th { background: #1a1a3e; color: #e94560; }
+        tr:hover { background: #0f0f23; }
+
+        .nav-links {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        .nav-links a {
+            color: #6eb5ff;
+            text-decoration: none;
+            padding: 10px 20px;
+            background: #1a1a3e;
+            border-radius: 8px;
+        }
+        .nav-links a:hover { background: #252550; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Session-Based Authentication</h1>
+        <p>Implementation Guide for Django</p>
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    </header>
+
+    <div class="container">
+        <!-- Quick Concept Recap -->
+        <div class="step active" data-step="0">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">0</span>
+                <span class="step-title">Quick Recap: How Sessions Work</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="diagram">
+<pre style="color: #eee; margin: 0;">
+┌─────────┐         ┌─────────────┐         ┌──────────┐
+│ Browser │         │   Django    │         │ Database │
+└────┬────┘         └──────┬──────┘         └────┬─────┘
+     │                     │                      │
+     │ 1. POST /login      │                      │
+     │ (email, password)   │                      │
+     │────────────────────>│                      │
+     │                     │ 2. Verify credentials│
+     │                     │─────────────────────>│
+     │                     │<─────────────────────│
+     │                     │                      │
+     │                     │ 3. Create session    │
+     │                     │─────────────────────>│
+     │                     │   (session_id, data) │
+     │                     │                      │
+     │ 4. Set-Cookie:      │                      │
+     │    sessionid=abc123 │                      │
+     │<────────────────────│                      │
+     │                     │                      │
+     │ 5. GET /dashboard   │                      │
+     │ Cookie: sessionid   │                      │
+     │────────────────────>│                      │
+     │                     │ 6. Lookup session    │
+     │                     │─────────────────────>│
+     │                     │<─────────────────────│
+     │ 7. Response         │                      │
+     │<────────────────────│                      │
+</pre>
+                </div>
+
+                <div class="quiz">
+                    <h4>Quick Check</h4>
+                    <p>Where is session data stored in Django by default?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">A. In the browser's localStorage</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true)">B. In the database (django_session table)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">C. In Redis only</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">D. In the cookie itself</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔍</span> <strong>Think:</strong> Why not store session data in the cookie itself?
+                    </div>
+                    <div class="reveal-content">
+                        <ul>
+                            <li><strong>Size limit:</strong> Cookies are limited to ~4KB</li>
+                            <li><strong>Security:</strong> Users can modify cookie contents</li>
+                            <li><strong>Bandwidth:</strong> Cookies sent with every request</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #6eb5ff;">
+                            <strong>Django's approach:</strong> Store only a random session ID in the cookie,
+                            actual data in the server (DB/cache).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Django Project Setup -->
+        <div class="step" data-step="1">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">1</span>
+                <span class="step-title">Project Structure & Settings</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🧠</span> <strong>Recall Quiz:</strong> In Django, what's the difference between a <em>project</em> and an <em>app</em>?
+                    </div>
+                    <div class="reveal-content">
+                        <table>
+                            <tr><th>Project</th><th>App</th></tr>
+                            <tr>
+                                <td>The entire web application</td>
+                                <td>A reusable component/module</td>
+                            </tr>
+                            <tr>
+                                <td>Contains settings.py, urls.py</td>
+                                <td>Contains models.py, views.py</td>
+                            </tr>
+                            <tr>
+                                <td>One per deployment</td>
+                                <td>Many apps per project</td>
+                            </tr>
+                        </table>
+                        <p style="margin-top: 15px; color: #6eb5ff;">
+                            <strong>Example:</strong> <code>myproject/</code> is the project. <code>users/</code>, <code>products/</code>, <code>orders/</code> are apps.
+                            Apps can be reused across different projects!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="file-tree">
+<pre>
+myproject/
+├── <span class="folder">myproject/</span>
+│   ├── <span class="highlight">settings.py</span>     ← Session config goes here
+│   ├── <span class="file">urls.py</span>          ← Main URL routing
+│   └── <span class="file">wsgi.py</span>
+├── <span class="folder">users/</span>              ← Create this app for auth
+│   ├── <span class="file">models.py</span>        ← User model
+│   ├── <span class="highlight">views.py</span>         ← Login/Logout logic
+│   ├── <span class="file">urls.py</span>          ← Auth URLs
+│   └── <span class="file">serializers.py</span>   ← DRF serializers
+└── <span class="file">manage.py</span>
+</pre>
+                </div>
+
+                <h4 style="margin-top: 20px;">settings.py - Session Configuration</h4>
+<pre><code><span class="comment"># These are Django's DEFAULT settings for sessions
+# You don't need to add them unless you want to change them</span>
+
+<span class="comment"># Where to store session data (try changing this!)</span>
+SESSION_ENGINE = <span class="string">'django.contrib.sessions.backends.db'</span>
+<span class="comment"># Options: 'db', 'cache', 'cached_db', 'file', 'signed_cookies'</span>
+
+<span class="comment"># Cookie name sent to browser</span>
+SESSION_COOKIE_NAME = <span class="string">'sessionid'</span>
+
+<span class="comment"># Session timeout in seconds (2 weeks default)</span>
+SESSION_COOKIE_AGE = <span class="keyword">1209600</span>
+
+<span class="comment"># SECURITY: Only send cookie over HTTPS?</span>
+SESSION_COOKIE_SECURE = <span class="keyword">False</span>  <span class="comment"># Set True in production!</span>
+
+<span class="comment"># SECURITY: Prevent JavaScript access to cookie</span>
+SESSION_COOKIE_HTTPONLY = <span class="keyword">True</span>
+
+<span class="comment"># Required middleware (already in default Django)</span>
+MIDDLEWARE = [
+    <span class="string">'django.contrib.sessions.middleware.SessionMiddleware'</span>,  <span class="comment"># This handles sessions!</span>
+    <span class="string">'django.contrib.auth.middleware.AuthenticationMiddleware'</span>,
+    <span class="comment"># ... other middleware</span>
+]
+</code></pre>
+
+                <div class="quiz">
+                    <h4>Middleware Order Matters!</h4>
+                    <p>Why must <code>SessionMiddleware</code> come BEFORE <code>AuthenticationMiddleware</code>?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'middleware-quiz')">A. Alphabetical order</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'middleware-quiz')">B. Auth middleware needs session data to identify the user</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'middleware-quiz')">C. It doesn't matter, Django auto-sorts</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'middleware-quiz')">D. Sessions are more important</div>
+                    </div>
+                    <div class="quiz-feedback" id="middleware-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="middleware-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Explanation: Why Order Matters</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>What AuthenticationMiddleware does:</strong></p>
+                        <ul>
+                            <li>Reads <code>_auth_user_id</code> from <code>request.session</code></li>
+                            <li>Fetches the User object from database</li>
+                            <li>Sets <code>request.user</code> for your views to use</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>The dependency chain:</strong></p>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.95em;">
+SessionMiddleware → creates request.session
+        ↓
+AuthenticationMiddleware → reads request.session['_auth_user_id']
+        ↓
+Your View → uses request.user
+</pre>
+                        </div>
+                        <p style="color: #ff6b6b;"><strong>If reversed:</strong> AuthenticationMiddleware tries to read <code>request.session</code> but it doesn't exist yet → crash or anonymous user always!</p>
+                    </div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🧪</span> <strong>Try This:</strong> Explore session backends
+                    </div>
+                    <div class="reveal-content">
+                        <p>Change <code>SESSION_ENGINE</code> and observe:</p>
+                        <table>
+                            <tr><th>Backend</th><th>Where data is stored</th><th>When to use</th></tr>
+                            <tr><td><code>db</code></td><td>django_session table</td><td>Simple, reliable</td></tr>
+                            <tr><td><code>cache</code></td><td>Redis/Memcached</td><td>High performance</td></tr>
+                            <tr><td><code>file</code></td><td>/tmp/django_sessions/</td><td>Development only</td></tr>
+                            <tr><td><code>signed_cookies</code></td><td>In the cookie (signed)</td><td>Stateless but limited</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: User Model -->
+        <div class="step" data-step="2">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">2</span>
+                <span class="step-title">User Model Setup</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🧠</span> <strong>Recall Quiz:</strong> What's the N+1 problem? How does <code>select_related</code> help?
+                    </div>
+                    <div class="reveal-content">
+                        <p><strong>N+1 Problem:</strong> When you query N items, then make N additional queries for related data.</p>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.95em;">
+<span class="comment"># ❌ N+1 Problem (N+1 queries!)</span>
+users = User.objects.all()      # 1 query
+for user in users:
+    print(user.profile.phone)   # N queries!
+
+<span class="comment"># ✅ With select_related (1 query with JOIN)</span>
+users = User.objects.select_related('profile').all()
+for user in users:
+    print(user.profile.phone)   # No extra queries!
+</pre>
+                        </div>
+                        <p style="color: #6eb5ff;"><strong>Rule:</strong> Use <code>select_related</code> for ForeignKey/OneToOne, <code>prefetch_related</code> for ManyToMany.</p>
+                    </div>
+                </div>
+
+                <h4>Option A: Use Django's Built-in User</h4>
+<pre><code><span class="comment"># users/models.py - Simplest approach</span>
+<span class="keyword">from</span> django.contrib.auth.models <span class="keyword">import</span> User
+
+<span class="comment"># That's it! Django provides:
+# - username, email, password (hashed!)
+# - is_active, is_staff, is_superuser
+# - date_joined, last_login</span>
+</code></pre>
+
+                <h4>Option B: Extend with Profile (Recommended)</h4>
+<pre><code><span class="comment"># users/models.py</span>
+<span class="keyword">from</span> django.db <span class="keyword">import</span> models
+<span class="keyword">from</span> django.contrib.auth.models <span class="keyword">import</span> User
+
+<span class="keyword">class</span> <span class="function">Profile</span>(models.Model):
+    <span class="comment"># OneToOne relationship - each user has ONE profile</span>
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name=<span class="string">'profile'</span>
+    )
+    phone = models.CharField(max_length=15, blank=True)
+    avatar = models.URLField(blank=True)
+
+    <span class="keyword">def</span> <span class="function">__str__</span>(self):
+        <span class="keyword">return</span> f<span class="string">"Profile of {self.user.username}"</span>
+
+<span class="comment"># Question: What cardinality is this? (1:1, 1:N, M:N)</span>
+</code></pre>
+
+                <div class="quiz">
+                    <h4>Password Storage</h4>
+                    <p>Django stores passwords as: <code>algorithm$iterations$salt$hash</code>. What hashing algorithm does Django use by default?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">A. MD5</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">B. SHA-256</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true)">C. PBKDF2 with SHA-256</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">D. BCrypt</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>💡</span> Why not just SHA-256? Why PBKDF2?
+                    </div>
+                    <div class="reveal-content">
+                        <p><strong>Key derivation functions (KDFs)</strong> like PBKDF2, BCrypt, Argon2:</p>
+                        <ul>
+                            <li>Add <strong>salt</strong> - prevents rainbow table attacks</li>
+                            <li><strong>Iterations</strong> - deliberately slow (100,000+ rounds)</li>
+                            <li>SHA-256 is too fast! Attackers can try billions/second</li>
+                        </ul>
+<pre><code><span class="comment"># Example stored password:</span>
+pbkdf2_sha256$600000$randomsalt$hashedpassword==
+</code></pre>
+                    </div>
+                </div>
+
+                <h4>Don't forget migrations!</h4>
+<pre><code><span class="comment"># Terminal commands</span>
+python manage.py makemigrations users
+python manage.py migrate
+
+<span class="comment"># What tables does this create?
+# - users_profile (your model)
+# - auth_user (Django's User)
+# - django_session (for sessions!)</span>
+</code></pre>
+            </div>
+        </div>
+
+        <!-- Step 3: Login View -->
+        <div class="step" data-step="3">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">3</span>
+                <span class="step-title">Implement Login View</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="quiz" style="margin-bottom: 20px;">
+                    <h4>🧠 Recall: REST Methods</h4>
+                    <p>In REST, what HTTP method should <code>login</code> use?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'rest-login')">A. GET - We're getting a session</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'rest-login')">B. POST - We're creating a session</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'rest-login')">C. PUT - We're updating auth state</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'rest-login')">D. PATCH - Partial auth update</div>
+                    </div>
+                    <div class="quiz-feedback" id="rest-login-feedback"></div>
+                </div>
+                <div class="reveal-box" id="rest-login-explanation" style="display: none; margin-bottom: 20px;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">POST creates a resource (session). GET must be idempotent & safe!</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <table>
+                            <tr><th>Method</th><th>Purpose</th><th>Safe?</th><th>Idempotent?</th></tr>
+                            <tr><td>GET</td><td>Read data</td><td>✓</td><td>✓</td></tr>
+                            <tr><td>POST</td><td>Create resource</td><td>✗</td><td>✗</td></tr>
+                            <tr><td>PUT</td><td>Replace resource</td><td>✗</td><td>✓</td></tr>
+                            <tr><td>DELETE</td><td>Remove resource</td><td>✗</td><td>✓</td></tr>
+                        </table>
+                        <p style="margin-top: 10px; color: #6eb5ff;">Login = "Create a session" → POST. Logout = "Delete session" → POST or DELETE.</p>
+                    </div>
+                </div>
+
+                <h4>users/views.py</h4>
+<pre><code><span class="keyword">from</span> rest_framework.views <span class="keyword">import</span> APIView
+<span class="keyword">from</span> rest_framework.response <span class="keyword">import</span> Response
+<span class="keyword">from</span> rest_framework <span class="keyword">import</span> status
+<span class="keyword">from</span> django.contrib.auth <span class="keyword">import</span> authenticate, login, logout
+
+<span class="keyword">class</span> <span class="function">LoginView</span>(APIView):
+    <span class="string">"""
+    POST /api/auth/login/
+    Body: {"username": "...", "password": "..."}
+    """</span>
+
+    <span class="keyword">def</span> <span class="function">post</span>(self, request):
+        username = request.data.get(<span class="string">'username'</span>)
+        password = request.data.get(<span class="string">'password'</span>)
+
+        <span class="comment"># Step 1: Authenticate (verify credentials)</span>
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
+        <span class="comment"># Returns User object if valid, None if invalid</span>
+
+        <span class="keyword">if</span> user <span class="keyword">is None</span>:
+            <span class="keyword">return</span> Response(
+                {<span class="string">'error'</span>: <span class="string">'Invalid credentials'</span>},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        <span class="comment"># Step 2: Create session (this does the magic!)</span>
+        login(request, user)
+        <span class="comment"># What does login() do?
+        # 1. Creates entry in django_session table
+        # 2. Stores user_id in session data
+        # 3. Sets sessionid cookie in response</span>
+
+        <span class="keyword">return</span> Response({
+            <span class="string">'message'</span>: <span class="string">'Login successful'</span>,
+            <span class="string">'user'</span>: {
+                <span class="string">'id'</span>: user.id,
+                <span class="string">'username'</span>: user.username,
+                <span class="string">'email'</span>: user.email
+            }
+        })
+</code></pre>
+
+                <div class="quiz">
+                    <h4>What does <code>authenticate()</code> return?</h4>
+                    <p>If the password is wrong, what does <code>authenticate()</code> return?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">A. Raises AuthenticationError</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true)">B. Returns None</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">C. Returns False</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">D. Returns empty User object</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔍</span> Under the hood: What does <code>login()</code> actually do?
+                    </div>
+                    <div class="reveal-content">
+<pre><code><span class="comment"># Simplified version of what Django's login() does:</span>
+
+<span class="keyword">def</span> <span class="function">login</span>(request, user):
+    <span class="comment"># 1. Generate session key (random string)</span>
+    session_key = get_random_string(32)
+
+    <span class="comment"># 2. Store user info in session</span>
+    request.session[<span class="string">'_auth_user_id'</span>] = user.pk
+    request.session[<span class="string">'_auth_user_backend'</span>] = <span class="string">'...'</span>
+
+    <span class="comment"># 3. Save to database</span>
+    Session.objects.create(
+        session_key=session_key,
+        session_data=encoded_data,
+        expire_date=now + SESSION_COOKIE_AGE
+    )
+
+    <span class="comment"># 4. Cookie is set automatically by SessionMiddleware</span>
+</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Protecting Views -->
+        <div class="step" data-step="4">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">4</span>
+                <span class="step-title">Protect Views (Authentication Required)</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🧠</span> <strong>Recall Quiz:</strong> What's a decorator in Python? How does <code>@property</code> work?
+                    </div>
+                    <div class="reveal-content">
+                        <p><strong>Decorator:</strong> A function that wraps another function to add behavior.</p>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.95em;">
+<span class="comment"># @decorator is syntactic sugar for:</span>
+@login_required
+def my_view(request):
+    pass
+
+<span class="comment"># Same as:</span>
+def my_view(request):
+    pass
+my_view = login_required(my_view)
+
+<span class="comment"># @property makes a method act like an attribute:</span>
+class User:
+    @property
+    def full_name(self):
+        return f"{self.first} {self.last}"
+
+user.full_name  <span class="comment"># No parentheses needed!</span>
+</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <h4>Method 1: DRF Permission Classes</h4>
+<pre><code><span class="keyword">from</span> rest_framework.permissions <span class="keyword">import</span> IsAuthenticated
+<span class="keyword">from</span> rest_framework.views <span class="keyword">import</span> APIView
+
+<span class="keyword">class</span> <span class="function">ProfileView</span>(APIView):
+    <span class="comment"># This view requires login!</span>
+    permission_classes = [IsAuthenticated]
+
+    <span class="keyword">def</span> <span class="function">get</span>(self, request):
+        <span class="comment"># request.user is automatically set by AuthenticationMiddleware</span>
+        user = request.user
+        <span class="keyword">return</span> Response({
+            <span class="string">'id'</span>: user.id,
+            <span class="string">'username'</span>: user.username,
+            <span class="string">'email'</span>: user.email
+        })
+</code></pre>
+
+                <h4>Method 2: Function-Based with Decorator</h4>
+<pre><code><span class="keyword">from</span> django.contrib.auth.decorators <span class="keyword">import</span> login_required
+<span class="keyword">from</span> rest_framework.decorators <span class="keyword">import</span> api_view, permission_classes
+
+<span class="comment"># Using DRF decorator</span>
+@api_view([<span class="string">'GET'</span>])
+@permission_classes([IsAuthenticated])
+<span class="keyword">def</span> <span class="function">my_profile</span>(request):
+    <span class="keyword">return</span> Response({<span class="string">'user'</span>: request.user.username})
+
+<span class="comment"># Or Django's built-in decorator (for non-API views)</span>
+@login_required(login_url=<span class="string">'/login/'</span>)
+<span class="keyword">def</span> <span class="function">dashboard</span>(request):
+    <span class="keyword">return</span> render(request, <span class="string">'dashboard.html'</span>)
+</code></pre>
+
+                <div class="quiz">
+                    <h4>How does DRF know the user is logged in?</h4>
+                    <p>What checks the session cookie and populates <code>request.user</code>?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">A. The View itself</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true)">B. AuthenticationMiddleware</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">C. The permission class</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">D. Django REST Framework</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔧</span> How Middleware Processes Requests
+                    </div>
+                    <div class="reveal-content">
+                        <div class="diagram">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+Request comes in
+       │
+       ▼
+┌──────────────────────────────┐
+│ SessionMiddleware            │
+│ - Reads 'sessionid' cookie   │
+│ - Loads session from DB      │
+│ - Attaches request.session   │
+└──────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────┐
+│ AuthenticationMiddleware     │
+│ - Reads user_id from session │
+│ - Fetches User from DB       │
+│ - Sets request.user          │
+└──────────────────────────────┘
+       │
+       ▼
+    Your View
+    (request.user is ready!)
+</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 5: Logout -->
+        <div class="step" data-step="5">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">5</span>
+                <span class="step-title">Implement Logout</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <h4>users/views.py</h4>
+<pre><code><span class="keyword">class</span> <span class="function">LogoutView</span>(APIView):
+    permission_classes = [IsAuthenticated]
+
+    <span class="keyword">def</span> <span class="function">post</span>(self, request):
+        <span class="comment"># This does everything!</span>
+        logout(request)
+        <span class="comment"># What happens:
+        # 1. Deletes session from database
+        # 2. Clears session cookie
+        # 3. Sets request.user to AnonymousUser</span>
+
+        <span class="keyword">return</span> Response({<span class="string">'message'</span>: <span class="string">'Logged out'</span>})
+</code></pre>
+
+                <div class="quiz">
+                    <h4>Security: Should logout be GET or POST?</h4>
+                    <p>Which HTTP method should be used for the logout endpoint?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'logout-method-quiz')">A. GET - Logout is just reading/ending the session</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'logout-method-quiz')">B. POST - Logout modifies server state</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'logout-method-quiz')">C. DELETE - We're deleting the session</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'logout-method-quiz')">D. Either GET or POST works fine</div>
+                    </div>
+                    <div class="quiz-feedback" id="logout-method-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="logout-method-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Why POST is the Right Choice</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+
+                        <h4 style="color: #6eb5ff; margin-bottom: 10px;">Why not DELETE?</h4>
+                        <p>While DELETE seems logical ("we're deleting the session"), it has practical issues:</p>
+                        <ul>
+                            <li><strong>HTML forms only support GET and POST</strong> - no native DELETE support</li>
+                            <li>Requires JavaScript (fetch/XMLHttpRequest) to send DELETE requests</li>
+                            <li>Some proxies/firewalls block or mishandle DELETE requests</li>
+                            <li>POST is universally supported and accomplishes the same goal</li>
+                        </ul>
+
+                        <h4 style="color: #ff6b6b; margin-top: 20px; margin-bottom: 10px;">Why not GET? (Security Risk!)</h4>
+                        <p>Browsers automatically make GET requests without user interaction:</p>
+
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.9em;">
+<span class="comment"># Attack scenario:</span>
+1. Attacker embeds: <span style="color: #ff6b6b;">&lt;img src="https://yoursite.com/logout/"&gt;</span>
+2. Victim opens attacker's page/email
+3. Browser auto-fetches the "image" → sends GET + cookies
+4. Server logs out the victim without their knowledge!
+</pre>
+                        </div>
+
+                        <p><strong>Other auto-GET triggers:</strong> <code>&lt;img&gt;</code>, <code>&lt;script&gt;</code>, <code>&lt;iframe&gt;</code>, <code>&lt;link&gt;</code>, CSS <code>url()</code>, browser prefetching</p>
+
+                        <div class="info-box warning" style="margin-top: 15px;">
+                            <strong>This is CSRF (Cross-Site Request Forgery)</strong> - attacker tricks the victim's browser into making authenticated requests.
+                        </div>
+
+                        <p style="margin-top: 15px; color: #6eb5ff;"><strong>Rule:</strong> State-changing endpoints must use POST/PUT/PATCH/DELETE, never GET.</p>
+                    </div>
+                </div>
+
+                <div class="quiz">
+                    <h4>Session Invalidation</h4>
+                    <p>If you call <code>logout()</code> on the server, but the client still has the old cookie, what happens on the next request?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, true)">A. User appears as not logged in (session doesn't exist in DB)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">B. User is still logged in</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">C. Server error</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false)">D. Cookie is automatically deleted</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 6: URL Configuration -->
+        <div class="step" data-step="6">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">6</span>
+                <span class="step-title">URL Configuration</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <div class="diagram" style="padding: 15px; margin-bottom: 20px;">
+<pre style="color: #eee; margin: 0; font-size: 0.9em;">
+<span class="comment"># Django has TWO levels of URL routing:</span>
+
+<span style="color: #ffd700;">myproject/urls.py</span> (Project-level)     <span style="color: #ffd700;">users/urls.py</span> (App-level)
+         │                                      │
+         │  include('users.urls')               │
+         ├─────────────────────────────────────>│
+         │                                      │
+    /api/auth/  ──────────────────────────> login/  → LoginView
+                                            logout/ → LogoutView
+                                            profile/→ ProfileView
+
+<span class="comment"># Final URLs = project prefix + app path</span>
+<span style="color: #2ed573;">/api/auth/</span> + <span style="color: #6eb5ff;">login/</span> = <span style="color: #fff;">/api/auth/login/</span>
+</pre>
+                </div>
+
+                <h4>users/urls.py <span style="color: #888; font-weight: normal;">(App-level routing)</span></h4>
+<pre><code><span class="keyword">from</span> django.urls <span class="keyword">import</span> path
+<span class="keyword">from</span> .views <span class="keyword">import</span> LoginView, LogoutView, ProfileView
+
+urlpatterns = [
+    path(<span class="string">'login/'</span>, LoginView.as_view(), name=<span class="string">'login'</span>),
+    <span class="comment">#     ↑ route        ↑ view               ↑ name for reverse lookup</span>
+    path(<span class="string">'logout/'</span>, LogoutView.as_view(), name=<span class="string">'logout'</span>),
+    path(<span class="string">'profile/'</span>, ProfileView.as_view(), name=<span class="string">'profile'</span>),
+]
+<span class="comment"># as_view() converts class-based view → callable function</span>
+</code></pre>
+
+                <h4>myproject/urls.py <span style="color: #888; font-weight: normal;">(Project-level routing)</span></h4>
+<pre><code><span class="keyword">from</span> django.urls <span class="keyword">import</span> path, include
+
+urlpatterns = [
+    path(<span class="string">'api/auth/'</span>, include(<span class="string">'users.urls'</span>)),
+    <span class="comment">#                   ↑ delegates to app's urls.py</span>
+    <span class="comment"># Result:
+    # POST /api/auth/login/
+    # POST /api/auth/logout/
+    # GET  /api/auth/profile/</span>
+]
+</code></pre>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔍</span> <strong>What does <code>name='login'</code> do?</strong>
+                    </div>
+                    <div class="reveal-content">
+                        <p>Allows reverse URL lookup - get URL from name instead of hardcoding:</p>
+<pre><code><span class="keyword">from</span> django.urls <span class="keyword">import</span> reverse
+
+reverse(<span class="string">'login'</span>)  <span class="comment"># Returns '/api/auth/login/'</span>
+
+<span class="comment"># In templates:</span>
+&lt;a href=<span class="string">"{% url 'login' %}"</span>&gt;Login&lt;/a&gt;
+</code></pre>
+                        <p style="color: #6eb5ff;">If you change the URL path later, all references update automatically!</p>
+                    </div>
+                </div>
+
+                <div class="info-box tip">
+                    <strong>RESTful alternative:</strong> Some prefer <code>/api/session/</code> (POST to create, DELETE to destroy)
+                    instead of <code>/login/</code> and <code>/logout/</code>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 7: Testing -->
+        <div class="step" data-step="7">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">7</span>
+                <span class="step-title">Testing Your Implementation</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <h4>Using cURL</h4>
+<pre><code><span class="comment"># 1. Login (note: -c saves cookies to file)</span>
+curl -X POST http://localhost:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "password": "testpass"}' \
+  -c cookies.txt
+
+<span class="comment"># 2. Access protected route (note: -b sends cookies)</span>
+curl http://localhost:8000/api/auth/profile/ \
+  -b cookies.txt
+
+<span class="comment"># 3. Logout</span>
+curl -X POST http://localhost:8000/api/auth/logout/ \
+  -b cookies.txt
+
+<span class="comment"># 4. Try profile again (should fail!)</span>
+curl http://localhost:8000/api/auth/profile/ \
+  -b cookies.txt
+</code></pre>
+
+                <div class="reveal-box" style="margin-bottom: 20px;">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔍</span> <strong>What is CORS and why does it exist?</strong>
+                    </div>
+                    <div class="reveal-content">
+                        <p><strong>Same-Origin Policy:</strong> Browsers block requests from one origin to another by default (security).</p>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.9em;">
+<span class="comment"># What is an "origin"?</span>
+Origin = <span style="color: #6eb5ff;">protocol</span> + <span style="color: #ffd700;">host</span> + <span style="color: #2ed573;">port</span>
+
+<span style="color: #6eb5ff;">http://</span><span style="color: #ffd700;">localhost</span>:<span style="color: #2ed573;">3000</span>  ← Frontend (React)
+<span style="color: #6eb5ff;">http://</span><span style="color: #ffd700;">localhost</span>:<span style="color: #2ed573;">8000</span>  ← Backend (Django)
+
+Different ports = Different origins = Blocked by browser!
+</pre>
+                        </div>
+                        <p><strong>CORS (Cross-Origin Resource Sharing):</strong> Server tells browser "I trust requests from these origins".</p>
+                    </div>
+                </div>
+
+                <div class="quiz">
+                    <h4>API Testing Knowledge</h4>
+                    <p>When testing with Postman or cURL, session cookies are NOT sent by default cross-origin. What CORS header allows credentials?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'cors-quiz')">A. Access-Control-Allow-Origin: *</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'cors-quiz')">B. Access-Control-Allow-Credentials: true</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'cors-quiz')">C. Access-Control-Allow-Methods: POST</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'cors-quiz')">D. Access-Control-Allow-Headers: Cookie</div>
+                    </div>
+                    <div class="quiz-feedback" id="cors-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="cors-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Understanding CORS Headers</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <table>
+                            <tr><th>Header</th><th>Purpose</th></tr>
+                            <tr>
+                                <td><code>Access-Control-Allow-Origin</code></td>
+                                <td>Which origins can make requests (e.g., <code>http://localhost:3000</code>)</td>
+                            </tr>
+                            <tr>
+                                <td><code style="color: #2ed573;">Access-Control-Allow-Credentials</code></td>
+                                <td><strong>Allows cookies/auth headers to be sent cross-origin</strong></td>
+                            </tr>
+                            <tr>
+                                <td><code>Access-Control-Allow-Methods</code></td>
+                                <td>Which HTTP methods are allowed (GET, POST, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td><code>Access-Control-Allow-Headers</code></td>
+                                <td>Which custom headers client can send</td>
+                            </tr>
+                        </table>
+
+                        <div class="info-box warning" style="margin-top: 15px;">
+                            <strong>Why can't you use <code>*</code> with credentials?</strong>
+                            <p style="margin-top: 5px;">
+                                Security risk! If <code>Access-Control-Allow-Origin: *</code> + credentials were allowed,
+                                any malicious site could make authenticated requests to your API.
+                                You MUST specify exact origins when using credentials.
+                            </p>
+                        </div>
+
+                        <div class="diagram" style="padding: 15px; margin: 15px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.9em;">
+<span class="comment"># The complete flow:</span>
+
+1. Frontend (localhost:3000) calls Backend (localhost:8000)
+2. Browser sees cross-origin → sends preflight OPTIONS request
+3. Server responds with CORS headers:
+   <span style="color: #6eb5ff;">Access-Control-Allow-Origin: http://localhost:3000</span>
+   <span style="color: #2ed573;">Access-Control-Allow-Credentials: true</span>
+4. Browser sees credentials allowed → sends cookies with actual request
+</pre>
+                        </div>
+
+                        <p><strong>Frontend must also opt-in:</strong></p>
+<pre><code><span class="comment">// JavaScript fetch</span>
+fetch(<span class="string">'http://localhost:8000/api/auth/profile/'</span>, {
+    <span class="keyword">credentials</span>: <span class="string">'include'</span>  <span class="comment">// ← Required to send cookies!</span>
+})
+
+<span class="comment">// Axios</span>
+axios.get(url, { <span class="keyword">withCredentials</span>: <span class="keyword">true</span> })
+</code></pre>
+                    </div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🧪</span> <strong>Django settings for CORS with credentials</strong>
+                    </div>
+                    <div class="reveal-content">
+<pre><code><span class="comment"># pip install django-cors-headers</span>
+<span class="comment"># Add 'corsheaders' to INSTALLED_APPS</span>
+<span class="comment"># Add 'corsheaders.middleware.CorsMiddleware' to MIDDLEWARE (before CommonMiddleware)</span>
+
+<span class="comment"># settings.py</span>
+CORS_ALLOW_CREDENTIALS = <span class="keyword">True</span>
+
+CORS_ALLOWED_ORIGINS = [
+    <span class="string">"http://localhost:3000"</span>,  <span class="comment"># React dev server</span>
+    <span class="string">"http://127.0.0.1:3000"</span>,
+]
+
+<span class="comment"># ❌ This WON'T work with credentials:</span>
+<span class="comment"># CORS_ALLOW_ALL_ORIGINS = True</span>
+</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary & Extensions -->
+        <div class="step" data-step="8">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">✓</span>
+                <span class="step-title">Summary & Extensions</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <h4>What We Built</h4>
+                <table>
+                    <tr><th>Component</th><th>File</th><th>Purpose</th></tr>
+                    <tr><td>Settings</td><td>settings.py</td><td>Session engine, cookie config</td></tr>
+                    <tr><td>Model</td><td>users/models.py</td><td>User + Profile</td></tr>
+                    <tr><td>Views</td><td>users/views.py</td><td>Login, Logout, Profile</td></tr>
+                    <tr><td>URLs</td><td>users/urls.py</td><td>Route mapping</td></tr>
+                    <tr><td>Middleware</td><td>(built-in)</td><td>Session + Auth processing</td></tr>
+                </table>
+
+                <h4 style="margin-top: 25px;">Extensions to Explore</h4>
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🚀</span> Use Redis for sessions (better performance)
+                    </div>
+                    <div class="reveal-content">
+<pre><code><span class="comment"># pip install django-redis</span>
+CACHES = {
+    <span class="string">'default'</span>: {
+        <span class="string">'BACKEND'</span>: <span class="string">'django_redis.cache.RedisCache'</span>,
+        <span class="string">'LOCATION'</span>: <span class="string">'redis://127.0.0.1:6379/1'</span>,
+    }
+}
+SESSION_ENGINE = <span class="string">'django.contrib.sessions.backends.cache'</span>
+SESSION_CACHE_ALIAS = <span class="string">'default'</span>
+</code></pre>
+                    </div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>🔒</span> Add rate limiting to prevent brute force
+                    </div>
+                    <div class="reveal-content">
+<pre><code><span class="comment"># pip install django-ratelimit</span>
+<span class="keyword">from</span> django_ratelimit.decorators <span class="keyword">import</span> ratelimit
+
+@ratelimit(key=<span class="string">'ip'</span>, rate=<span class="string">'5/m'</span>, method=<span class="string">'POST'</span>)
+<span class="keyword">def</span> <span class="function">login_view</span>(request):
+    <span class="comment"># Max 5 login attempts per minute per IP</span>
+    ...
+</code></pre>
+                    </div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>📊</span> Track login history
+                    </div>
+                    <div class="reveal-content">
+<pre><code><span class="keyword">class</span> <span class="function">LoginHistory</span>(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=<span class="keyword">True</span>)
+    success = models.BooleanField()
+</code></pre>
+                    </div>
+                </div>
+
+                <div class="info-box question" style="margin-top: 20px;">
+                    <strong>Final Question:</strong> When would you choose session-based auth over JWT?
+                    <p style="margin-top: 10px; color: #aaa;">
+                        Think about: server state, scalability, logout capability, token size...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Practice Questions -->
+        <div class="step" data-step="9">
+            <div class="step-header" onclick="toggleStep(this)">
+                <span class="step-number">★</span>
+                <span class="step-title">Advanced Practice Questions</span>
+                <span class="step-toggle">+</span>
+            </div>
+            <div class="step-content">
+                <p style="color: #6eb5ff; margin-bottom: 25px;">Test your understanding with these medium-to-tough questions covering Design Patterns, OOP, Concurrency, and Python Advanced Concepts - all in the context of session-based authentication!</p>
+
+                <!-- Design Pattern Question 1: Strategy Pattern -->
+                <div class="quiz">
+                    <h4>Design Pattern: Session Backends</h4>
+                    <p>Django supports multiple session backends (database, cache, file, signed cookies). Each backend has the same interface but different implementations. Which design pattern best describes this architecture?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'strategy-pattern-quiz')">A. Factory Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'strategy-pattern-quiz')">B. Strategy Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'strategy-pattern-quiz')">C. Adapter Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'strategy-pattern-quiz')">D. Singleton Pattern</div>
+                    </div>
+                    <div class="quiz-feedback" id="strategy-pattern-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="strategy-pattern-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Strategy Pattern in Session Backends</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Why Strategy Pattern?</strong></p>
+                        <ul>
+                            <li>Defines a family of algorithms (session storage methods)</li>
+                            <li>Makes them interchangeable at runtime via <code>SESSION_ENGINE</code> setting</li>
+                            <li>Client (Django) uses the same interface regardless of backend</li>
+                        </ul>
+
+                        <h4 style="margin-top: 15px; color: #6eb5ff;">UML Diagram - Strategy Pattern for Session Backends:</h4>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+┌─────────────────────────────────────────────────────────────────┐
+│                      «interface»                                 │
+│                    SessionBackend                                │
+├─────────────────────────────────────────────────────────────────┤
+│ + create() -> str                                                │
+│ + save(session_key: str, data: dict, expire: datetime)          │
+│ + load(session_key: str) -> dict                                 │
+│ + delete(session_key: str)                                       │
+│ + exists(session_key: str) -> bool                               │
+└─────────────────────────────────────────────────────────────────┘
+                              △
+                              │ implements
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+┌───────┴───────┐    ┌───────┴───────┐    ┌───────┴───────┐
+│  DBBackend    │    │ CacheBackend  │    │ FileBackend   │
+├───────────────┤    ├───────────────┤    ├───────────────┤
+│ - db_table    │    │ - cache_alias │    │ - storage_path│
+├───────────────┤    ├───────────────┤    ├───────────────┤
+│ + create()    │    │ + create()    │    │ + create()    │
+│ + save()      │    │ + save()      │    │ + save()      │
+│ + load()      │    │ + load()      │    │ + load()      │
+│ + delete()    │    │ + delete()    │    │ + delete()    │
+└───────────────┘    └───────────────┘    └───────────────┘
+
+┌─────────────────────┐         ┌─────────────────────┐
+│  SessionMiddleware  │────────>│   SessionBackend    │
+│     (Context)       │ uses    │    (Strategy)       │
+├─────────────────────┤         └─────────────────────┘
+│ - backend: Backend  │
+├─────────────────────┤   settings.py:
+│ + process_request() │   SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+│ + process_response()│   # Swappable at runtime!
+└─────────────────────┘
+</pre>
+                        </div>
+                        <p style="color: #888;"><strong>Key Insight:</strong> Strategy lets you change the session storage algorithm without changing the middleware code.</p>
+                    </div>
+                </div>
+
+                <!-- Design Pattern Question 2: Decorator Pattern -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Design Pattern: @login_required</h4>
+                    <p>The <code>@login_required</code> decorator adds authentication checking to a view function without modifying the function itself. Which pattern does this represent?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'decorator-pattern-quiz')">A. Proxy Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'decorator-pattern-quiz')">B. Strategy Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'decorator-pattern-quiz')">C. Decorator Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'decorator-pattern-quiz')">D. Observer Pattern</div>
+                    </div>
+                    <div class="quiz-feedback" id="decorator-pattern-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="decorator-pattern-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Decorator Pattern in @login_required</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Why Decorator Pattern?</strong></p>
+                        <ul>
+                            <li>Adds behavior (auth check) to an object (view function) dynamically</li>
+                            <li>Wraps the original function without modifying its code</li>
+                            <li>Can be stacked: <code>@login_required @permission_required('admin')</code></li>
+                        </ul>
+
+                        <h4 style="margin-top: 15px; color: #6eb5ff;">UML Diagram - Decorator Pattern for View Protection:</h4>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+┌─────────────────────────────────────────────────────────────────┐
+│                      «interface»                                 │
+│                       ViewFunction                               │
+├─────────────────────────────────────────────────────────────────┤
+│ + __call__(request: HttpRequest) -> HttpResponse                 │
+└─────────────────────────────────────────────────────────────────┘
+                              △
+                              │ implements
+              ┌───────────────┴───────────────┐
+              │                               │
+┌─────────────┴─────────────┐   ┌─────────────┴─────────────┐
+│    ConcreteView           │   │    ViewDecorator          │
+│    (dashboard_view)       │   │    (login_required)       │
+├───────────────────────────┤   ├───────────────────────────┤
+│                           │   │ - wrapped_view: ViewFunc  │
+├───────────────────────────┤   │ - login_url: str          │
+│ + __call__(request)       │   ├───────────────────────────┤
+│   return render(...)      │   │ + __call__(request)       │
+└───────────────────────────┘   │   if not authenticated:   │
+                                │     return redirect(login)│
+                                │   return wrapped(request) │
+                                └───────────────────────────┘
+
+<span style="color: #ffd700;">Stacking Decorators:</span>
+@login_required          ─┐
+@permission_required     ─┼─> Each decorator wraps the next
+def my_view(request):    ─┘
+
+<span style="color: #2ed573;">Execution order:</span> login_required → permission_required → my_view
+</pre>
+                        </div>
+<pre><code><span class="comment"># Python's decorator IS the Decorator Pattern!</span>
+<span class="keyword">def</span> <span class="function">login_required</span>(view_func):
+    <span class="keyword">def</span> <span class="function">wrapper</span>(request, *args, **kwargs):
+        <span class="keyword">if not</span> request.user.is_authenticated:
+            <span class="keyword">return</span> redirect(<span class="string">'login'</span>)
+        <span class="keyword">return</span> view_func(request, *args, **kwargs)  <span class="comment"># Delegate to wrapped</span>
+    <span class="keyword">return</span> wrapper
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Design Pattern Question 3: Observer Pattern -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Design Pattern: Login Signals</h4>
+                    <p>Django emits <code>user_logged_in</code> and <code>user_logged_out</code> signals that other parts of the application can listen to. Which pattern does this represent?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'observer-pattern-quiz')">A. Observer Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'observer-pattern-quiz')">B. Mediator Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'observer-pattern-quiz')">C. Command Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'observer-pattern-quiz')">D. Chain of Responsibility</div>
+                    </div>
+                    <div class="quiz-feedback" id="observer-pattern-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="observer-pattern-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Observer Pattern in Django Signals</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Why Observer Pattern?</strong></p>
+                        <ul>
+                            <li>Subject (login system) notifies observers (signal receivers) of state changes</li>
+                            <li>Loose coupling - login code doesn't know about logging, analytics, etc.</li>
+                            <li>Multiple observers can react to one event</li>
+                        </ul>
+
+                        <h4 style="margin-top: 15px; color: #6eb5ff;">UML Diagram - Observer Pattern for Login Signals:</h4>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+┌───────────────────────────┐         ┌───────────────────────────┐
+│       Signal              │         │      «interface»          │
+│    (user_logged_in)       │         │       Receiver            │
+├───────────────────────────┤         ├───────────────────────────┤
+│ - receivers: List[func]   │         │ + __call__(sender, user,  │
+├───────────────────────────┤         │            request, **kw) │
+│ + connect(receiver)       │         └───────────────────────────┘
+│ + disconnect(receiver)    │                      △
+│ + send(sender, **kwargs)  │                      │ implements
+└───────────────────────────┘         ┌────────────┼────────────┐
+            │                         │            │            │
+            │ notifies          ┌─────┴────┐ ┌─────┴────┐ ┌─────┴────┐
+            └──────────────────>│  Logger  │ │Analytics │ │  Audit   │
+                                │ Receiver │ │ Receiver │ │ Receiver │
+                                └──────────┘ └──────────┘ └──────────┘
+
+<span style="color: #ffd700;">Signal Flow:</span>
+login(request, user)
+    │
+    ▼
+user_logged_in.send(sender=User, user=user, request=request)
+    │
+    ├──> log_user_login()      # Logs to file
+    ├──> track_analytics()     # Sends to analytics
+    └──> record_audit_trail()  # Stores in audit DB
+</pre>
+                        </div>
+<pre><code><span class="comment"># Connecting observers to the login signal</span>
+<span class="keyword">from</span> django.contrib.auth.signals <span class="keyword">import</span> user_logged_in
+
+<span class="keyword">def</span> <span class="function">log_login</span>(sender, user, request, **kwargs):
+    print(f<span class="string">"User {user.username} logged in from {request.META['REMOTE_ADDR']}"</span>)
+
+user_logged_in.connect(log_login)  <span class="comment"># Subscribe to the signal</span>
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Design Pattern Question 4: Singleton -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Design Pattern: Database Connection Pool</h4>
+                    <p>When using database-backed sessions, Django maintains a connection pool. Having multiple connection pools would waste resources. Which pattern ensures only ONE pool instance exists?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'singleton-pattern-quiz')">A. Singleton Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'singleton-pattern-quiz')">B. Factory Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'singleton-pattern-quiz')">C. Builder Pattern</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'singleton-pattern-quiz')">D. Prototype Pattern</div>
+                    </div>
+                    <div class="quiz-feedback" id="singleton-pattern-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="singleton-pattern-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Singleton Pattern for Connection Pool</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Why Singleton Pattern?</strong></p>
+                        <ul>
+                            <li>Ensures only ONE instance of connection pool exists</li>
+                            <li>Provides global access point to that instance</li>
+                            <li>Prevents resource waste from multiple pools</li>
+                        </ul>
+
+                        <h4 style="margin-top: 15px; color: #6eb5ff;">UML Diagram - Singleton for Connection Pool:</h4>
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+┌─────────────────────────────────────────────────────────────────┐
+│                    ConnectionPool                                │
+├─────────────────────────────────────────────────────────────────┤
+│ <span style="color: #ff6b6b;">- _instance: ConnectionPool = None</span>  (class variable)           │
+│ - connections: List[Connection]                                  │
+│ - max_size: int                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ <span style="color: #2ed573;">+ get_instance() -> ConnectionPool</span>  (class method)             │
+│ - __init__()  (private - can't call directly)                   │
+│ + get_connection() -> Connection                                 │
+│ + release_connection(conn: Connection)                           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ SessionBackend  │     │   View Code     │     │  Middleware     │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         │ get_instance()        │ get_instance()        │ get_instance()
+         ▼                       ▼                       ▼
+    ┌────────────────────────────────────────────────────────┐
+    │                  SAME ConnectionPool                    │
+    │                     Instance                            │
+    └────────────────────────────────────────────────────────┘
+</pre>
+                        </div>
+<pre><code><span class="comment"># Singleton implementation in Python</span>
+<span class="keyword">class</span> <span class="function">ConnectionPool</span>:
+    _instance = <span class="keyword">None</span>
+
+    <span class="keyword">def</span> <span class="function">__new__</span>(cls):
+        <span class="keyword">if</span> cls._instance <span class="keyword">is None</span>:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialize()
+        <span class="keyword">return</span> cls._instance
+
+    <span class="keyword">def</span> <span class="function">_initialize</span>(self):
+        self.connections = []
+
+<span class="comment"># All calls return the SAME instance</span>
+pool1 = ConnectionPool()
+pool2 = ConnectionPool()
+print(pool1 <span class="keyword">is</span> pool2)  <span class="comment"># True</span>
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- OOP Question: Abstract Base Class -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>OOP: Session Backend Interface</h4>
+                    <p>Django's session backends must implement <code>create()</code>, <code>save()</code>, <code>load()</code>, <code>delete()</code>. To enforce this contract, Django uses:</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'abc-quiz')">A. A regular class with pass methods</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'abc-quiz')">B. An Abstract Base Class (ABC) with @abstractmethod</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'abc-quiz')">C. Duck typing with no enforcement</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'abc-quiz')">D. A Protocol class</div>
+                    </div>
+                    <div class="quiz-feedback" id="abc-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="abc-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Abstract Base Classes for Interface Contracts</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod
+
+<span class="keyword">class</span> <span class="function">SessionBase</span>(ABC):
+    <span class="string">"""All session backends MUST implement these methods"""</span>
+
+    @abstractmethod
+    <span class="keyword">def</span> <span class="function">create</span>(self) -> str:
+        <span class="string">"""Create new session, return session_key"""</span>
+        <span class="keyword">pass</span>
+
+    @abstractmethod
+    <span class="keyword">def</span> <span class="function">save</span>(self, must_create: bool = <span class="keyword">False</span>):
+        <span class="keyword">pass</span>
+
+    @abstractmethod
+    <span class="keyword">def</span> <span class="function">load</span>(self) -> dict:
+        <span class="keyword">pass</span>
+
+<span class="comment"># ❌ This will raise TypeError at instantiation!</span>
+<span class="keyword">class</span> <span class="function">BadBackend</span>(SessionBase):
+    <span class="keyword">pass</span>  <span class="comment"># Missing abstract methods</span>
+
+backend = BadBackend()  <span class="comment"># TypeError: Can't instantiate abstract class</span>
+
+<span class="comment"># ✅ Must implement all abstract methods</span>
+<span class="keyword">class</span> <span class="function">GoodBackend</span>(SessionBase):
+    <span class="keyword">def</span> <span class="function">create</span>(self): ...
+    <span class="keyword">def</span> <span class="function">save</span>(self, must_create=<span class="keyword">False</span>): ...
+    <span class="keyword">def</span> <span class="function">load</span>(self): ...
+</code></pre>
+                        <p style="margin-top: 15px;"><strong>Why ABC over Duck Typing?</strong></p>
+                        <ul>
+                            <li>Fails fast at instantiation, not at method call</li>
+                            <li>Self-documenting: clear what must be implemented</li>
+                            <li>IDE support: autocomplete, type checking</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Concurrency Question: Race Condition -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Concurrency: Session Race Condition</h4>
+                    <p>Two requests from the same user arrive simultaneously. Both read <code>cart_items=5</code>, add 1, and save. Expected: 7. What will the result likely be?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'race-condition-quiz')">A. 6 (race condition - one update is lost)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'race-condition-quiz')">B. 7 (database handles it)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'race-condition-quiz')">C. Error is raised</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'race-condition-quiz')">D. 5 (both updates are lost)</div>
+                    </div>
+                    <div class="quiz-feedback" id="race-condition-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="race-condition-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #3a2a1a;">
+                        <span>⚠️</span> <strong style="color: #ffa502;">Race Condition in Session Updates</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <div class="diagram" style="padding: 15px; margin: 10px 0;">
+<pre style="color: #eee; margin: 0; font-size: 0.85em;">
+<span style="color: #ff6b6b;">Race Condition Timeline:</span>
+
+Request A                    Database                    Request B
+    │                           │                           │
+    │──── READ session ────────>│                           │
+    │<─── cart_items = 5 ───────│                           │
+    │                           │<──── READ session ────────│
+    │                           │───── cart_items = 5 ─────>│
+    │  (compute 5 + 1 = 6)      │     (compute 5 + 1 = 6)   │
+    │                           │                           │
+    │──── WRITE cart_items=6 ──>│                           │
+    │                           │<──── WRITE cart_items=6 ──│
+    │                           │                           │
+    │                      Result: 6 (expected 7!)          │
+
+<span style="color: #2ed573;">Solutions:</span>
+1. Database-level atomic operations: UPDATE SET cart_items = cart_items + 1
+2. Optimistic locking: Check version before save
+3. Pessimistic locking: SELECT ... FOR UPDATE
+4. Use Redis atomic INCR for counters
+</pre>
+                        </div>
+<pre><code><span class="comment"># Solution: Use F() for atomic increment</span>
+<span class="keyword">from</span> django.db.models <span class="keyword">import</span> F
+
+<span class="comment"># ❌ Race condition prone</span>
+session = Session.objects.get(key=key)
+session.data[<span class="string">'cart_items'</span>] += 1
+session.save()
+
+<span class="comment"># ✅ Atomic update (if cart_items was a DB field)</span>
+Session.objects.filter(key=key).update(
+    cart_items=F(<span class="string">'cart_items'</span>) + 1
+)
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Concurrency Question: Thread Safety -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Concurrency: Semaphores</h4>
+                    <p>To limit concurrent session validations to 10 at a time (prevent DB overload), which synchronization primitive is most appropriate?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'semaphore-quiz')">A. Lock (Mutex) - allows only 1 thread</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'semaphore-quiz')">B. Semaphore - allows N concurrent accesses</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'semaphore-quiz')">C. Event - signals between threads</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'semaphore-quiz')">D. Condition - wait for state change</div>
+                    </div>
+                    <div class="quiz-feedback" id="semaphore-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="semaphore-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Semaphore for Rate Limiting</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code><span class="keyword">import</span> threading
+
+<span class="comment"># Semaphore with 10 permits - allows 10 concurrent validations</span>
+validation_semaphore = threading.Semaphore(10)
+
+<span class="keyword">def</span> <span class="function">validate_session</span>(session_key):
+    <span class="keyword">with</span> validation_semaphore:  <span class="comment"># Acquires permit, blocks if 10 in use</span>
+        <span class="comment"># Only 10 threads can be here simultaneously</span>
+        result = db.query(<span class="string">"SELECT * FROM sessions WHERE key=%s"</span>, session_key)
+        <span class="keyword">return</span> result
+    <span class="comment"># Permit released automatically</span>
+
+<span class="comment"># Comparison:</span>
+<span class="comment"># Lock/Mutex: Binary semaphore (0 or 1) - only 1 thread</span>
+<span class="comment"># Semaphore: Counting semaphore (0 to N) - up to N threads</span>
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>Use cases:</strong></p>
+                        <ul>
+                            <li>Connection pooling (max 10 DB connections)</li>
+                            <li>Rate limiting API calls</li>
+                            <li>Bounded resource access</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Python Advanced: Type Hints -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Python Advanced: Generic Session Store</h4>
+                    <p>You want a session store that works with any serializable type. Which typing construct allows this?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'generics-quiz')">A. Union[int, str, dict] - specific types only</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'generics-quiz')">B. TypeVar and Generic[T] - parametric polymorphism</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'generics-quiz')">C. Any - disables type checking</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'generics-quiz')">D. object - base class of all types</div>
+                    </div>
+                    <div class="quiz-feedback" id="generics-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="generics-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Generics in Python for Type-Safe Sessions</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code><span class="keyword">from</span> typing <span class="keyword">import</span> TypeVar, Generic, Dict
+
+T = TypeVar(<span class="string">'T'</span>)  <span class="comment"># Type parameter</span>
+
+<span class="keyword">class</span> <span class="function">SessionStore</span>(Generic[T]):
+    <span class="string">"""A type-safe session store"""</span>
+
+    <span class="keyword">def</span> <span class="function">__init__</span>(self):
+        self._data: Dict[str, T] = {}
+
+    <span class="keyword">def</span> <span class="function">set</span>(self, key: str, value: T) -> <span class="keyword">None</span>:
+        self._data[key] = value
+
+    <span class="keyword">def</span> <span class="function">get</span>(self, key: str) -> T:
+        <span class="keyword">return</span> self._data[key]
+
+<span class="comment"># Usage - type checker knows the types!</span>
+int_store: SessionStore[int] = SessionStore()
+int_store.set(<span class="string">'count'</span>, 5)      <span class="comment"># ✓ OK</span>
+int_store.set(<span class="string">'count'</span>, <span class="string">'five'</span>) <span class="comment"># ✗ Type error!</span>
+
+str_store: SessionStore[str] = SessionStore()
+str_store.set(<span class="string">'name'</span>, <span class="string">'Alice'</span>) <span class="comment"># ✓ OK</span>
+name: str = str_store.get(<span class="string">'name'</span>)  <span class="comment"># Type checker knows it's str</span>
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>Generics vs Any:</strong></p>
+                        <ul>
+                            <li><code>Any</code>: Disables type checking completely</li>
+                            <li><code>Generic[T]</code>: Preserves type information through the class</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Python Advanced: Exception Handling -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Python Advanced: Exception Chaining</h4>
+                    <p>A session lookup fails. You want to raise a custom <code>SessionError</code> while preserving the original <code>DatabaseError</code>. Which syntax?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'exception-quiz')">A. raise SessionError(str(e))</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'exception-quiz')">B. raise SessionError("...") from e</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'exception-quiz')">C. raise SessionError("...").with_cause(e)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'exception-quiz')">D. raise SessionError("..."); raise e</div>
+                    </div>
+                    <div class="quiz-feedback" id="exception-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="exception-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">Exception Chaining with "from"</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code><span class="keyword">class</span> <span class="function">SessionError</span>(Exception):
+    <span class="keyword">pass</span>
+
+<span class="keyword">def</span> <span class="function">load_session</span>(session_key):
+    <span class="keyword">try</span>:
+        <span class="keyword">return</span> db.query(<span class="string">"SELECT * FROM sessions WHERE key=%s"</span>, session_key)
+    <span class="keyword">except</span> DatabaseError <span class="keyword">as</span> e:
+        <span class="comment"># ✅ Chains exceptions - original traceback preserved</span>
+        <span class="keyword">raise</span> SessionError(f<span class="string">"Failed to load session {session_key}"</span>) <span class="keyword">from</span> e
+
+<span class="comment"># Output shows BOTH exceptions:</span>
+<span class="comment"># DatabaseError: connection refused</span>
+<span class="comment"># </span>
+<span class="comment"># The above exception was the direct cause of the following exception:</span>
+<span class="comment"># </span>
+<span class="comment"># SessionError: Failed to load session abc123</span>
+
+<span class="comment"># Access the original exception:</span>
+<span class="keyword">except</span> SessionError <span class="keyword">as</span> e:
+    original = e.__cause__  <span class="comment"># The DatabaseError</span>
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>Why chain exceptions?</strong></p>
+                        <ul>
+                            <li>Preserve debugging context (original traceback)</li>
+                            <li>Provide appropriate abstraction (SessionError vs DatabaseError)</li>
+                            <li>Allow callers to access root cause if needed</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Functional Programming Question -->
+                <div class="quiz" style="margin-top: 25px;">
+                    <h4>Python Advanced: Functional Session Processing</h4>
+                    <p>You have a list of sessions and want to: filter active ones, extract user IDs, convert to integers. Which approach is most functional/Pythonic?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'functional-quiz')">A. Nested for loops with if statements</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'functional-quiz')">B. list(map(int, map(get_user_id, filter(is_active, sessions))))</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'functional-quiz')">C. [int(s.user_id) for s in sessions if s.is_active]</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'functional-quiz')">D. reduce(lambda acc, s: acc + [int(s.user_id)] if s.is_active else acc, sessions, [])</div>
+                    </div>
+                    <div class="quiz-feedback" id="functional-quiz-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="functional-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a3a2a;">
+                        <span>✓</span> <strong style="color: #2ed573;">List Comprehensions - Pythonic Functional Style</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code><span class="comment"># All equivalent, but list comprehension is most Pythonic:</span>
+
+sessions = [Session(user_id=<span class="string">'1'</span>, is_active=<span class="keyword">True</span>),
+            Session(user_id=<span class="string">'2'</span>, is_active=<span class="keyword">False</span>), ...]
+
+<span class="comment"># ❌ Imperative - verbose</span>
+result = []
+<span class="keyword">for</span> s <span class="keyword">in</span> sessions:
+    <span class="keyword">if</span> s.is_active:
+        result.append(int(s.user_id))
+
+<span class="comment"># ❌ map/filter - hard to read</span>
+result = list(map(<span class="keyword">lambda</span> s: int(s.user_id), filter(<span class="keyword">lambda</span> s: s.is_active, sessions)))
+
+<span class="comment"># ✅ List comprehension - clear and Pythonic</span>
+result = [int(s.user_id) <span class="keyword">for</span> s <span class="keyword">in</span> sessions <span class="keyword">if</span> s.is_active]
+
+<span class="comment"># For large data, use generator expression (lazy evaluation):</span>
+result = (int(s.user_id) <span class="keyword">for</span> s <span class="keyword">in</span> sessions <span class="keyword">if</span> s.is_active)
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>Python's philosophy:</strong> List comprehensions are preferred over map/filter for readability. Use generators for memory efficiency.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="nav-links">
+            <a href="../auth2_guide/index.html">← Back to Auth Guide</a>
+            <a href="../token-auth-guide/index.html">Next: JWT Token Auth →</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleStep(header) {
+            const step = header.parentElement;
+            const wasActive = step.classList.contains('active');
+
+            // Close all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+
+            // Open clicked step if it wasn't active
+            if (!wasActive) {
+                step.classList.add('active');
+            }
+
+            updateProgress();
+        }
+
+        function toggleReveal(header) {
+            const box = header.parentElement;
+            box.classList.toggle('open');
+        }
+
+        function checkAnswer(option, isCorrect, quizId) {
+            const quiz = option.closest('.quiz');
+            const options = quiz.querySelectorAll('.quiz-option');
+            const feedback = quiz.querySelector('.quiz-feedback');
+
+            // Reset all options
+            options.forEach(opt => {
+                opt.classList.remove('correct', 'wrong');
+                opt.style.pointerEvents = 'none';
+            });
+
+            // Mark selected
+            if (isCorrect) {
+                option.classList.add('correct');
+                feedback.style.display = 'block';
+                feedback.style.background = '#1a3a2a';
+                feedback.style.color = '#2ed573';
+                feedback.textContent = '✓ Correct!';
+            } else {
+                option.classList.add('wrong');
+                // Find and highlight correct answer
+                options.forEach(opt => {
+                    if (opt.onclick.toString().includes('true')) {
+                        opt.classList.add('correct');
+                    }
+                });
+                feedback.style.display = 'block';
+                feedback.style.background = '#3a1a1a';
+                feedback.style.color = '#ff4757';
+                feedback.textContent = '✗ Not quite. See the correct answer highlighted.';
+            }
+
+            // Show explanation regardless of correct/incorrect answer
+            if (quizId) {
+                const explanation = document.getElementById(quizId.replace('-quiz', '-explanation'));
+                if (explanation) {
+                    explanation.style.display = 'block';
+                    explanation.classList.add('open');
+                }
+            }
+        }
+
+        function updateProgress() {
+            const steps = document.querySelectorAll('.step');
+            const activeIndex = Array.from(steps).findIndex(s => s.classList.contains('active'));
+            const progress = ((activeIndex + 1) / steps.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        // Initialize
+        updateProgress();
+    </script>
+</body>
+</html>

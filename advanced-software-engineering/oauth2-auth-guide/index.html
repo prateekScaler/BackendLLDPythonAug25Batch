@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 2.0 & OIDC Implementation Guide</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1em;
+        }
+
+        .progress-bar {
+            background: #2d2d44;
+            border-radius: 10px;
+            height: 12px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Step Cards */
+        .step {
+            background: #1e1e32;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .step-header {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #252540;
+            transition: background 0.3s;
+        }
+
+        .step-header:hover {
+            background: #2a2a4a;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .step-number.completed {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+        }
+
+        .step-title {
+            flex: 1;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .step-toggle {
+            font-size: 1.5em;
+            color: #667eea;
+            transition: transform 0.3s;
+        }
+
+        .step.open .step-toggle {
+            transform: rotate(180deg);
+        }
+
+        .step-content {
+            display: none;
+            padding: 25px;
+            border-top: 1px solid #333;
+        }
+
+        .step.open .step-content {
+            display: block;
+        }
+
+        /* Code blocks */
+        pre {
+            background: #0d0d1a;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border: 1px solid #333;
+            font-size: 0.9em;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            color: #e0e0e0;
+        }
+
+        .code-comment { color: #6a9955; }
+        .code-keyword { color: #569cd6; }
+        .code-string { color: #ce9178; }
+        .code-function { color: #dcdcaa; }
+        .code-class { color: #4ec9b0; }
+        .code-decorator { color: #c586c0; }
+
+        /* Reveal boxes */
+        .reveal-box {
+            background: #252540;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+
+        .reveal-header {
+            padding: 12px 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .reveal-header:hover {
+            background: #2d2d4a;
+        }
+
+        .reveal-content {
+            display: none;
+            padding: 18px;
+            border-top: 1px solid #444;
+            background: #1a1a2e;
+        }
+
+        .reveal-box.open .reveal-content {
+            display: block;
+        }
+
+        /* Quiz */
+        .quiz {
+            background: linear-gradient(135deg, #1a3a2e 0%, #1a2e3a 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #2d5a4a;
+        }
+
+        .quiz h4 {
+            color: #4caf50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .quiz-option {
+            padding: 12px 18px;
+            background: #1e1e32;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .quiz-option.correct {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .quiz-option.wrong {
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.15);
+        }
+
+        .quiz-result {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Info boxes */
+        .info-box {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .info-box.concept {
+            background: linear-gradient(135deg, #1a2e4a 0%, #1a3a4a 100%);
+            border-left: 4px solid #2196f3;
+        }
+
+        .info-box.warning {
+            background: linear-gradient(135deg, #4a3a1a 0%, #4a2e1a 100%);
+            border-left: 4px solid #ff9800;
+        }
+
+        .info-box.security {
+            background: linear-gradient(135deg, #4a1a1a 0%, #4a1a2e 100%);
+            border-left: 4px solid #f44336;
+        }
+
+        .info-box.success {
+            background: linear-gradient(135deg, #1a4a2e 0%, #1a3a2e 100%);
+            border-left: 4px solid #4caf50;
+        }
+
+        /* Flow diagram */
+        .flow-diagram {
+            background: #0d0d1a;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .flow-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            min-width: 120px;
+        }
+
+        .flow-user { background: linear-gradient(135deg, #4caf50, #2e7d32); color: white; }
+        .flow-app { background: linear-gradient(135deg, #2196f3, #1565c0); color: white; }
+        .flow-provider { background: linear-gradient(135deg, #9c27b0, #6a1b9a); color: white; }
+        .flow-api { background: linear-gradient(135deg, #ff9800, #e65100); color: white; }
+
+        .flow-arrow {
+            color: #667eea;
+            font-size: 1.5em;
+        }
+
+        .flow-label {
+            font-size: 0.85em;
+            color: #888;
+            margin: 5px 0;
+        }
+
+        /* Comparison table */
+        .comparison {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #1e1e32;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .comparison th {
+            background: #252540;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison td {
+            padding: 12px 15px;
+            border-top: 1px solid #333;
+        }
+
+        .comparison tr:hover {
+            background: #252540;
+        }
+
+        /* Interactive Demo */
+        .demo-container {
+            background: linear-gradient(135deg, #1a1a3e 0%, #2a1a3e 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid #764ba2;
+        }
+
+        .demo-container h3 {
+            color: #764ba2;
+            margin-bottom: 20px;
+        }
+
+        .demo-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .demo-btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .demo-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .demo-btn.secondary {
+            background: #333;
+            color: #e0e0e0;
+        }
+
+        .demo-output {
+            background: #0d0d1a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.9em;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #252540;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            color: #888;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #1e1e32;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            background: #1e1e32;
+            padding: 20px;
+            border-radius: 0 8px 8px 8px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Lists */
+        ul, ol {
+            padding-left: 25px;
+            margin: 10px 0;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        /* Highlight text */
+        .highlight {
+            background: linear-gradient(135deg, #667eea33, #764ba233);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* File structure */
+        .file-tree {
+            background: #0d0d1a;
+            border-radius: 8px;
+            padding: 15px 20px;
+            font-family: monospace;
+            margin: 15px 0;
+        }
+
+        .file-tree .folder { color: #dcdcaa; }
+        .file-tree .file { color: #9cdcfe; }
+        .file-tree .note { color: #6a9955; font-style: italic; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.6em; }
+            .flow-row { flex-direction: column; }
+            .flow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OAuth 2.0 & OIDC Implementation</h1>
+            <p>Delegated Authorization & Identity - The Modern Way</p>
+        </header>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text"><span id="progressText">0</span> of 9 steps completed</div>
+
+        <!-- Step 0: Understanding OAuth -->
+        <div class="step" data-step="0">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">0</div>
+                <div class="step-title">Understanding OAuth 2.0 vs OIDC</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box concept">
+                    <strong>Key Insight:</strong> OAuth 2.0 is for <em>authorization</em> (what you can access),
+                    OIDC adds <em>authentication</em> (who you are) on top.
+                </div>
+
+                <table class="comparison">
+                    <tr>
+                        <th>Aspect</th>
+                        <th>OAuth 2.0</th>
+                        <th>OIDC (OAuth 2.0 + Identity)</th>
+                    </tr>
+                    <tr>
+                        <td>Purpose</td>
+                        <td>Authorization - grant access</td>
+                        <td>Authentication + Authorization</td>
+                    </tr>
+                    <tr>
+                        <td>Question Answered</td>
+                        <td>"Can this app access my photos?"</td>
+                        <td>"Who is this user?"</td>
+                    </tr>
+                    <tr>
+                        <td>Token Returned</td>
+                        <td>access_token (opaque or JWT)</td>
+                        <td>access_token + <strong>id_token</strong> (JWT)</td>
+                    </tr>
+                    <tr>
+                        <td>User Info</td>
+                        <td>Call /userinfo endpoint</td>
+                        <td>In id_token claims directly</td>
+                    </tr>
+                    <tr>
+                        <td>Scope</td>
+                        <td>read, write, delete, etc.</td>
+                        <td>openid, profile, email</td>
+                    </tr>
+                </table>
+
+                <div class="flow-diagram">
+                    <h4 style="margin-bottom: 20px; color: #667eea;">Authorization Code Flow</h4>
+
+                    <div class="flow-row">
+                        <div class="flow-box flow-user">User</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-app">Your App</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-provider">Auth Provider</div>
+                    </div>
+                    <div class="flow-label">1. User clicks "Login with Google"</div>
+
+                    <div class="flow-row">
+                        <div class="flow-box flow-provider">Provider</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-user">User Consent</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-app">Callback + Code</div>
+                    </div>
+                    <div class="flow-label">2. User approves, provider redirects with auth code</div>
+
+                    <div class="flow-row">
+                        <div class="flow-box flow-app">Your App</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-provider">Token Endpoint</div>
+                        <div class="flow-arrow">&#8594;</div>
+                        <div class="flow-box flow-api">Tokens!</div>
+                    </div>
+                    <div class="flow-label">3. Exchange code for tokens (server-to-server)</div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#128161;</span> Why Authorization Code Flow? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <ul>
+                            <li><strong>Tokens never exposed to browser</strong> - Code comes to frontend, tokens stay in backend</li>
+                            <li><strong>Server-to-server exchange</strong> - Uses client_secret securely</li>
+                            <li><strong>Short-lived code</strong> - Auth code expires in ~10 mins</li>
+                            <li><strong>PKCE for extra security</strong> - Prevents code interception attacks</li>
+                        </ul>
+                        <p style="margin-top: 15px; color: #888;">
+                            <em>Relates to: HTTP Architecture (request/response), REST APIs (token endpoints)</em>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="quiz">
+                    <h4>&#128300; Quick Check</h4>
+                    <p>What does the "openid" scope tell the auth provider?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'openid-scope')">A) Give full read/write access</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'openid-scope')">B) Return an id_token with user identity</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'openid-scope')">C) Allow password reset</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'openid-scope')">D) Enable refresh tokens</div>
+                    </div>
+                    <div class="quiz-result" id="openid-scope-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="openid-scope-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a4a2e;">
+                        <span>&#10003;</span> <strong style="color: #4caf50;">Understanding OIDC Scopes</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>The "openid" scope is the magic switch that turns OAuth into OIDC:</strong></p>
+                        <table class="comparison">
+                            <tr><th>Scope</th><th>What You Get</th></tr>
+                            <tr><td><code>openid</code></td><td>Returns an <strong>id_token</strong> (JWT with user identity)</td></tr>
+                            <tr><td><code>profile</code></td><td>Adds name, picture to id_token</td></tr>
+                            <tr><td><code>email</code></td><td>Adds email, email_verified to id_token</td></tr>
+                        </table>
+                        <p style="margin-top: 15px; color: #888;">
+                            Without "openid" scope → Pure OAuth 2.0 (only access_token)<br>
+                            With "openid" scope → OIDC (access_token + id_token with identity)
+                        </p>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(0)">I understand the difference &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 1: Project Setup -->
+        <div class="step" data-step="1">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">1</div>
+                <div class="step-title">Project Setup & Dependencies</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="file-tree">
+                    <span class="folder">oauth_project/</span><br>
+                    &nbsp;&nbsp;<span class="folder">oauth_project/</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">settings.py</span> <span class="note"># OAuth config</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">urls.py</span> <span class="note"># Callback routes</span><br>
+                    &nbsp;&nbsp;<span class="folder">accounts/</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">views.py</span> <span class="note"># OAuth flow handlers</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">models.py</span> <span class="note"># Social account linking</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">oauth_utils.py</span> <span class="note"># Token exchange helpers</span><br>
+                </div>
+
+                <h4>Install Dependencies</h4>
+<pre><code><span class="code-comment"># Option 1: Use django-allauth (recommended for production)</span>
+pip install django-allauth
+
+<span class="code-comment"># Option 2: Use social-auth-app-django</span>
+pip install social-auth-app-django
+
+<span class="code-comment"># Option 3: Manual implementation (for learning)</span>
+pip install requests PyJWT</code></pre>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab(this, 'allauth')">django-allauth</button>
+                    <button class="tab" onclick="switchTab(this, 'manual')">Manual (Learning)</button>
+                </div>
+
+                <div class="tab-content active" id="allauth">
+<pre><code><span class="code-comment"># settings.py - django-allauth setup</span>
+
+INSTALLED_APPS = [
+    <span class="code-comment"># ... Django defaults ...</span>
+    <span class="code-string">'django.contrib.sites'</span>,
+    <span class="code-string">'allauth'</span>,
+    <span class="code-string">'allauth.account'</span>,
+    <span class="code-string">'allauth.socialaccount'</span>,
+    <span class="code-string">'allauth.socialaccount.providers.google'</span>,
+    <span class="code-string">'allauth.socialaccount.providers.github'</span>,
+]
+
+SITE_ID = <span class="code-keyword">1</span>
+
+<span class="code-comment"># Authentication backends</span>
+AUTHENTICATION_BACKENDS = [
+    <span class="code-string">'django.contrib.auth.backends.ModelBackend'</span>,
+    <span class="code-string">'allauth.account.auth_backends.AuthenticationBackend'</span>,
+]
+
+<span class="code-comment"># Allauth settings</span>
+SOCIALACCOUNT_PROVIDERS = {
+    <span class="code-string">'google'</span>: {
+        <span class="code-string">'SCOPE'</span>: [<span class="code-string">'profile'</span>, <span class="code-string">'email'</span>],
+        <span class="code-string">'AUTH_PARAMS'</span>: {<span class="code-string">'access_type'</span>: <span class="code-string">'online'</span>},
+    }
+}
+
+LOGIN_REDIRECT_URL = <span class="code-string">'/'</span>
+ACCOUNT_LOGOUT_REDIRECT_URL = <span class="code-string">'/'</span></code></pre>
+                </div>
+
+                <div class="tab-content" id="manual">
+<pre><code><span class="code-comment"># settings.py - Manual OAuth config</span>
+
+<span class="code-comment"># Store credentials securely (use environment variables!)</span>
+GOOGLE_CLIENT_ID = os.environ.get(<span class="code-string">'GOOGLE_CLIENT_ID'</span>)
+GOOGLE_CLIENT_SECRET = os.environ.get(<span class="code-string">'GOOGLE_CLIENT_SECRET'</span>)
+GOOGLE_REDIRECT_URI = <span class="code-string">'http://localhost:8000/oauth/callback/google/'</span>
+
+<span class="code-comment"># OAuth endpoints</span>
+GOOGLE_AUTH_URL = <span class="code-string">'https://accounts.google.com/o/oauth2/v2/auth'</span>
+GOOGLE_TOKEN_URL = <span class="code-string">'https://oauth2.googleapis.com/token'</span>
+GOOGLE_USERINFO_URL = <span class="code-string">'https://www.googleapis.com/oauth2/v2/userinfo'</span></code></pre>
+                </div>
+
+                <div class="info-box warning">
+                    <strong>Security:</strong> Never commit client_secret to git! Use environment variables or Django's
+                    secrets management. Relates to: <em>Environment config best practices from earlier modules</em>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#128218;</span> What are Authentication Backends? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <p>Django tries each backend in order until one succeeds:</p>
+<pre><code>AUTHENTICATION_BACKENDS = [
+    <span class="code-comment"># 1. Try username/password first</span>
+    <span class="code-string">'django.contrib.auth.backends.ModelBackend'</span>,
+
+    <span class="code-comment"># 2. If that fails, try social auth</span>
+    <span class="code-string">'allauth.account.auth_backends.AuthenticationBackend'</span>,
+]</code></pre>
+                        <p style="margin-top: 10px;">This is the <strong>Chain of Responsibility</strong> pattern -
+                        each backend gets a chance to authenticate.</p>
+                    </div>
+                </div>
+
+                <div class="quiz">
+                    <h4>&#128300; Architecture Question</h4>
+                    <p>Why do we exchange the auth code for tokens server-side instead of in the browser?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'server-exchange')">A) Browsers can't make HTTP requests</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'server-exchange')">B) To keep client_secret secure - browsers can be inspected</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'server-exchange')">C) The provider blocks browser requests</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'server-exchange')">D) Tokens are too large for browsers</div>
+                    </div>
+                    <div class="quiz-result" id="server-exchange-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="server-exchange-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a4a2e;">
+                        <span>&#10003;</span> <strong style="color: #4caf50;">Why Server-to-Server Token Exchange?</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>The client_secret is like a password for your app:</strong></p>
+<pre><code style="font-size: 0.85em;"><span class="code-comment"># Token exchange requires client_secret:</span>
+POST /token
+{
+  code: "auth_code_from_callback",
+  client_id: "public_id",
+  <span style="color: #f44336;">client_secret: "SUPER_SECRET"</span>  <span class="code-comment">← Must stay on server!</span>
+}
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>If client_secret was in browser:</strong></p>
+                        <ul>
+                            <li>Anyone could view it (DevTools → Network/Sources)</li>
+                            <li>Attackers could impersonate your app</li>
+                            <li>They could exchange stolen auth codes for tokens</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #888;">This is why "Authorization Code Flow" exists - code goes to browser, secret exchange happens on server.</p>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(1)">Dependencies configured &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Initiate OAuth Flow -->
+        <div class="step" data-step="2">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">2</div>
+                <div class="step-title">Initiate OAuth Flow (Redirect to Provider)</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box concept">
+                    <strong>Step 1 of Flow:</strong> User clicks "Login with Google" &#8594;
+                    Your app redirects to Google with specific parameters
+                </div>
+
+<pre><code><span class="code-comment"># accounts/views.py</span>
+<span class="code-keyword">import</span> secrets
+<span class="code-keyword">import</span> hashlib
+<span class="code-keyword">import</span> base64
+<span class="code-keyword">from</span> urllib.parse <span class="code-keyword">import</span> urlencode
+<span class="code-keyword">from</span> django.shortcuts <span class="code-keyword">import</span> redirect
+<span class="code-keyword">from</span> django.conf <span class="code-keyword">import</span> settings
+
+<span class="code-keyword">def</span> <span class="code-function">oauth_login</span>(request):
+    <span class="code-string">"""Redirect user to Google's authorization page"""</span>
+
+    <span class="code-comment"># Generate state token to prevent CSRF</span>
+    state = secrets.token_urlsafe(<span class="code-keyword">32</span>)
+    request.session[<span class="code-string">'oauth_state'</span>] = state
+
+    <span class="code-comment"># Generate PKCE code verifier and challenge</span>
+    code_verifier = secrets.token_urlsafe(<span class="code-keyword">64</span>)
+    request.session[<span class="code-string">'pkce_verifier'</span>] = code_verifier
+
+    <span class="code-comment"># Create code challenge (SHA256 hash, base64url encoded)</span>
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).decode().rstrip(<span class="code-string">'='</span>)
+
+    <span class="code-comment"># Build authorization URL</span>
+    params = {
+        <span class="code-string">'client_id'</span>: settings.GOOGLE_CLIENT_ID,
+        <span class="code-string">'redirect_uri'</span>: settings.GOOGLE_REDIRECT_URI,
+        <span class="code-string">'response_type'</span>: <span class="code-string">'code'</span>,  <span class="code-comment"># We want auth code, not token</span>
+        <span class="code-string">'scope'</span>: <span class="code-string">'openid email profile'</span>,  <span class="code-comment"># OIDC scopes</span>
+        <span class="code-string">'state'</span>: state,  <span class="code-comment"># CSRF protection</span>
+        <span class="code-string">'code_challenge'</span>: code_challenge,  <span class="code-comment"># PKCE</span>
+        <span class="code-string">'code_challenge_method'</span>: <span class="code-string">'S256'</span>,
+    }
+
+    auth_url = f<span class="code-string">"{settings.GOOGLE_AUTH_URL}?{urlencode(params)}"</span>
+    <span class="code-keyword">return</span> redirect(auth_url)</code></pre>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#128274;</span> What is PKCE and why do we need it? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <p><strong>PKCE</strong> (Proof Key for Code Exchange) prevents authorization code interception:</p>
+                        <ol>
+                            <li>Generate random <code>code_verifier</code> (stored in session)</li>
+                            <li>Create <code>code_challenge</code> = SHA256(code_verifier)</li>
+                            <li>Send challenge with auth request</li>
+                            <li>Send verifier when exchanging code for tokens</li>
+                            <li>Provider checks: SHA256(verifier) == challenge</li>
+                        </ol>
+                        <p style="margin-top: 10px; color: #888;">
+                            Even if attacker intercepts the code, they can't exchange it without the verifier!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#128737;</span> What is the state parameter? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <p>The <code>state</code> parameter prevents <strong>CSRF attacks</strong> on OAuth:</p>
+<pre><code><span class="code-comment"># Without state - attacker could:</span>
+1. Get their own auth code from Google
+2. Trick victim into loading: /callback?code=ATTACKER_CODE
+3. Victim's account now linked to attacker's Google!
+
+<span class="code-comment"># With state:</span>
+1. We generate random state, store in session
+2. Google sends state back in callback
+3. We verify: callback state == session state
+4. Attacker can't forge - they don't know victim's state</code></pre>
+                        <p style="margin-top: 10px;">
+                            <em>Relates to: CSRF protection you learned in Django security</em>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="demo-container">
+                    <h3>&#128421; See the Authorization URL</h3>
+                    <p>Click to generate an example authorization URL:</p>
+                    <button class="demo-btn primary" onclick="generateAuthUrl()">Generate Auth URL</button>
+                    <div class="demo-output" id="authUrlOutput">Click the button to see the URL structure...</div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(2)">I understand the redirect &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Handle Callback -->
+        <div class="step" data-step="3">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">3</div>
+                <div class="step-title">Handle the Callback (Receive Auth Code)</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box concept">
+                    <strong>Step 2 of Flow:</strong> After user consents, Google redirects back to your
+                    <code>redirect_uri</code> with an authorization code
+                </div>
+
+<pre><code><span class="code-comment"># accounts/views.py</span>
+<span class="code-keyword">import</span> requests
+<span class="code-keyword">from</span> django.http <span class="code-keyword">import</span> HttpResponseBadRequest
+
+<span class="code-keyword">def</span> <span class="code-function">oauth_callback</span>(request):
+    <span class="code-string">"""Handle the callback from Google"""</span>
+
+    <span class="code-comment"># Step 1: Verify state (CSRF protection)</span>
+    state = request.GET.get(<span class="code-string">'state'</span>)
+    stored_state = request.session.get(<span class="code-string">'oauth_state'</span>)
+
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> state <span class="code-keyword">or</span> state != stored_state:
+        <span class="code-keyword">return</span> HttpResponseBadRequest(<span class="code-string">'Invalid state parameter'</span>)
+
+    <span class="code-comment"># Step 2: Check for errors</span>
+    error = request.GET.get(<span class="code-string">'error'</span>)
+    <span class="code-keyword">if</span> error:
+        <span class="code-keyword">return</span> HttpResponseBadRequest(f<span class="code-string">'OAuth error: {error}'</span>)
+
+    <span class="code-comment"># Step 3: Get the authorization code</span>
+    code = request.GET.get(<span class="code-string">'code'</span>)
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> code:
+        <span class="code-keyword">return</span> HttpResponseBadRequest(<span class="code-string">'No authorization code received'</span>)
+
+    <span class="code-comment"># Step 4: Exchange code for tokens (next step!)</span>
+    tokens = exchange_code_for_tokens(code, request)
+
+    <span class="code-comment"># Step 5: Process tokens and create/login user</span>
+    user = process_oauth_tokens(tokens, request)
+
+    <span class="code-keyword">return</span> redirect(<span class="code-string">'dashboard'</span>)</code></pre>
+
+<pre><code><span class="code-comment"># What Google sends to your callback:</span>
+GET /oauth/callback/google/?code=4/P7q7W91...&state=abc123&scope=openid+email+profile
+
+<span class="code-comment"># The code is SHORT-LIVED (usually 10 minutes)</span>
+<span class="code-comment"># Exchange it immediately!</span></code></pre>
+
+                <div class="info-box warning">
+                    <strong>Important:</strong> The authorization code can only be used ONCE.
+                    If token exchange fails, user must re-authenticate.
+                </div>
+
+                <div class="quiz">
+                    <h4>&#128300; Security Check</h4>
+                    <p>What should you do if the state parameter doesn't match?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'state-mismatch')">A) Ignore it and continue</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'state-mismatch')">B) Log a warning but proceed</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'state-mismatch')">C) Reject the request immediately - possible CSRF attack</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'state-mismatch')">D) Ask the user to try again</div>
+                    </div>
+                    <div class="quiz-result" id="state-mismatch-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="state-mismatch-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #4a1a1a;">
+                        <span>&#128737;</span> <strong style="color: #f44336;">CSRF Attack on OAuth - The State Parameter</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Attack scenario without state validation:</strong></p>
+<pre><code style="font-size: 0.85em;"><span class="code-comment"># Attacker's plan:</span>
+1. Attacker logs into Google, gets auth code for THEIR account
+2. Attacker tricks victim into clicking:
+   <span style="color: #f44336;">yourapp.com/callback?code=ATTACKER_CODE</span>
+3. Your app exchanges code → gets ATTACKER's tokens
+4. Victim's account now linked to ATTACKER's Google!
+   <span class="code-comment">← Attacker can now login as victim!</span>
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>How state prevents this:</strong></p>
+                        <ul>
+                            <li>You generate random state, store in victim's session</li>
+                            <li>Attacker's forged request has wrong/no state</li>
+                            <li>State mismatch → Reject immediately</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #888;">Same concept as Django's CSRF token - proves the request originated from your app.</p>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(3)">Callback handling understood &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Token Exchange -->
+        <div class="step" data-step="4">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">4</div>
+                <div class="step-title">Exchange Code for Tokens</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box concept">
+                    <strong>Step 3 of Flow:</strong> Your server exchanges the auth code for access_token
+                    (and id_token if using OIDC) via server-to-server request
+                </div>
+
+<pre><code><span class="code-comment"># accounts/oauth_utils.py</span>
+<span class="code-keyword">import</span> requests
+<span class="code-keyword">from</span> django.conf <span class="code-keyword">import</span> settings
+
+<span class="code-keyword">def</span> <span class="code-function">exchange_code_for_tokens</span>(code, request):
+    <span class="code-string">"""
+    Exchange authorization code for tokens.
+    This is a SERVER-TO-SERVER request (client_secret stays safe!)
+    """</span>
+
+    <span class="code-comment"># Get PKCE verifier from session</span>
+    code_verifier = request.session.get(<span class="code-string">'pkce_verifier'</span>)
+
+    <span class="code-comment"># Prepare token request</span>
+    token_data = {
+        <span class="code-string">'grant_type'</span>: <span class="code-string">'authorization_code'</span>,
+        <span class="code-string">'code'</span>: code,
+        <span class="code-string">'redirect_uri'</span>: settings.GOOGLE_REDIRECT_URI,
+        <span class="code-string">'client_id'</span>: settings.GOOGLE_CLIENT_ID,
+        <span class="code-string">'client_secret'</span>: settings.GOOGLE_CLIENT_SECRET,  <span class="code-comment"># Secret!</span>
+        <span class="code-string">'code_verifier'</span>: code_verifier,  <span class="code-comment"># PKCE proof</span>
+    }
+
+    <span class="code-comment"># POST to token endpoint</span>
+    response = requests.post(
+        settings.GOOGLE_TOKEN_URL,
+        data=token_data,
+        headers={<span class="code-string">'Content-Type'</span>: <span class="code-string">'application/x-www-form-urlencoded'</span>}
+    )
+
+    <span class="code-keyword">if</span> response.status_code != <span class="code-keyword">200</span>:
+        <span class="code-keyword">raise</span> Exception(f<span class="code-string">'Token exchange failed: {response.text}'</span>)
+
+    <span class="code-keyword">return</span> response.json()
+    <span class="code-comment"># Returns: {</span>
+    <span class="code-comment">#   "access_token": "ya29.xxx...",</span>
+    <span class="code-comment">#   "id_token": "eyJhbGc...",  (if openid scope)</span>
+    <span class="code-comment">#   "expires_in": 3600,</span>
+    <span class="code-comment">#   "token_type": "Bearer",</span>
+    <span class="code-comment">#   "refresh_token": "1//xxx..."  (if offline access)</span>
+    <span class="code-comment"># }</span></code></pre>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#129300;</span> What's the difference between the tokens? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <table class="comparison">
+                            <tr>
+                                <th>Token</th>
+                                <th>Purpose</th>
+                                <th>Lifespan</th>
+                            </tr>
+                            <tr>
+                                <td><strong>access_token</strong></td>
+                                <td>Call provider's APIs (get user data)</td>
+                                <td>~1 hour</td>
+                            </tr>
+                            <tr>
+                                <td><strong>id_token</strong></td>
+                                <td>User identity (OIDC only)</td>
+                                <td>~1 hour</td>
+                            </tr>
+                            <tr>
+                                <td><strong>refresh_token</strong></td>
+                                <td>Get new access tokens</td>
+                                <td>Long-lived</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="demo-container">
+                    <h3>&#128194; Token Response Structure</h3>
+                    <button class="demo-btn primary" onclick="showTokenResponse()">Show Example Response</button>
+                    <div class="demo-output" id="tokenOutput">Click to see what Google returns...</div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(4)">Token exchange understood &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 5: Process ID Token -->
+        <div class="step" data-step="5">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">5</div>
+                <div class="step-title">Decode & Verify the ID Token (OIDC)</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box success">
+                    <strong>OIDC Magic:</strong> The id_token is a JWT containing user info.
+                    No need for an extra API call - it's signed by Google!
+                </div>
+
+<pre><code><span class="code-comment"># accounts/oauth_utils.py</span>
+<span class="code-keyword">import</span> jwt
+<span class="code-keyword">from</span> jwt <span class="code-keyword">import</span> PyJWKClient
+
+<span class="code-keyword">def</span> <span class="code-function">verify_id_token</span>(id_token):
+    <span class="code-string">"""
+    Verify and decode the OIDC id_token.
+    IMPORTANT: Always verify the signature!
+    """</span>
+
+    <span class="code-comment"># Google's JWKS endpoint (public keys for verification)</span>
+    jwks_url = <span class="code-string">'https://www.googleapis.com/oauth2/v3/certs'</span>
+    jwks_client = PyJWKClient(jwks_url)
+
+    <span class="code-comment"># Get the signing key from Google</span>
+    signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+
+    <span class="code-comment"># Decode and verify</span>
+    claims = jwt.decode(
+        id_token,
+        signing_key.key,
+        algorithms=[<span class="code-string">'RS256'</span>],  <span class="code-comment"># Google uses RS256</span>
+        audience=settings.GOOGLE_CLIENT_ID,  <span class="code-comment"># Verify audience!</span>
+        issuer=<span class="code-string">'https://accounts.google.com'</span>,  <span class="code-comment"># Verify issuer!</span>
+    )
+
+    <span class="code-comment"># Claims now contains:</span>
+    <span class="code-comment"># {</span>
+    <span class="code-comment">#   "iss": "https://accounts.google.com",</span>
+    <span class="code-comment">#   "sub": "1234567890",  <- Unique user ID</span>
+    <span class="code-comment">#   "email": "user@gmail.com",</span>
+    <span class="code-comment">#   "email_verified": true,</span>
+    <span class="code-comment">#   "name": "John Doe",</span>
+    <span class="code-comment">#   "picture": "https://...",</span>
+    <span class="code-comment">#   "iat": 1234567890,</span>
+    <span class="code-comment">#   "exp": 1234571490,</span>
+    <span class="code-comment"># }</span>
+
+    <span class="code-keyword">return</span> claims</code></pre>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#128272;</span> RS256 vs HS256 - Why Google uses RS256? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <table class="comparison">
+                            <tr>
+                                <th>Algorithm</th>
+                                <th>Type</th>
+                                <th>Use Case</th>
+                            </tr>
+                            <tr>
+                                <td><strong>HS256</strong></td>
+                                <td>Symmetric (shared secret)</td>
+                                <td>When you control both signing & verifying</td>
+                            </tr>
+                            <tr>
+                                <td><strong>RS256</strong></td>
+                                <td>Asymmetric (public/private key)</td>
+                                <td>When others need to verify (OIDC)</td>
+                            </tr>
+                        </table>
+                        <p style="margin-top: 15px;">
+                            Google signs with private key &#8594; Anyone can verify with public key (JWKS)
+                            <br><em>You use the same JWT concepts from Token Auth!</em>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-box security">
+                    <strong>Critical Validations:</strong>
+                    <ul>
+                        <li><code>aud</code> (audience) must match YOUR client_id</li>
+                        <li><code>iss</code> (issuer) must be Google</li>
+                        <li><code>exp</code> must not be expired</li>
+                        <li>Signature must be valid</li>
+                    </ul>
+                </div>
+
+                <div class="quiz">
+                    <h4>&#128300; JWT Knowledge Check</h4>
+                    <p>Why must we verify the "aud" (audience) claim?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'aud-claim')">A) To check if user is authorized</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'aud-claim')">B) To ensure the token was meant for OUR app, not another</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'aud-claim')">C) To get the user's email</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'aud-claim')">D) It's optional, just best practice</div>
+                    </div>
+                    <div class="quiz-result" id="aud-claim-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="aud-claim-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a4a2e;">
+                        <span>&#10003;</span> <strong style="color: #4caf50;">The Audience (aud) Claim - Token Confusion Attack</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+                        <p><strong>Attack scenario without audience validation:</strong></p>
+<pre><code style="font-size: 0.85em;"><span class="code-comment"># Attacker runs a malicious app also using Google OAuth</span>
+1. Victim logs into attacker's app via Google
+2. Attacker gets id_token meant for THEIR app:
+   { "aud": "attacker-app-id", "sub": "user123", "email": "victim@gmail.com" }
+3. Attacker sends this token to YOUR app
+4. <span style="color: #f44336;">Without aud check</span> → Your app accepts it!
+   <span class="code-comment">← Attacker now logged in as victim on YOUR app</span>
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>The fix - always verify:</strong></p>
+<pre><code style="font-size: 0.85em;">claims = jwt.decode(
+    id_token,
+    key,
+    <span style="color: #4caf50;">audience=settings.GOOGLE_CLIENT_ID</span>  <span class="code-comment">← Must match YOUR app!</span>
+)
+</code></pre>
+                        <p style="color: #888;">If aud doesn't match your client_id, reject the token immediately.</p>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(5)">ID token verification understood &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 6: Create/Link User -->
+        <div class="step" data-step="6">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">6</div>
+                <div class="step-title">Create or Link Django User</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="info-box concept">
+                    <strong>Decision Point:</strong> When a social login succeeds, you need to either
+                    create a new user or link to an existing one.
+                </div>
+
+<pre><code><span class="code-comment"># accounts/models.py</span>
+<span class="code-keyword">from</span> django.db <span class="code-keyword">import</span> models
+<span class="code-keyword">from</span> django.contrib.auth.models <span class="code-keyword">import</span> User
+
+<span class="code-keyword">class</span> <span class="code-class">SocialAccount</span>(models.Model):
+    <span class="code-string">"""Links social provider accounts to Django users"""</span>
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    provider = models.CharField(max_length=<span class="code-keyword">30</span>)  <span class="code-comment"># 'google', 'github'</span>
+    provider_id = models.CharField(max_length=<span class="code-keyword">255</span>)  <span class="code-comment"># 'sub' claim</span>
+    email = models.EmailField()
+    extra_data = models.JSONField(default=dict)  <span class="code-comment"># Store raw claims</span>
+
+    <span class="code-keyword">class</span> <span class="code-class">Meta</span>:
+        unique_together = [<span class="code-string">'provider'</span>, <span class="code-string">'provider_id'</span>]
+
+    <span class="code-keyword">def</span> <span class="code-function">__str__</span>(self):
+        <span class="code-keyword">return</span> f<span class="code-string">"{self.user.email} via {self.provider}"</span></code></pre>
+
+<pre><code><span class="code-comment"># accounts/oauth_utils.py</span>
+<span class="code-keyword">from</span> django.contrib.auth.models <span class="code-keyword">import</span> User
+<span class="code-keyword">from</span> django.contrib.auth <span class="code-keyword">import</span> login
+<span class="code-keyword">from</span> .models <span class="code-keyword">import</span> SocialAccount
+
+<span class="code-keyword">def</span> <span class="code-function">process_oauth_tokens</span>(tokens, request):
+    <span class="code-string">"""Create or get user from OAuth tokens"""</span>
+
+    <span class="code-comment"># Verify and decode the id_token</span>
+    claims = verify_id_token(tokens[<span class="code-string">'id_token'</span>])
+
+    provider_id = claims[<span class="code-string">'sub'</span>]  <span class="code-comment"># Unique ID from Google</span>
+    email = claims[<span class="code-string">'email'</span>]
+    name = claims.get(<span class="code-string">'name'</span>, <span class="code-string">''</span>)
+
+    <span class="code-comment"># Try to find existing social account</span>
+    <span class="code-keyword">try</span>:
+        social = SocialAccount.objects.get(
+            provider=<span class="code-string">'google'</span>,
+            provider_id=provider_id
+        )
+        user = social.user
+    <span class="code-keyword">except</span> SocialAccount.DoesNotExist:
+        <span class="code-comment"># Check if user exists with this email</span>
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                <span class="code-string">'username'</span>: email,  <span class="code-comment"># Or generate unique username</span>
+                <span class="code-string">'first_name'</span>: name.split()[<span class="code-keyword">0</span>] <span class="code-keyword">if</span> name <span class="code-keyword">else</span> <span class="code-string">''</span>,
+            }
+        )
+
+        <span class="code-comment"># Create social account link</span>
+        SocialAccount.objects.create(
+            user=user,
+            provider=<span class="code-string">'google'</span>,
+            provider_id=provider_id,
+            email=email,
+            extra_data=claims
+        )
+
+    <span class="code-comment"># Log the user in (creates session)</span>
+    login(request, user)
+
+    <span class="code-keyword">return</span> user</code></pre>
+
+                <div class="reveal-box">
+                    <div class="reveal-header" onclick="toggleReveal(this)">
+                        <span>&#129300;</span> Why use provider_id instead of email for matching? (Click to reveal)
+                    </div>
+                    <div class="reveal-content">
+                        <ul>
+                            <li><strong>Emails can change</strong> - User might change their Gmail</li>
+                            <li><strong>provider_id (sub) never changes</strong> - It's the permanent identifier</li>
+                            <li><strong>Multiple providers</strong> - Same email could exist in Google & GitHub</li>
+                        </ul>
+                        <p style="margin-top: 10px;">
+                            Use email for <em>initial matching</em>, but <code>provider_id</code> for <em>permanent linking</em>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="quiz">
+                    <h4>&#128300; Django ORM Question</h4>
+                    <p>What does <code>get_or_create</code> return?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'get-or-create')">A) Just the object</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'get-or-create')">B) A tuple: (object, created_boolean)</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'get-or-create')">C) The object or None</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'get-or-create')">D) A QuerySet</div>
+                    </div>
+                    <div class="quiz-result" id="get-or-create-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="get-or-create-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a4a2e;">
+                        <span>&#10003;</span> <strong style="color: #4caf50;">Django's get_or_create Pattern</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code style="font-size: 0.85em;"><span class="code-comment"># Returns a TUPLE: (object, was_created)</span>
+user, created = User.objects.get_or_create(
+    email=email,
+    defaults={<span class="code-string">'username'</span>: email}  <span class="code-comment">← Only used if creating</span>
+)
+
+<span class="code-keyword">if</span> created:
+    print(<span class="code-string">"New user created!"</span>)
+<span class="code-keyword">else</span>:
+    print(<span class="code-string">"Found existing user"</span>)
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>Similar ORM methods:</strong></p>
+                        <table class="comparison">
+                            <tr><th>Method</th><th>Returns</th></tr>
+                            <tr><td><code>get()</code></td><td>Object (or raises DoesNotExist)</td></tr>
+                            <tr><td><code>get_or_create()</code></td><td>(object, created_bool)</td></tr>
+                            <tr><td><code>update_or_create()</code></td><td>(object, created_bool)</td></tr>
+                            <tr><td><code>first()</code></td><td>Object or None</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(6)">User linking understood &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 7: URL Configuration -->
+        <div class="step" data-step="7">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">7</div>
+                <div class="step-title">URL Configuration & Templates</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+<pre><code><span class="code-comment"># oauth_project/urls.py</span>
+<span class="code-keyword">from</span> django.urls <span class="code-keyword">import</span> path
+<span class="code-keyword">from</span> accounts <span class="code-keyword">import</span> views
+
+urlpatterns = [
+    <span class="code-comment"># OAuth flow endpoints</span>
+    path(<span class="code-string">'oauth/login/google/'</span>, views.oauth_login, name=<span class="code-string">'oauth_login_google'</span>),
+    path(<span class="code-string">'oauth/callback/google/'</span>, views.oauth_callback, name=<span class="code-string">'oauth_callback_google'</span>),
+
+    <span class="code-comment"># Or with django-allauth (simpler!)</span>
+    path(<span class="code-string">'accounts/'</span>, include(<span class="code-string">'allauth.urls'</span>)),
+]</code></pre>
+
+                <h4>Login Template</h4>
+<pre><code><span class="code-comment">&lt;!-- templates/login.html --&gt;</span>
+&lt;div class="social-login"&gt;
+    &lt;h3&gt;Or login with:&lt;/h3&gt;
+
+    <span class="code-comment">&lt;!-- Manual OAuth --&gt;</span>
+    &lt;a href="{% url 'oauth_login_google' %}" class="btn-google"&gt;
+        &lt;img src="/static/google-icon.svg"&gt;
+        Continue with Google
+    &lt;/a&gt;
+
+    <span class="code-comment">&lt;!-- Or with django-allauth --&gt;</span>
+    {% load socialaccount %}
+    &lt;a href="{% provider_login_url 'google' %}" class="btn-google"&gt;
+        Continue with Google
+    &lt;/a&gt;
+&lt;/div&gt;</code></pre>
+
+                <div class="info-box warning">
+                    <strong>Redirect URI Must Match:</strong> The redirect_uri in your code MUST exactly match
+                    what you registered in Google Cloud Console. Including trailing slashes!
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(7)">URLs configured &#10003;</button>
+            </div>
+        </div>
+
+        <!-- Step 8: Testing & Complete Flow -->
+        <div class="step" data-step="8">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number">8</div>
+                <div class="step-title">Testing & Complete Flow Demo</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <div class="demo-container">
+                    <h3>&#127919; Interactive OAuth Flow Simulator</h3>
+                    <p>Step through the complete OAuth flow:</p>
+
+                    <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
+                        <button class="demo-btn primary" onclick="simulateFlow(1)">1. User Clicks Login</button>
+                        <button class="demo-btn secondary" onclick="simulateFlow(2)">2. Redirect to Google</button>
+                        <button class="demo-btn secondary" onclick="simulateFlow(3)">3. User Consents</button>
+                        <button class="demo-btn secondary" onclick="simulateFlow(4)">4. Callback Received</button>
+                        <button class="demo-btn secondary" onclick="simulateFlow(5)">5. Exchange Tokens</button>
+                        <button class="demo-btn secondary" onclick="simulateFlow(6)">6. User Logged In!</button>
+                    </div>
+
+                    <div class="demo-output" id="flowOutput" style="min-height: 200px;">
+Click through each step to see what happens...
+                    </div>
+                </div>
+
+                <h4>Testing Checklist</h4>
+                <ul>
+                    <li>&#9989; State parameter validated (try tampering!)</li>
+                    <li>&#9989; PKCE challenge verified</li>
+                    <li>&#9989; ID token signature verified</li>
+                    <li>&#9989; Audience claim checked</li>
+                    <li>&#9989; New user created on first login</li>
+                    <li>&#9989; Existing user linked on subsequent logins</li>
+                    <li>&#9989; Session created after OAuth success</li>
+                </ul>
+
+                <div class="quiz">
+                    <h4>&#128300; Final Architecture Quiz</h4>
+                    <p>In OAuth Authorization Code flow, the access_token is:</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'final-oauth')">A) Sent to the browser in the redirect</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, true, 'final-oauth')">B) Obtained server-to-server, never seen by browser</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'final-oauth')">C) Stored in a cookie by Google</div>
+                        <div class="quiz-option" onclick="checkAnswer(this, false, 'final-oauth')">D) Embedded in the auth code</div>
+                    </div>
+                    <div class="quiz-result" id="final-oauth-feedback"></div>
+                </div>
+
+                <div class="reveal-box" id="final-oauth-explanation" style="display: none;">
+                    <div class="reveal-header" onclick="toggleReveal(this)" style="background: #1a4a2e;">
+                        <span>&#10003;</span> <strong style="color: #4caf50;">Authorization Code Flow - Token Security</strong>
+                    </div>
+                    <div class="reveal-content" style="display: block;">
+<pre><code style="font-size: 0.85em;"><span class="code-comment"># What passes through the browser (VISIBLE):</span>
+<span style="color: #ff9800;">Auth Code</span> - Short-lived, one-time use, useless without client_secret
+
+<span class="code-comment"># What stays on server (HIDDEN):</span>
+<span style="color: #4caf50;">access_token</span> - Can access user's data at provider
+<span style="color: #4caf50;">refresh_token</span> - Can get new access_tokens
+<span style="color: #4caf50;">client_secret</span> - Proves your app's identity
+</code></pre>
+                        <p style="margin-top: 10px;"><strong>This is THE key security feature of Authorization Code flow:</strong></p>
+                        <ul>
+                            <li>Browser only sees the auth code (useless alone)</li>
+                            <li>Tokens exchanged via server-to-server POST</li>
+                            <li>Even if attacker intercepts code, they can't exchange it without client_secret</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #888;">Compare to "Implicit Flow" (deprecated) which returned tokens directly to browser - much less secure!</p>
+                    </div>
+                </div>
+
+                <button class="demo-btn primary" onclick="completeStep(8)">I can implement OAuth! &#127881;</button>
+            </div>
+        </div>
+
+        <!-- Extensions -->
+        <div class="step" data-step="extensions">
+            <div class="step-header" onclick="toggleStep(this)">
+                <div class="step-number" style="background: linear-gradient(135deg, #ff9800, #e65100);">+</div>
+                <div class="step-title">Extensions & Production Tips</div>
+                <div class="step-toggle">&#9660;</div>
+            </div>
+            <div class="step-content">
+                <h4>Multiple Providers</h4>
+<pre><code><span class="code-comment"># Support Google, GitHub, Apple, etc.</span>
+OAUTH_PROVIDERS = {
+    <span class="code-string">'google'</span>: {
+        <span class="code-string">'auth_url'</span>: <span class="code-string">'https://accounts.google.com/o/oauth2/v2/auth'</span>,
+        <span class="code-string">'token_url'</span>: <span class="code-string">'https://oauth2.googleapis.com/token'</span>,
+        <span class="code-string">'scopes'</span>: [<span class="code-string">'openid'</span>, <span class="code-string">'email'</span>, <span class="code-string">'profile'</span>],
+    },
+    <span class="code-string">'github'</span>: {
+        <span class="code-string">'auth_url'</span>: <span class="code-string">'https://github.com/login/oauth/authorize'</span>,
+        <span class="code-string">'token_url'</span>: <span class="code-string">'https://github.com/login/oauth/access_token'</span>,
+        <span class="code-string">'scopes'</span>: [<span class="code-string">'read:user'</span>, <span class="code-string">'user:email'</span>],
+    },
+}</code></pre>
+
+                <h4>Refresh Token Flow</h4>
+<pre><code><span class="code-keyword">def</span> <span class="code-function">refresh_access_token</span>(refresh_token):
+    <span class="code-string">"""Get new access_token using refresh_token"""</span>
+
+    response = requests.post(
+        settings.GOOGLE_TOKEN_URL,
+        data={
+            <span class="code-string">'grant_type'</span>: <span class="code-string">'refresh_token'</span>,
+            <span class="code-string">'refresh_token'</span>: refresh_token,
+            <span class="code-string">'client_id'</span>: settings.GOOGLE_CLIENT_ID,
+            <span class="code-string">'client_secret'</span>: settings.GOOGLE_CLIENT_SECRET,
+        }
+    )
+    <span class="code-keyword">return</span> response.json()</code></pre>
+
+                <h4>Common Pitfalls</h4>
+                <div class="info-box security">
+                    <ul>
+                        <li><strong>Redirect URI mismatch</strong> - Must exactly match registered URI</li>
+                        <li><strong>Missing state validation</strong> - CSRF vulnerability!</li>
+                        <li><strong>Not verifying id_token</strong> - Attacker could forge claims</li>
+                        <li><strong>Storing tokens insecurely</strong> - Encrypt at rest</li>
+                        <li><strong>Ignoring token expiration</strong> - Check exp before use</li>
+                    </ul>
+                </div>
+
+                <h4>OAuth vs Session vs JWT - When to Use What?</h4>
+                <table class="comparison">
+                    <tr>
+                        <th>Method</th>
+                        <th>Best For</th>
+                    </tr>
+                    <tr>
+                        <td>Session Auth</td>
+                        <td>Traditional web apps, server-rendered</td>
+                    </tr>
+                    <tr>
+                        <td>JWT Token Auth</td>
+                        <td>SPAs, mobile apps, microservices</td>
+                    </tr>
+                    <tr>
+                        <td>OAuth 2.0</td>
+                        <td>Third-party API access, social login</td>
+                    </tr>
+                    <tr>
+                        <td>OIDC</td>
+                        <td>Single Sign-On, federated identity</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <footer style="text-align: center; padding: 30px; color: #666;">
+            <p>OAuth 2.0 & OIDC Implementation Guide | Backend LLD Course</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">
+                Connects: HTTP Architecture &#8594; REST APIs &#8594; Sessions &#8594; JWT &#8594; OAuth
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Step management
+        function toggleStep(header) {
+            const step = header.parentElement;
+            step.classList.toggle('open');
+        }
+
+        function toggleReveal(header) {
+            const box = header.parentElement;
+            box.classList.toggle('open');
+        }
+
+        // Tab switching
+        function switchTab(tab, contentId) {
+            const parent = tab.parentElement.parentElement;
+            parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(contentId).classList.add('active');
+        }
+
+        // Quiz handling
+        function checkAnswer(option, isCorrect, quizId) {
+            const quiz = option.closest('.quiz');
+            const options = quiz.querySelectorAll('.quiz-option');
+            const result = quiz.querySelector('.quiz-result');
+
+            options.forEach(opt => {
+                opt.style.pointerEvents = 'none';
+                opt.classList.remove('correct', 'wrong');
+            });
+
+            if (isCorrect) {
+                option.classList.add('correct');
+                result.innerHTML = '<span style="color: #4caf50;">&#10003; Correct!</span>';
+
+                // Show explanation if available
+                if (quizId) {
+                    const explanation = document.getElementById(quizId + '-explanation');
+                    if (explanation) {
+                        explanation.style.display = 'block';
+                        explanation.classList.add('open');
+                    }
+                }
+            } else {
+                option.classList.add('wrong');
+                options.forEach(opt => {
+                    if (opt.onclick.toString().includes('true')) {
+                        opt.classList.add('correct');
+                    }
+                });
+                result.innerHTML = '<span style="color: #f44336;">&#10007; Not quite. See the correct answer above.</span>';
+            }
+            result.style.display = 'block';
+        }
+
+        // Progress tracking
+        let completedSteps = new Set();
+
+        function completeStep(stepNum) {
+            completedSteps.add(stepNum);
+            updateProgress();
+
+            const step = document.querySelector(`[data-step="${stepNum}"]`);
+            if (step) {
+                step.querySelector('.step-number').classList.add('completed');
+            }
+
+            // Auto-open next step
+            const nextStep = document.querySelector(`[data-step="${stepNum + 1}"]`);
+            if (nextStep) {
+                setTimeout(() => {
+                    nextStep.classList.add('open');
+                    nextStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            }
+        }
+
+        function updateProgress() {
+            const total = 9;
+            const completed = completedSteps.size;
+            const percent = (completed / total) * 100;
+
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = completed;
+        }
+
+        // Demo: Generate auth URL
+        function generateAuthUrl() {
+            const state = 'random_' + Math.random().toString(36).substring(7);
+            const codeChallenge = 'sha256_hashed_code_verifier_base64url';
+
+            const params = new URLSearchParams({
+                client_id: 'your-client-id.apps.googleusercontent.com',
+                redirect_uri: 'http://localhost:8000/oauth/callback/google/',
+                response_type: 'code',
+                scope: 'openid email profile',
+                state: state,
+                code_challenge: codeChallenge,
+                code_challenge_method: 'S256'
+            });
+
+            const url = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+
+            document.getElementById('authUrlOutput').innerHTML =
+`<span style="color: #4ec9b0;">Authorization URL:</span>
+<span style="word-break: break-all;">${url}</span>
+
+<span style="color: #6a9955;">// Parameters explained:</span>
+<span style="color: #9cdcfe;">client_id</span>: Your app's ID (from Google Console)
+<span style="color: #9cdcfe;">redirect_uri</span>: Where Google sends the user back
+<span style="color: #9cdcfe;">response_type</span>: "code" for Authorization Code flow
+<span style="color: #9cdcfe;">scope</span>: What permissions to request (openid = OIDC)
+<span style="color: #9cdcfe;">state</span>: "${state}" (CSRF protection)
+<span style="color: #9cdcfe;">code_challenge</span>: PKCE challenge (SHA256 hash)`;
+        }
+
+        // Demo: Token response
+        function showTokenResponse() {
+            document.getElementById('tokenOutput').innerHTML =
+`<span style="color: #4ec9b0;">Token Response from Google:</span>
+{
+  <span style="color: #9cdcfe;">"access_token"</span>: <span style="color: #ce9178;">"ya29.a0AfH6SMBx..."</span>,
+  <span style="color: #9cdcfe;">"expires_in"</span>: <span style="color: #b5cea8;">3600</span>,
+  <span style="color: #9cdcfe;">"token_type"</span>: <span style="color: #ce9178;">"Bearer"</span>,
+  <span style="color: #9cdcfe; background: #1a4a2e; padding: 2px 4px;">"id_token"</span>: <span style="color: #ce9178;">"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+  <span style="color: #9cdcfe;">"refresh_token"</span>: <span style="color: #ce9178;">"1//0eXyz..."</span>,
+  <span style="color: #9cdcfe;">"scope"</span>: <span style="color: #ce9178;">"openid email profile"</span>
+}
+
+<span style="color: #6a9955;">// id_token is a JWT containing user info!</span>
+<span style="color: #6a9955;">// Decode it to get: sub, email, name, picture</span>`;
+        }
+
+        // Demo: Flow simulator
+        const flowSteps = {
+            1: `<span style="color: #4caf50;">&#9654; Step 1: User Clicks "Login with Google"</span>
+
+User is on your login page and clicks the Google login button.
+
+<span style="color: #888;">Your app prepares:</span>
+- Generate random <span style="color: #9cdcfe;">state</span> token (CSRF protection)
+- Generate PKCE <span style="color: #9cdcfe;">code_verifier</span>
+- Create <span style="color: #9cdcfe;">code_challenge</span> = SHA256(verifier)
+- Store both in session`,
+
+            2: `<span style="color: #2196f3;">&#9654; Step 2: Redirect to Google</span>
+
+Browser redirects to:
+<span style="color: #ce9178;">https://accounts.google.com/o/oauth2/v2/auth?
+  client_id=xxx&
+  redirect_uri=http://localhost:8000/callback/&
+  response_type=code&
+  scope=openid email profile&
+  state=abc123&
+  code_challenge=xyz789</span>
+
+<span style="color: #888;">User sees Google's login page</span>`,
+
+            3: `<span style="color: #9c27b0;">&#9654; Step 3: User Consents</span>
+
+Google shows consent screen:
+&#9989; "Demo App wants to:"
+   - View your email address
+   - View your basic profile info
+
+User clicks <span style="color: #4caf50;">[Allow]</span>
+
+<span style="color: #888;">Google validates the request and generates an auth code</span>`,
+
+            4: `<span style="color: #ff9800;">&#9654; Step 4: Callback Received</span>
+
+Google redirects back to your app:
+<span style="color: #ce9178;">http://localhost:8000/callback/?
+  code=4/P7q7W91a-oMsCeLvIaQm6bTrgtp7&
+  state=abc123&
+  scope=openid+email+profile</span>
+
+Your server:
+1. Verifies <span style="color: #9cdcfe;">state</span> matches session &#10003;
+2. Extracts the <span style="color: #9cdcfe;">code</span>`,
+
+            5: `<span style="color: #e91e63;">&#9654; Step 5: Exchange Tokens (Server-to-Server)</span>
+
+Your server POSTs to Google's token endpoint:
+<span style="color: #ce9178;">POST https://oauth2.googleapis.com/token</span>
+{
+  grant_type: "authorization_code",
+  code: "4/P7q7W91a...",
+  redirect_uri: "http://localhost:8000/callback/",
+  client_id: "xxx",
+  client_secret: "SECRET",  <span style="color: #6a9955;">// Never seen by browser!</span>
+  code_verifier: "original_verifier"
+}
+
+<span style="color: #888;">Google verifies PKCE and returns tokens</span>`,
+
+            6: `<span style="color: #4caf50;">&#9654; Step 6: User Logged In!</span>
+
+Your server receives:
+{
+  access_token: "ya29...",
+  <span style="background: #1a4a2e; padding: 2px 4px;">id_token: "eyJhbGc..."</span>,  <span style="color: #6a9955;">// JWT with user info!</span>
+  expires_in: 3600
+}
+
+Actions:
+1. Decode & verify id_token
+2. Extract user info (sub, email, name)
+3. Create or link Django user
+4. Create session (login())
+5. Redirect to dashboard
+
+<span style="color: #4caf50;">&#127881; OAuth flow complete!</span>`
+        };
+
+        function simulateFlow(step) {
+            document.getElementById('flowOutput').innerHTML = flowSteps[step] || 'Click a step button...';
+        }
+    </script>
+</body>
+</html>
