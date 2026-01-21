@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Service - Intro to Message Queues</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .toc {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .toc h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .toc a {
+            color: #333;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .toc a:hover {
+            color: #667eea;
+            padding-left: 10px;
+        }
+
+        .emoji-bullet {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .section {
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
+            padding: 20px 25px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            transition: all 0.3s;
+        }
+
+        .section-header:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .section-header:hover h2 {
+            color: white;
+        }
+
+        .section-header h2 {
+            color: #333;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-header .icon {
+            margin-right: 15px;
+            font-size: 1.5em;
+        }
+
+        .toggle-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .section.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .section-content {
+            display: none;
+            padding: 25px;
+            animation: fadeIn 0.3s;
+        }
+
+        .section.active .section-content {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .code-block .keyword {
+            color: #569cd6;
+        }
+
+        .code-block .string {
+            color: #ce9178;
+        }
+
+        .code-block .comment {
+            color: #6a9955;
+        }
+
+        .code-block .function {
+            color: #dcdcaa;
+        }
+
+        .diagram-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .diagram-box pre {
+            font-family: 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .diagram-box h4 {
+            color: #495057;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            border-left: 4px solid #17a2b8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .highlight-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border-left: 4px solid #dc3545;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .warning-box h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .success-box h4 {
+            color: #155724;
+            margin-bottom: 10px;
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .question-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .answer-reveal {
+            background: #ffc107;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .answer-reveal:hover {
+            background: #e0a800;
+        }
+
+        .answer-content {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 5px;
+        }
+
+        .answer-content.show {
+            display: block;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .hidden-cell {
+            cursor: pointer;
+            background: #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .hidden-cell:hover {
+            background: #dee2e6;
+        }
+
+        .hidden-cell .cell-placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .hidden-cell .cell-answer {
+            display: none;
+        }
+
+        .hidden-cell.revealed {
+            background: #d4edda;
+        }
+
+        .hidden-cell.revealed .cell-placeholder {
+            display: none;
+        }
+
+        .hidden-cell.revealed .cell-answer {
+            display: inline;
+            color: #155724;
+        }
+
+        .external-link {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .external-link:hover {
+            background: #5a6fd6;
+            transform: translateY(-2px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            z-index: 1000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #ffc107;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        h3 {
+            color: #667eea;
+            margin: 25px 0 15px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #eee;
+        }
+
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        strong {
+            color: #667eea;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Email Service - Intro to Message Queues</h1>
+            <p class="subtitle">A comprehensive guide to understanding message queues and building email notification services</p>
+        </header>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#section-1"><span class="emoji-bullet">1.</span> Introduction</a></li>
+                <li><a href="#section-2"><span class="emoji-bullet">2.</span> Synchronous vs Asynchronous</a></li>
+                <li><a href="#section-3"><span class="emoji-bullet">3.</span> Basic Async Approaches</a></li>
+                <li><a href="#section-4"><span class="emoji-bullet">4.</span> Message Queues</a></li>
+                <li><a href="#section-5"><span class="emoji-bullet">5.</span> Types of Message Queues</a></li>
+                <li><a href="#section-6"><span class="emoji-bullet">6.</span> Apache Kafka Architecture</a></li>
+                <li><a href="#section-7"><span class="emoji-bullet">7.</span> Real-World Example: YouTube Upload</a></li>
+                <li><a href="#section-8"><span class="emoji-bullet">8.</span> Building Notification Services</a></li>
+                <li><a href="#section-9"><span class="emoji-bullet">9.</span> Hands-On: Django + Kafka + Email</a></li>
+                <li><a href="#section-10"><span class="emoji-bullet">10.</span> Resources &amp; Tools</a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Introduction -->
+        <div class="content-card">
+            <div class="section" id="section-1">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">1.</span> Introduction</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>Why This Topic?</h3>
+                    <p>Every modern application needs to send emails - welcome emails, order confirmations, password resets, notifications. But how do you handle this at scale without making users wait?</p>
+
+                    <div class="diagram-box">
+                        <h4>Email Use Cases in Modern Applications</h4>
+                        <pre>
+
+        +-------------------------+
+        |                         |
+        |      USER SERVICE       |
+        |                         |
+        +-----------+-------------+
+                    |
+                    |
+        +-----------v-------------+          +-------------------------+
+        |                         |          |                         |
+        |     Welcome Email       |          |      ORDER SERVICE      |
+        |                         |          |                         |
+        +-------------------------+          +-----------+-------------+
+                                                         |
+        +-------------------------+                      |
+        |                         |          +-----------v-------------+
+        |    Password Reset       |          |                         |
+        |                         |          |   Order Confirmation    |
+        +-------------------------+          |                         |
+                                             +-------------------------+
+
+                                             +-------------------------+
+        +-------------------------+          |                         |
+        |                         |          |    Shipping Update      |
+        |    PAYMENT SERVICE      |          |                         |
+        |                         |          +-------------------------+
+        +-----------+-------------+
+                    |
+                    |
+        +-----------v-------------+
+        |                         |
+        |    Payment Receipt      |
+        |                         |
+        +-------------------------+
+
+
+        =======================================================
+
+             Every service needs to send emails!
+
+             How do we handle this efficiently?
+
+        =======================================================
+
+                        </pre>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>The Problem</h4>
+                        <p>Sending an email can take 2-5 seconds. If a user registers and you send a welcome email synchronously, they wait 5 seconds just to see &quot;Registration successful&quot;. That&apos;s terrible UX!</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>The Problem Visualized: Synchronous Email Sending</h4>
+                        <pre>
+
+    USER                           SERVER
+      |                               |
+      |                               |
+      |    "I want to register"       |
+      |   --------------------------> |
+      |                               |
+      |                               |    +------------------------+
+      |                               |--> |  Step 1: Create User   |
+      |                               |    |      (100 ms)          |
+      |      USER IS                  |    +------------------------+
+      |      WAITING...               |
+      |                               |    +------------------------+
+      |      STILL                    |--> |  Step 2: Send Email    |
+      |      WAITING...               |    |                        |
+      |                               |    |    Connecting to       |
+      |      CAN'T DO                 |    |    SMTP server...      |
+      |      ANYTHING                 |    |                        |
+      |      ELSE...                  |    |    Sending email...    |
+      |                               |    |                        |
+      |      3 SECONDS                |    |    Waiting for         |
+      |      PASSED...                |    |    confirmation...     |
+      |                               |    |                        |
+      |      4 SECONDS...             |    |      (3-5 seconds!)    |
+      |                               |    +------------------------+
+      |      5 SECONDS!               |
+      |                               |    +------------------------+
+      |    "Registration successful"  |--> |  Step 3: Send Response |
+      | <---------------------------- |    +------------------------+
+      |                               |
+      |                               |
+
+
+            +--------------------------------------------------+
+            |                                                  |
+            |   TOTAL WAIT TIME:  5+ SECONDS                   |
+            |                                                  |
+            |   User experience:  TERRIBLE!                    |
+            |                                                  |
+            +--------------------------------------------------+
+
+                        </pre>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>The Solution: Asynchronous with Message Queue</h4>
+                        <pre>
+
+    USER                           SERVER                    BACKGROUND
+      |                               |                           |
+      |                               |                           |
+      |    "I want to register"       |                           |
+      |   --------------------------> |                           |
+      |                               |                           |
+      |                               |    +------------------+   |
+      |                               |--> | Create User      |   |
+      |                               |    | (100 ms)         |   |
+      |                               |    +------------------+   |
+      |                               |                           |
+      |                               |    +------------------+   |
+      |                               |--> | Put email task   |   |
+      |                               |    | in QUEUE         |   |
+      |                               |    | (10 ms)          |   |
+      |                               |    +-------+----------+   |
+      |                               |            |              |
+      |    "Registration successful!" |            |              |
+      | <---------------------------- |            |              |
+      |                               |            |              |
+      |   +--------------------+      |            |              |
+      |   | User continues     |      |            v              |
+      |   | browsing the site! |      |    +------+----------+    |
+      |   +--------------------+      |    |  MESSAGE QUEUE  |    |
+      |                               |    |                 |    |
+      |                               |    |  [email task]   |    |
+      |                               |    +-------+---------+    |
+      |                               |            |              |
+      |                               |            v              |
+      |                               |    +-------+---------+    |
+      |                               |    | EMAIL SERVICE   |    |
+      |                               |    |                 |    |
+      |                               |    | Picks up task   |    |
+      |                               |    | Sends email     |    |
+      |                               |    | (3-5 seconds)   |    |
+      |                               |    +-----------------+    |
+      |                               |                           |
+
+
+            +--------------------------------------------------+
+            |                                                  |
+            |   USER WAIT TIME:  ~100 MILLISECONDS             |
+            |                                                  |
+            |   User experience:  INSTANT!                     |
+            |                                                  |
+            +--------------------------------------------------+
+
+                        </pre>
+                    </div>
+
+                    <h3>What You&apos;ll Learn</h3>
+                    <ul>
+                        <li>Why synchronous communication doesn&apos;t scale</li>
+                        <li>How message queues solve this problem</li>
+                        <li>Apache Kafka architecture and concepts</li>
+                        <li>Building a real email service with Django + Kafka</li>
+                    </ul>
+
+                    <div class="diagram-box">
+                        <h4>What We&apos;ll Build in This Course</h4>
+                        <pre>
+
+    +-------------------+         +-------------------+         +-------------------+
+    |                   |         |                   |         |                   |
+    |                   |         |                   |         |                   |
+    |    DJANGO         |         |      KAFKA        |         |     EMAIL         |
+    |    REST API       | ------> |    MESSAGE        | ------> |    CONSUMER       |
+    |                   |         |     QUEUE         |         |    SERVICE        |
+    |   (Producer)      |         |                   |         |    (Worker)       |
+    |                   |         |                   |         |                   |
+    +-------------------+         +-------------------+         +-------------------+
+            ^                                                           |
+            |                                                           |
+            |                                                           v
+    +-------+-------+                                           +-------+-------+
+    |               |                                           |               |
+    |    USER       |                                           |   USER'S      |
+    |  REGISTRATION |                                           |    EMAIL      |
+    |   REQUEST     |                                           |    INBOX      |
+    |               |                                           |               |
+    +---------------+                                           +---------------+
+
+
+
+    +=================================================================+
+    |                                                                 |
+    |   BENEFITS OF THIS ARCHITECTURE:                                |
+    |                                                                 |
+    |   [✓]  Instant response to users (no waiting for email)         |
+    |                                                                 |
+    |   [✓]  Reliable delivery (retries if email fails)               |
+    |                                                                 |
+    |   [✓]  Scalable (add more consumers for high traffic)           |
+    |                                                                 |
+    |   [✓]  Decoupled (API doesn't care about email details)         |
+    |                                                                 |
+    +=================================================================+
+
+                        </pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Sync vs Async -->
+        <div class="content-card">
+            <div class="section" id="section-2">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">2.</span> Synchronous vs Asynchronous Architecture</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>What is Synchronous Communication?</h3>
+                    <p>In <strong>synchronous communication</strong>, the client sends a request and <strong>waits</strong> for the response. The client is blocked until the server completes the entire operation.</p>
+
+                    <div class="diagram-box">
+                        <h4>Synchronous Flow</h4>
+                        <pre>
+    CLIENT                                    SERVER
+      |                                         |
+      |-------- Request (Register User) ------->|
+      |                                         |
+      |              [WAITING...]               | Create user (100ms)
+      |              [WAITING...]               | Send email (3000ms)
+      |              [WAITING...]               | Log activity (50ms)
+      |                                         |
+      |&lt;------- Response (Success!) ------------|
+      |                                         |
+
+    Total time: 3150ms (User waited 3+ seconds!)
+                        </pre>
+                    </div>
+
+                    <div class="question-box">
+                        <h4>Deep Dive: What happens at the network level?</h4>
+                        <p>Before any HTTP request, a TCP connection must be established. Do you know the TCP 3-way handshake?</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Answer</button>
+                        <div class="answer-content">
+                            <h4>TCP 3-Way Handshake</h4>
+                            <div class="diagram-box">
+                                <pre>
+    CLIENT                                    SERVER
+      |                                         |
+      |-------- SYN (seq=x) ------------------->|  Step 1: Client initiates
+      |                                         |
+      |<------- SYN-ACK (seq=y, ack=x+1) -------|  Step 2: Server acknowledges
+      |                                         |
+      |-------- ACK (ack=y+1) ----------------->|  Step 3: Client confirms
+      |                                         |
+      |========= CONNECTION ESTABLISHED ========|
+      |                                         |
+      |-------- HTTP Request ------------------>|  Now data can flow
+      |                                         |
+                                </pre>
+                            </div>
+                            <p><strong>What are x and y?</strong></p>
+                            <ul>
+                                <li><strong>x</strong> = Client's initial sequence number (random, e.g., 1000)</li>
+                                <li><strong>y</strong> = Server's initial sequence number (random, e.g., 5000)</li>
+                                <li><strong>x+1, y+1</strong> = Acknowledgment numbers confirming receipt</li>
+                            </ul>
+                            <p><em>In synchronous calls, this connection stays open while waiting. Server resources (memory, ports) are tied up!</em></p>
+                        </div>
+                    </div>
+
+                    <h3>Real Example: User Registration with Email</h3>
+                    <div class="code-block">
+<span class="comment"># Synchronous approach - BAD!</span>
+<span class="keyword">def</span> <span class="function">register_user</span>(request):
+    <span class="comment"># Step 1: Create user in database (100ms)</span>
+    user = User.objects.create(email=email, password=password)
+
+    <span class="comment"># Step 2: Send welcome email (2-5 seconds!)</span>
+    send_welcome_email(user.email)  <span class="comment"># CLIENT WAITS HERE!</span>
+
+    <span class="comment"># Step 3: Return response</span>
+    <span class="keyword">return</span> JsonResponse({<span class="string">&quot;status&quot;</span>: <span class="string">&quot;success&quot;</span>})
+                    </div>
+
+                    <div class="warning-box">
+                        <h4>Problems with Synchronous Approach:</h4>
+                        <ul>
+                            <li>User waits 5+ seconds just to register</li>
+                            <li>If email server is slow/down, registration fails</li>
+                            <li>Server resources tied up waiting for email</li>
+                            <li>Poor user experience</li>
+                            <li>Can&apos;t handle high traffic</li>
+                        </ul>
+                    </div>
+
+                    <h3>What is Asynchronous Communication?</h3>
+                    <p>In <strong>asynchronous communication</strong>, the client sends a request and gets an immediate acknowledgment. The actual work happens in the background.</p>
+
+                    <div class="diagram-box">
+                        <h4>Asynchronous Flow</h4>
+                        <pre>
+    CLIENT                    SERVER                    BACKGROUND
+      |                         |                          |
+      |---- Request (Register) ->|                          |
+      |                         | Create user (100ms)       |
+      |                         |---- Queue email task ---->|
+      |&lt;-- Response (Success!) --|                          |
+      |                         |                          |
+    [User continues browsing]   |                    Send email (3000ms)
+      |                         |                          |
+
+    User wait time: ~100ms (Instant!)
+                        </pre>
+                    </div>
+
+                    <p style="margin-bottom: 10px; color: #6c757d; font-style: italic;">Click on each cell to reveal the comparison:</p>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Synchronous</th>
+                                <th>Asynchronous</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>User Wait Time</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">3-5 seconds</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">~100ms (instant)</span></td>
+                            </tr>
+                            <tr>
+                                <td>Server Resources</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Tied up waiting</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Free immediately</span></td>
+                            </tr>
+                            <tr>
+                                <td>Email Failure</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Registration fails!</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">User registered, retry email</span></td>
+                            </tr>
+                            <tr>
+                                <td>Scalability</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Limited by email speed</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Add more workers</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Basic Async Approaches -->
+        <div class="content-card">
+            <div class="section" id="section-3">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">3.</span> Basic Async Approaches</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>Approach 1: Background Threads</h3>
+                    <div class="code-block">
+<span class="comment"># Simple async with threading</span>
+<span class="keyword">import</span> threading
+
+<span class="keyword">def</span> <span class="function">register_user</span>(request):
+    user = User.objects.create(email=email, password=password)
+
+    <span class="comment"># Start background thread for email</span>
+    thread = threading.Thread(target=send_welcome_email, args=(user.email,))
+    thread.start()
+
+    <span class="keyword">return</span> JsonResponse({<span class="string">&quot;status&quot;</span>: <span class="string">&quot;success&quot;</span>})
+                    </div>
+
+                    <div class="warning-box">
+                        <h4>Problems with Threading:</h4>
+                        <ul>
+                            <li>If server restarts, pending emails are lost</li>
+                            <li>No retry mechanism if email fails</li>
+                            <li>Hard to track what&apos;s pending</li>
+                            <li>Threads consume server memory</li>
+                        </ul>
+                    </div>
+
+                    <h3>Approach 2: Database Queue</h3>
+                    <div class="code-block">
+<span class="comment"># Database as a queue</span>
+<span class="keyword">def</span> <span class="function">register_user</span>(request):
+    user = User.objects.create(email=email, password=password)
+
+    <span class="comment"># Save to database queue</span>
+    EmailTask.objects.create(
+        to_email=user.email,
+        template=<span class="string">&quot;welcome&quot;</span>,
+        status=<span class="string">&quot;pending&quot;</span>
+    )
+
+    <span class="keyword">return</span> JsonResponse({<span class="string">&quot;status&quot;</span>: <span class="string">&quot;success&quot;</span>})
+
+<span class="comment"># Separate worker process</span>
+<span class="keyword">def</span> <span class="function">process_email_queue</span>():
+    <span class="keyword">while</span> True:
+        task = EmailTask.objects.filter(status=<span class="string">&quot;pending&quot;</span>).first()
+        <span class="keyword">if</span> task:
+            send_email(task.to_email, task.template)
+            task.status = <span class="string">&quot;completed&quot;</span>
+            task.save()
+        time.sleep(1)
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Better, but still has issues:</h4>
+                        <ul>
+                            <li>Database not designed for queuing (inefficient)</li>
+                            <li>Polling wastes resources</li>
+                            <li>Hard to scale workers</li>
+                            <li>No built-in retry/dead-letter handling</li>
+                        </ul>
+                    </div>
+
+                    <div class="question-box">
+                        <h4>Think About It...</h4>
+                        <p>What if you need to send 100,000 emails per hour? How would the database queue approach handle this?</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Answer</button>
+                        <div class="answer-content">
+                            <p><strong>Problems at scale:</strong></p>
+                            <ul>
+                                <li>Database becomes a bottleneck</li>
+                                <li>Constant polling creates load</li>
+                                <li>Adding workers means more database connections</li>
+                                <li>Lock contention when multiple workers grab tasks</li>
+                            </ul>
+                            <p><strong>Solution:</strong> We need a purpose-built message queue!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Message Queues -->
+        <div class="content-card">
+            <div class="section" id="section-4">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">4.</span> Introduction to Message Queues</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>What is a Message Queue?</h3>
+                    <p>A <strong>message queue</strong> is a form of asynchronous service-to-service communication. Messages are stored in the queue until they are processed and deleted.</p>
+
+                    <div class="diagram-box">
+                        <h4>Message Queue Concept</h4>
+                        <pre>
+    PRODUCER                    MESSAGE QUEUE                    CONSUMER
+    (Sends messages)            (Stores messages)                (Processes messages)
+
+    +-------------+            +-----------------+            +-------------+
+    | User Service|            |                 |            |Email Service|
+    |             | ---------> | [msg3][msg2][msg1] --------->|             |
+    |  &quot;Send      |   PUSH     |                 |    PULL    |  Sends      |
+    |   welcome   |            |    FIFO Queue   |            |  emails     |
+    |   email&quot;    |            |                 |            |             |
+    +-------------+            +-----------------+            +-------------+
+                        </pre>
+                    </div>
+
+                    <h3>Key Benefits of Message Queues</h3>
+                    <p style="margin-bottom: 10px; color: #6c757d; font-style: italic;">Click on each explanation to reveal:</p>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Benefit</th>
+                                <th>Explanation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Decoupling</strong></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Producer and consumer don&apos;t need to know about each other</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Persistence</strong></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Messages survive crashes and restarts</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Scalability</strong></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Add more consumers to handle more load</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Load Leveling</strong></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Handle traffic spikes without crashing</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Reliability</strong></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">Click to reveal</span><span class="cell-answer">Automatic retries, dead letter queues</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="question-box">
+                        <h4>Think About It...</h4>
+                        <p>If the Email Service goes down for 10 minutes, what happens to emails in a message queue vs direct calls?</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Answer</button>
+                        <div class="answer-content">
+                            <p><strong>Direct Calls:</strong> All email requests fail! Users see errors.</p>
+                            <p><strong>Message Queue:</strong> Messages pile up in queue. When Email Service comes back, it processes all pending emails. No data lost!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Types of Message Queues -->
+        <div class="content-card">
+            <div class="section" id="section-5">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">5.</span> Types of Message Queues</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>1. Simple Message Queues</h3>
+                    <p>Basic queue where messages are consumed once and deleted.</p>
+
+                    <div class="diagram-box">
+                        <h4>Simple Queue (Point-to-Point)</h4>
+                        <pre>
+    Producer --> [msg3][msg2][msg1] --> Consumer
+
+    - Each message delivered to ONE consumer only
+    - Message deleted after consumption
+    - Examples: AWS SQS, RabbitMQ (simple mode)
+                        </pre>
+                    </div>
+
+                    <h3>2. Pub/Sub (Publish-Subscribe)</h3>
+                    <p>Messages are broadcast to all subscribers.</p>
+
+                    <div class="diagram-box">
+                        <h4>Pub/Sub Pattern</h4>
+                        <pre>
+                                    +--> Subscriber 1 (Email Service)
+                                    |
+    Publisher --> [Topic: user_signup] -+--> Subscriber 2 (Analytics)
+                                    |
+                                    +--> Subscriber 3 (Notification)
+
+    - Each message delivered to ALL subscribers
+    - Examples: Redis Pub/Sub, Google Pub/Sub
+                        </pre>
+                    </div>
+
+                    <h3>3. Log-Based Message Queues (Kafka Style)</h3>
+                    <p>Messages stored as an append-only log. Consumers track their position.</p>
+
+                    <div class="highlight-box">
+                        <h4>What is an Append-Only Log?</h4>
+                        <p>Think of it like a diary - you can only write new entries at the end, never modify old ones.</p>
+                        <ul>
+                            <li><strong>New messages</strong> always added at the END</li>
+                            <li><strong>Old messages</strong> are NEVER deleted or modified</li>
+                            <li>Each message gets a unique <strong>offset</strong> (position)</li>
+                        </ul>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Log-Based Queue</h4>
+                        <pre>
+    Offset:  0     1     2     3     4     5     6     7
+            +----+----+----+----+----+----+----+----+
+            |msg |msg |msg |msg |msg |msg |msg |msg |
+            +----+----+----+----+----+----+----+----+
+                              ^                   ^
+                              |                   |
+                        Consumer A           Consumer B
+                        (offset 3)           (offset 7)
+
+    - Consumers track their own position (offset)
+    - Can replay messages by resetting offset
+    - Examples: Apache Kafka, AWS Kinesis
+                        </pre>
+                    </div>
+
+                    <div class="question-box">
+                        <h4>Why Can Kafka Replay Messages But Others Can't?</h4>
+                        <p>Think about what happens after a consumer reads a message in each system...</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Answer</button>
+                        <div class="answer-content">
+                            <p><strong>Traditional Queues (RabbitMQ, SQS):</strong></p>
+                            <ul>
+                                <li>Message is <strong>deleted</strong> after consumer acknowledges it</li>
+                                <li>Once gone, it's gone forever - can't replay!</li>
+                            </ul>
+                            <p><strong>Redis Pub/Sub:</strong></p>
+                            <ul>
+                                <li>Messages are <strong>not stored at all</strong> - just broadcast in real-time</li>
+                                <li>If no one is listening when message is sent, it's lost forever</li>
+                                <li>No persistence = No replay</li>
+                            </ul>
+                            <p><strong>Kafka (Log-based):</strong></p>
+                            <ul>
+                                <li>Messages are <strong>never deleted</strong> (until retention period expires, e.g., 7 days)</li>
+                                <li>Consumer just moves a pointer (offset) - message stays in log</li>
+                                <li>Want to replay? Just reset your offset to an earlier position!</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>Comparison of Popular Message Queues</h3>
+                    <p style="margin-bottom: 10px; color: #6c757d; font-style: italic;">Click on each cell to reveal:</p>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Feature</th>
+                                <th>RabbitMQ</th>
+                                <th>Apache Kafka</th>
+                                <th>AWS SQS</th>
+                                <th>Redis Pub/Sub</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Type</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Traditional MQ</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Log-based</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Simple Queue</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Pub/Sub</span></td>
+                            </tr>
+                            <tr>
+                                <td>Persistence</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Yes</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Yes (long-term)</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Yes</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">No</span></td>
+                            </tr>
+                            <tr>
+                                <td>Replay</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">No</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Yes</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">No</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">No</span></td>
+                            </tr>
+                            <tr>
+                                <td>Throughput</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Medium</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Very High</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Medium</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">High</span></td>
+                            </tr>
+                            <tr>
+                                <td>Best For</td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Task queues</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Event streaming</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">AWS apps</span></td>
+                                <td class="hidden-cell" onclick="revealCell(this)"><span class="cell-placeholder">?</span><span class="cell-answer">Real-time chat</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 6: Kafka Architecture -->
+        <div class="content-card">
+            <div class="section" id="section-6">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">6.</span> Apache Kafka Architecture</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>What is Apache Kafka?</h3>
+                    <p>Apache Kafka is a distributed event streaming platform capable of handling trillions of events per day.</p>
+
+                    <div class="highlight-box">
+                        <h4>Brief History</h4>
+                        <ul>
+                            <li>Created at LinkedIn in 2010 to handle massive data pipelines</li>
+                            <li>Open-sourced and donated to Apache Software Foundation in 2011</li>
+                            <li>Named after Franz Kafka, the writer, because it&apos;s designed for writing (logs)</li>
+                        </ul>
+                    </div>
+
+                    <h3>Core Components (Detailed)</h3>
+
+                    <!-- TOPIC -->
+                    <div class="highlight-box">
+                        <h4>1. Topic - The Category/Channel</h4>
+                        <p>A <strong>Topic</strong> is like a folder where related messages are grouped together.</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Why Topics Matter - Real Example</h4>
+                        <pre>
+    Your E-commerce Platform has DIFFERENT types of events:
+
+    +-------------------------------------------------------------+
+    |                         KAFKA                               |
+    |                                                             |
+    |   Topic: user-events          Topic: order-events           |
+    |   +-----------------+         +-----------------+          |
+    |   | user-signup     |         | order-placed    |          |
+    |   | user-login      |         | order-shipped   |          |
+    |   | password-reset  |         | order-delivered |          |
+    |   +-----------------+         +-----------------+          |
+    |                                                             |
+    |   Topic: email-requests       Topic: payment-events         |
+    |   +-----------------+         +-----------------+          |
+    |   | welcome-email   |         | payment-success |          |
+    |   | order-confirm   |         | payment-failed  |          |
+    |   +-----------------+         +-----------------+          |
+    +-------------------------------------------------------------+
+
+    WHY SEPARATE TOPICS?
+    - Email Service only subscribes to "email-requests" - ignores others
+    - Analytics Service can subscribe to ALL topics
+    - Each service gets ONLY the messages it cares about
+                        </pre>
+                    </div>
+
+                    <!-- BROKER -->
+                    <div class="highlight-box">
+                        <h4>2. Broker - The Server</h4>
+                        <p>A <strong>Broker</strong> is a Kafka server that stores and serves messages.</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Why Multiple Brokers?</h4>
+                        <pre>
+    Single Broker (BAD):
+    +--------------+
+    |   Broker 1   |  &lt;-- If this dies, EVERYTHING is lost!
+    |  ALL DATA    |  &lt;-- Single point of failure
+    +--------------+
+
+    Multiple Brokers (GOOD):
+    +--------------+  +--------------+  +--------------+
+    |   Broker 1   |  |   Broker 2   |  |   Broker 3   |
+    +--------------+  +--------------+  +--------------+
+
+    BENEFITS:
+    - Load Distribution - requests spread across servers
+    - Fault Tolerance - if Broker 1 dies, others continue
+    - More Storage - each broker adds more disk space
+                        </pre>
+                    </div>
+
+                    <!-- PARTITION -->
+                    <div class="highlight-box">
+                        <h4>3. Partition - The Key to Parallelism</h4>
+                        <p>A <strong>Partition</strong> splits a topic into multiple parallel streams.</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Understanding Partitions</h4>
+                        <pre>
+    WITHOUT Partitions (Slow):
+    +---------------------------------------------------+
+    | Topic: email-requests                             |
+    | [msg1][msg2][msg3][msg4][msg5][msg6][msg7][msg8] | --> Only ONE consumer!
+    +---------------------------------------------------+
+
+    WITH 3 Partitions (Fast - Parallel!):
+    +---------------------------------------------------+
+    | Topic: email-requests                             |
+    |                                                   |
+    | Partition 0: [msg1][msg4][msg7] ---> Consumer A   |
+    | Partition 1: [msg2][msg5][msg8] ---> Consumer B   |
+    | Partition 2: [msg3][msg6][msg9] ---> Consumer C   |
+    |                                                   |
+    | 3 consumers working IN PARALLEL = 3x throughput!  |
+    +---------------------------------------------------+
+                        </pre>
+                    </div>
+
+                    <!-- PARTITION vs REPLICA -->
+                    <div class="warning-box">
+                        <h4>Partition vs Replica - Don't Confuse!</h4>
+                        <p>These are DIFFERENT concepts:</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Partition vs Replica Explained</h4>
+                        <pre>
+    PARTITION = Splitting data for PARALLELISM (speed)
+    ====================================================
+    Topic split into parts, each part has DIFFERENT messages
+
+    Topic: emails (3 partitions)
+    +--------------+ +--------------+ +--------------+
+    | Partition 0  | | Partition 1  | | Partition 2  |
+    | [A][D][G]    | | [B][E][H]    | | [C][F][I]    |
+    +--------------+ +--------------+ +--------------+
+    Different msgs!   Different msgs!   Different msgs!
+
+
+    REPLICA = Copying data for FAULT TOLERANCE (safety)
+    ====================================================
+    Same partition copied to multiple brokers, SAME messages
+
+    Partition 0 with replication factor = 3:
+    +--------------+ +--------------+ +--------------+
+    |   Broker 1   | |   Broker 2   | |   Broker 3   |
+    | Partition 0  | | Partition 0  | | Partition 0  |
+    | [A][D][G]    | | [A][D][G]    | | [A][D][G]    |
+    |  (LEADER)    | |  (REPLICA)   | |  (REPLICA)   |
+    +--------------+ +--------------+ +--------------+
+    SAME messages!    SAME messages!    SAME messages!
+
+    - LEADER handles all reads/writes
+    - REPLICAS are backups - if leader dies, replica becomes leader
+                        </pre>
+                    </div>
+
+                    <!-- CONSUMER GROUP -->
+                    <div class="highlight-box">
+                        <h4>4. Consumer Group - Team of Workers</h4>
+                        <p>A <strong>Consumer Group</strong> is a team of consumers that work together. Each partition is assigned to exactly ONE consumer in the group.</p>
+                    </div>
+
+                    <div class="diagram-box">
+                        <h4>Real Example: Email Notification System</h4>
+                        <pre>
+    SCENARIO: High traffic - 10,000 emails/minute to send
+
+    Topic: email-requests (6 partitions)
+    +--------++--------++--------++--------++--------++--------+
+    | Part 0 || Part 1 || Part 2 || Part 3 || Part 4 || Part 5 |
+    +----+---++----+---++----+---++----+---++----+---++----+---+
+         |        |        |        |        |        |
+         v        v        v        v        v        v
+    +-------------------------------------------------------------+
+    |            CONSUMER GROUP: "email-senders"                  |
+    |                                                             |
+    |  +---------------+ +---------------+ +---------------+      |
+    |  |  Consumer 1   | |  Consumer 2   | |  Consumer 3   |      |
+    |  | Reads: P0, P1 | | Reads: P2, P3 | | Reads: P4, P5 |      |
+    |  | ~3,300/min    | | ~3,300/min    | | ~3,300/min    |      |
+    |  +---------------+ +---------------+ +---------------+      |
+    |                                                             |
+    |  Each consumer handles 2 partitions = load balanced!        |
+    +-------------------------------------------------------------+
+                        </pre>
+                    </div>
+
+                    <div class="question-box">
+                        <h4>Think About It...</h4>
+                        <p>If you have 3 partitions and 5 consumers in a consumer group, what happens?</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Answer</button>
+                        <div class="answer-content">
+                            <p><strong>Answer:</strong> Only 3 consumers will be active (one per partition). <strong>2 consumers will be IDLE!</strong></p>
+                            <p><strong>Rule:</strong> Max active consumers = Number of partitions</p>
+                            <p><strong>Tip:</strong> To scale consumers, you need MORE partitions. Plan ahead!</p>
+                        </div>
+                    </div>
+
+                    <div class="success-box">
+                        <h4>Summary: How It All Fits Together</h4>
+                        <ol>
+                            <li><strong>Topics</strong> organize messages by type (emails, orders, payments)</li>
+                            <li><strong>Partitions</strong> split topics for parallel processing</li>
+                            <li><strong>Brokers</strong> are servers that store partitions</li>
+                            <li><strong>Replicas</strong> are backup copies on different brokers</li>
+                            <li><strong>Consumer Groups</strong> let multiple workers share the load</li>
+                            <li><strong>Producers</strong> send messages, optionally with a key for ordering</li>
+                        </ol>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <a href="https://softwaremill.com/kafka-visualisation/" target="_blank" class="external-link">Interactive Kafka Visualization Tool</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 7: YouTube Example -->
+        <div class="content-card">
+            <div class="section" id="section-7">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">7.</span> Real-World Example: YouTube Upload</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>What Happens When You Upload a Video?</h3>
+                    <p>YouTube processes millions of video uploads daily. Here&apos;s how message queues help:</p>
+
+                    <div class="diagram-box">
+                        <h4>YouTube Upload Pipeline</h4>
+                        <pre>
+    User uploads video
+           |
+           v
+    +---------------+     +---------------------------+
+    | Upload Service| --> | MESSAGE QUEUE             |
+    | Returns:      |     | Topic: video-uploaded     |
+    | &quot;Processing&quot;  |     +---------------------------+
+    +---------------+                |
+                            +--------+--------+
+                            |                 |
+                            v                 v
+                    +-------------+   +-------------+
+                    | Transcoding |   | Thumbnail   |
+                    | Service     |   | Generator   |
+                    +-------------+   +-------------+
+                        </pre>
+                    </div>
+
+                    <h3>Why This Architecture?</h3>
+                    <ul>
+                        <li><strong>Instant Response:</strong> User doesn&apos;t wait for transcoding</li>
+                        <li><strong>Parallel Processing:</strong> Multiple services work simultaneously</li>
+                        <li><strong>Fault Tolerance:</strong> If one service fails, others continue</li>
+                        <li><strong>Scalability:</strong> Add more workers during peak hours</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 8: Notification Services -->
+        <div class="content-card">
+            <div class="section" id="section-8">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">8.</span> Building Notification Services</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>Modern Notification Architecture</h3>
+                    <p>Large applications send notifications through multiple channels: Email, SMS, Push, In-App, etc.</p>
+
+                    <div class="diagram-box">
+                        <h4>Multi-Channel Notification Service</h4>
+                        <pre>
+    Services                  Notification Service              Channels
+
+    +------------+           +------------------+            +----------+
+    |User Service| --------> |                  | ---------> | Email    |
+    +------------+           |   Router         |            +----------+
+                             |   Template Engine|            +----------+
+    +------------+           |   Rate Limiter   | ---------> | SMS      |
+    |Order Service|--------> |   User Prefs     |            +----------+
+    +------------+           |                  |            +----------+
+                             +------------------+ ---------> | Push     |
+    +------------+                                           +----------+
+    |Payment Svc | ----------------------------------------> | In-App   |
+    +------------+                                           +----------+
+                        </pre>
+                    </div>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>Multi-channel:</strong> Send to multiple channels from one request</li>
+                        <li><strong>User Preferences:</strong> Respect user notification settings</li>
+                        <li><strong>Rate Limiting:</strong> Don&apos;t spam users</li>
+                        <li><strong>Templates:</strong> Consistent formatting across channels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 9: Hands-On -->
+        <div class="content-card">
+            <div class="section" id="section-9">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">9.</span> Hands-On: Django + Kafka + Email</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>Project Overview</h3>
+                    <p>We&apos;ll build a user registration system that sends welcome emails asynchronously using Kafka.</p>
+
+                    <div class="diagram-box">
+                        <h4>Our Architecture</h4>
+                        <pre>
+    +-------------+      +---------+      +---------------+      +-------+
+    | Django API  | ---> |  Kafka  | ---> | Email Consumer| ---> | SMTP  |
+    | (Producer)  |      | (Queue) |      | (Consumer)    |      |Server |
+    +-------------+      +---------+      +---------------+      +-------+
+                        </pre>
+                    </div>
+
+                    <h3>Step 1: Install Kafka</h3>
+                    <p>Choose one of these installation methods:</p>
+
+                    <div class="highlight-box">
+                        <h4>Option A: Using Docker (Recommended)</h4>
+                    </div>
+                    <div class="code-block">
+<span class="comment"># Create docker-compose.yml</span>
+version: &apos;3&apos;
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - &quot;2181:2181&quot;
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - &quot;9092:9092&quot;
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+<span class="comment"># Start Kafka</span>
+docker-compose up -d
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Option B: Using Homebrew (macOS)</h4>
+                    </div>
+                    <div class="code-block">
+<span class="comment"># Install Kafka</span>
+brew install kafka
+
+<span class="comment"># Start Zookeeper (Terminal 1)</span>
+zookeeper-server-start /opt/homebrew/etc/kafka/zookeeper.properties
+
+<span class="comment"># Start Kafka (Terminal 2)</span>
+kafka-server-start /opt/homebrew/etc/kafka/server.properties
+                    </div>
+
+                    <h3>Step 2: Setup Django Project</h3>
+                    <div class="code-block">
+<span class="comment"># Create virtual environment</span>
+python3 -m venv venv
+source venv/bin/activate
+
+<span class="comment"># Install dependencies</span>
+pip install django djangorestframework kafka-python
+
+<span class="comment"># Create project</span>
+django-admin startproject email_notification_project
+cd email_notification_project
+python manage.py startapp users
+                    </div>
+
+                    <h3>Step 3: Configure Kafka Producer</h3>
+                    <div class="code-block">
+<span class="comment"># users/kafka_producer.py</span>
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaProducer
+<span class="keyword">import</span> json
+
+<span class="keyword">class</span> <span class="function">EmailProducer</span>:
+    <span class="keyword">def</span> <span class="function">__init__</span>(self):
+        self.producer = KafkaProducer(
+            bootstrap_servers=[<span class="string">&apos;localhost:9092&apos;</span>],
+            value_serializer=<span class="keyword">lambda</span> v: json.dumps(v).encode(<span class="string">&apos;utf-8&apos;</span>)
+        )
+
+    <span class="keyword">def</span> <span class="function">send_email_request</span>(self, email_data):
+        self.producer.send(<span class="string">&apos;email-topic&apos;</span>, email_data)
+        self.producer.flush()
+
+email_producer = EmailProducer()
+                    </div>
+
+                    <h3>Step 4: Create User Registration API</h3>
+                    <div class="code-block">
+<span class="comment"># users/views.py</span>
+<span class="keyword">from</span> rest_framework.views <span class="keyword">import</span> APIView
+<span class="keyword">from</span> rest_framework.response <span class="keyword">import</span> Response
+<span class="keyword">from</span> .kafka_producer <span class="keyword">import</span> email_producer
+
+<span class="keyword">class</span> <span class="function">UserRegistrationView</span>(APIView):
+    <span class="keyword">def</span> <span class="function">post</span>(self, request):
+        email = request.data.get(<span class="string">&apos;email&apos;</span>)
+        name = request.data.get(<span class="string">&apos;name&apos;</span>)
+
+        <span class="comment"># Send email request to Kafka (async!)</span>
+        email_producer.send_email_request({
+            <span class="string">&apos;type&apos;</span>: <span class="string">&apos;welcome_email&apos;</span>,
+            <span class="string">&apos;to&apos;</span>: email,
+            <span class="string">&apos;name&apos;</span>: name,
+            <span class="string">&apos;subject&apos;</span>: <span class="string">&apos;Welcome to Our Platform!&apos;</span>
+        })
+
+        <span class="keyword">return</span> Response({
+            <span class="string">&apos;status&apos;</span>: <span class="string">&apos;success&apos;</span>,
+            <span class="string">&apos;message&apos;</span>: <span class="string">&apos;User registered! Email will be sent shortly.&apos;</span>
+        })
+                    </div>
+
+                    <h3>Step 5: Create Email Consumer</h3>
+                    <div class="code-block">
+<span class="comment"># email_consumer.py</span>
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaConsumer
+<span class="keyword">import</span> json
+<span class="keyword">import</span> smtplib
+<span class="keyword">from</span> email.mime.text <span class="keyword">import</span> MIMEText
+
+<span class="keyword">def</span> <span class="function">send_email</span>(to_email, subject, body):
+    msg = MIMEText(body)
+    msg[<span class="string">&apos;Subject&apos;</span>] = subject
+    msg[<span class="string">&apos;From&apos;</span>] = <span class="string">&apos;noreply@yourapp.com&apos;</span>
+    msg[<span class="string">&apos;To&apos;</span>] = to_email
+
+    <span class="keyword">with</span> smtplib.SMTP(<span class="string">&apos;smtp.gmail.com&apos;</span>, 587) <span class="keyword">as</span> server:
+        server.starttls()
+        server.login(<span class="string">&apos;your-email@gmail.com&apos;</span>, <span class="string">&apos;your-app-password&apos;</span>)
+        server.send_message(msg)
+
+<span class="keyword">def</span> <span class="function">consume_emails</span>():
+    consumer = KafkaConsumer(
+        <span class="string">&apos;email-topic&apos;</span>,
+        bootstrap_servers=[<span class="string">&apos;localhost:9092&apos;</span>],
+        group_id=<span class="string">&apos;email-consumer-group&apos;</span>,
+        value_deserializer=<span class="keyword">lambda</span> m: json.loads(m.decode(<span class="string">&apos;utf-8&apos;</span>))
+    )
+
+    print(<span class="string">&quot;Email consumer started...&quot;</span>)
+
+    <span class="keyword">for</span> message <span class="keyword">in</span> consumer:
+        email_data = message.value
+        <span class="keyword">try</span>:
+            body = f&quot;Hello {email_data[&apos;name&apos;]}!\n\nWelcome to our platform!&quot;
+            send_email(email_data[<span class="string">&apos;to&apos;</span>], email_data[<span class="string">&apos;subject&apos;</span>], body)
+            print(f&quot;Email sent to {email_data[&apos;to&apos;]}&quot;)
+        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+            print(f&quot;Failed: {e}&quot;)
+
+<span class="keyword">if</span> __name__ == <span class="string">&apos;__main__&apos;</span>:
+    consume_emails()
+                    </div>
+
+                    <h3>Step 6: Setup SMTP (Gmail Example)</h3>
+                    <div class="highlight-box">
+                        <h4>Gmail App Password Setup:</h4>
+                        <ol>
+                            <li>Go to Google Account settings</li>
+                            <li>Security &gt; 2-Step Verification (enable if not)</li>
+                            <li>Security &gt; App passwords</li>
+                            <li>Generate new app password for &quot;Mail&quot;</li>
+                            <li>Use this password in your code</li>
+                        </ol>
+                    </div>
+
+                    <h3>Step 6b: Setup MailHog (Local Testing - Recommended for Development)</h3>
+
+                    <div class="question-box">
+                        <h4>What is MailHog and Why Use It?</h4>
+                        <div class="diagram-box">
+<pre>
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           THE PROBLEM WITH REAL SMTP                                │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│   During Development:                                                               │
+│   ┌──────────────┐         ┌─────────────┐         ┌──────────────────────┐        │
+│   │ Your Code    │ ──────► │ Gmail SMTP  │ ──────► │ Real Email Sent!     │        │
+│   │ (testing)    │         │ (production)│         │ - Annoys real users  │        │
+│   └──────────────┘         └─────────────┘         │ - Costs money (SES)  │        │
+│                                                    │ - Rate limits hit    │        │
+│                                                    │ - Can&apos;t inspect      │        │
+│                                                    └──────────────────────┘        │
+│                                                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                           THE MAILHOG SOLUTION                                      │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│   ┌──────────────┐         ┌─────────────┐         ┌──────────────────────┐        │
+│   │ Your Code    │ ──────► │ MailHog     │ ──────► │ Emails Captured!     │        │
+│   │ (testing)    │         │ (fake SMTP) │         │ - View in browser    │        │
+│   └──────────────┘         └─────────────┘         │ - No real sending    │        │
+│                                                    │ - Unlimited testing  │        │
+│        Same SMTP code!       Port 1025             │ - Inspect HTML/text  │        │
+│        No changes needed!                          └──────────────────────┘        │
+│                                                                                     │
+│   MailHog = Fake SMTP server that catches all emails for inspection                │
+│                                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+</pre>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>MailHog Features:</h4>
+                        <ul>
+                            <li><strong>SMTP Server</strong> - Receives emails on port 1025 (just like Gmail on 587)</li>
+                            <li><strong>Web UI</strong> - View all captured emails at http://localhost:8025</li>
+                            <li><strong>No Configuration</strong> - No passwords, no app passwords, just works</li>
+                            <li><strong>API</strong> - Programmatically check emails (great for automated tests)</li>
+                        </ul>
+                    </div>
+
+                    <h4>Option A: Install MailHog with Docker</h4>
+                    <div class="code-block">
+<span class="comment"># Why Docker? One command starts everything, easy cleanup</span>
+<span class="comment"># This runs MailHog in a container - isolated from your system</span>
+
+docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+
+<span class="comment"># -d          : Run in background (detached mode)</span>
+<span class="comment"># -p 1025:1025: Expose SMTP port (your code sends here)</span>
+<span class="comment"># -p 8025:8025: Expose Web UI port (you view emails here)</span>
+                    </div>
+
+                    <h4>Option B: Install MailHog with Homebrew (macOS)</h4>
+                    <div class="code-block">
+<span class="comment"># Step 1: Install MailHog</span>
+<span class="comment"># Why Homebrew? Native install, no Docker overhead, simpler for macOS users</span>
+
+brew install mailhog
+
+<span class="comment"># Step 2: Start MailHog</span>
+<span class="comment"># This starts the SMTP server (1025) and Web UI (8025)</span>
+
+mailhog
+
+<span class="comment"># You&apos;ll see output like:</span>
+<span class="comment"># [INFO] Serving under http://0.0.0.0:8025/</span>
+<span class="comment"># [INFO] Accepting SMTP on 0.0.0.0:1025</span>
+                    </div>
+
+                    <h4>Configure Your Code for MailHog</h4>
+                    <div class="code-block">
+<span class="comment"># Update your email consumer to use MailHog instead of Gmail</span>
+<span class="comment"># The ONLY changes: host and port. No authentication needed!</span>
+
+<span class="keyword">import</span> smtplib
+<span class="keyword">from</span> email.mime.text <span class="keyword">import</span> MIMEText
+
+<span class="keyword">def</span> <span class="function">send_email</span>(to_email, subject, body):
+    msg = MIMEText(body)
+    msg[<span class="string">&apos;Subject&apos;</span>] = subject
+    msg[<span class="string">&apos;From&apos;</span>] = <span class="string">&apos;noreply@yourapp.com&apos;</span>  <span class="comment"># Can be anything!</span>
+    msg[<span class="string">&apos;To&apos;</span>] = to_email
+
+    <span class="comment"># MailHog: localhost:1025, no auth needed</span>
+    <span class="keyword">with</span> smtplib.SMTP(<span class="string">&apos;localhost&apos;</span>, 1025) <span class="keyword">as</span> server:
+        <span class="comment"># No login required! MailHog accepts everything</span>
+        server.send_message(msg)
+        <span class="keyword">print</span>(<span class="string">f&apos;Email sent to {to_email}&apos;</span>)
+
+<span class="comment"># Compare with Gmail (production):</span>
+<span class="comment"># with smtplib.SMTP(&apos;smtp.gmail.com&apos;, 587) as server:</span>
+<span class="comment">#     server.starttls()           # Required for Gmail</span>
+<span class="comment">#     server.login(user, pass)    # Required for Gmail</span>
+<span class="comment">#     server.send_message(msg)</span>
+                    </div>
+
+                    <div class="success-box">
+                        <h4>View Your Emails</h4>
+                        <p>Open <strong>http://localhost:8025</strong> in your browser to see all captured emails!</p>
+                        <div class="diagram-box">
+<pre>
+┌─────────────────────────────────────────────────────────────────┐
+│  MailHog - Web UI (http://localhost:8025)                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Inbox (3 messages)                                             │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ ✉ Welcome to MyApp!          deepak@example.com   10:30 │    │
+│  │ ✉ Password Reset Request     sumit@example.com    10:28 │    │
+│  │ ✉ Order Confirmation #123    deepak@example.com   10:25 │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Click any email to view:                                       │
+│  - HTML rendered version                                        │
+│  - Plain text version                                           │
+│  - Raw source (headers, MIME)                                   │
+│  - Download as .eml file                                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <h4>Development vs Production Configuration</h4>
+                        <div class="code-block">
+<span class="comment"># Use environment variables to switch between MailHog and Gmail</span>
+
+<span class="keyword">import</span> os
+
+SMTP_HOST = os.getenv(<span class="string">&apos;SMTP_HOST&apos;</span>, <span class="string">&apos;localhost&apos;</span>)      <span class="comment"># Default: MailHog</span>
+SMTP_PORT = int(os.getenv(<span class="string">&apos;SMTP_PORT&apos;</span>, <span class="string">&apos;1025&apos;</span>))     <span class="comment"># Default: MailHog</span>
+SMTP_USER = os.getenv(<span class="string">&apos;SMTP_USER&apos;</span>, <span class="string">&apos;&apos;</span>)              <span class="comment"># Empty for MailHog</span>
+SMTP_PASS = os.getenv(<span class="string">&apos;SMTP_PASS&apos;</span>, <span class="string">&apos;&apos;</span>)              <span class="comment"># Empty for MailHog</span>
+
+<span class="comment"># .env.development (MailHog - no auth needed)</span>
+<span class="comment"># SMTP_HOST=localhost</span>
+<span class="comment"># SMTP_PORT=1025</span>
+
+<span class="comment"># .env.production (Gmail - real emails)</span>
+<span class="comment"># SMTP_HOST=smtp.gmail.com</span>
+<span class="comment"># SMTP_PORT=587</span>
+<span class="comment"># SMTP_USER=your-email@gmail.com</span>
+<span class="comment"># SMTP_PASS=your-app-password</span>
+                        </div>
+                    </div>
+
+                    <h3>Step 7: Run the System</h3>
+
+                    <h4>Option A: Using Docker (Kafka + MailHog)</h4>
+                    <div class="code-block">
+<span class="comment"># Terminal 1: Start Kafka and MailHog (Docker)</span>
+<span class="comment"># docker-compose.yml should include both services</span>
+docker-compose up
+
+<span class="comment"># Terminal 2: Start Django</span>
+python3 manage.py runserver
+
+<span class="comment"># Terminal 3: Start Email Consumer</span>
+python3 email_consumer.py
+
+<span class="comment"># Terminal 4: Test the API</span>
+curl -X POST http://localhost:8000/api/register/ \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &apos;{&quot;email&quot;: &quot;deepak@example.com&quot;, &quot;name&quot;: &quot;Deepak&quot;}&apos;
+
+<span class="comment"># Terminal 5: View emails in MailHog</span>
+<span class="comment"># Open http://localhost:8025 in your browser</span>
+                    </div>
+
+                    <h4>Option B: Using Homebrew (macOS)</h4>
+                    <div class="highlight-box">
+                        <p><strong>Why Homebrew?</strong> Native installation without Docker overhead. Good if you prefer running services directly on your Mac.</p>
+                    </div>
+                    <div class="code-block">
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 1: Install Kafka and MailHog (one-time setup)</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+brew install kafka     <span class="comment"># Installs Kafka + Zookeeper</span>
+brew install mailhog   <span class="comment"># Installs MailHog email catcher</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 2: Start Zookeeper (Terminal 1)</span>
+<span class="comment"># WHY? Kafka uses Zookeeper to manage cluster coordination,</span>
+<span class="comment">#      broker discovery, and leader election. Must start first!</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+zookeeper-server-start /opt/homebrew/etc/kafka/zookeeper.properties
+<span class="comment"># Intel Mac: /usr/local/etc/kafka/zookeeper.properties</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 3: Start Kafka Broker (Terminal 2)</span>
+<span class="comment"># WHY? This is the actual message broker that stores and</span>
+<span class="comment">#      delivers messages. Connects to Zookeeper on startup.</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+kafka-server-start /opt/homebrew/etc/kafka/server.properties
+<span class="comment"># Intel Mac: /usr/local/etc/kafka/server.properties</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 4: Create the email-topic (Terminal 3 - run once)</span>
+<span class="comment"># WHY? Topics don&apos;t exist by default. We need to create a</span>
+<span class="comment">#      topic where our email messages will be stored.</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+kafka-topics --create \
+  --topic email-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 3 \
+  --replication-factor 1
+
+<span class="comment"># --partitions 3       : Allow 3 parallel consumers</span>
+<span class="comment"># --replication-factor 1: Single copy (use 3 in production)</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 5: Start MailHog (Terminal 3)</span>
+<span class="comment"># WHY? Catches all outgoing emails so we can test without</span>
+<span class="comment">#      sending real emails. View them at http://localhost:8025</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+mailhog
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 6: Start Django Server (Terminal 4)</span>
+<span class="comment"># WHY? This runs your API that receives requests and</span>
+<span class="comment">#      publishes email messages to Kafka.</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+python3 manage.py runserver
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 7: Start Email Consumer (Terminal 5)</span>
+<span class="comment"># WHY? This reads from Kafka and actually sends the emails</span>
+<span class="comment">#      to MailHog (or real SMTP in production).</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+python3 email_consumer.py
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># STEP 8: Test the System (Terminal 6)</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+
+curl -X POST http://localhost:8000/api/register/ \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &apos;{&quot;email&quot;: &quot;deepak@example.com&quot;, &quot;name&quot;: &quot;Deepak&quot;}&apos;
+
+<span class="comment"># Now check http://localhost:8025 - you should see the email!</span>
+                    </div>
+
+                    <div class="question-box">
+                        <h4>Useful Kafka Commands (Homebrew)</h4>
+                        <div class="code-block">
+<span class="comment"># List all topics</span>
+kafka-topics --list --bootstrap-server localhost:9092
+
+<span class="comment"># Describe a topic (see partitions, replicas)</span>
+kafka-topics --describe --topic email-topic --bootstrap-server localhost:9092
+
+<span class="comment"># Watch messages in real-time (great for debugging!)</span>
+kafka-console-consumer --topic email-topic --from-beginning --bootstrap-server localhost:9092
+
+<span class="comment"># Send a test message manually</span>
+kafka-console-producer --topic email-topic --bootstrap-server localhost:9092
+<span class="comment"># Then type: {&quot;type&quot;:&quot;test&quot;,&quot;email&quot;:&quot;test@test.com&quot;}</span>
+                        </div>
+                    </div>
+
+                    <div class="success-box">
+                        <h4>What Happens:</h4>
+                        <ol>
+                            <li>API receives request and returns immediately</li>
+                            <li>Email request goes to Kafka topic</li>
+                            <li>Consumer picks up the message</li>
+                            <li>Consumer sends email via SMTP</li>
+                            <li>User receives email (async!)</li>
+                        </ol>
+                    </div>
+
+                    <h3>Optional: Advanced Partition Configuration</h3>
+                    <div class="highlight-box">
+                        <h4>For Production Systems</h4>
+                        <p>When you need more control over partitions, keys, and consumer groups, use these advanced configurations.</p>
+                    </div>
+
+                    <div class="code-block">
+<span class="comment"># 1. CREATE TOPIC WITH PARTITIONS (command line)</span>
+<span class="comment"># Run this once to create your topic with multiple partitions</span>
+
+kafka-topics --create \
+  --topic email-requests \
+  --bootstrap-server localhost:9092 \
+  --partitions 6 \
+  --replication-factor 3
+
+<span class="comment"># --partitions 6      : Split into 6 partitions for parallelism</span>
+<span class="comment"># --replication-factor 3 : Keep 3 copies for fault tolerance</span>
+                    </div>
+
+                    <div class="code-block">
+<span class="comment"># 2. PRODUCER - Sending with a partition key (Python)</span>
+<span class="comment"># Use keys to ensure related messages go to the same partition</span>
+
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaProducer
+<span class="keyword">import</span> json
+
+producer = KafkaProducer(
+    bootstrap_servers=[<span class="string">'localhost:9092'</span>],
+    value_serializer=<span class="keyword">lambda</span> v: json.dumps(v).encode(<span class="string">'utf-8'</span>),
+    key_serializer=<span class="keyword">lambda</span> k: k.encode(<span class="string">'utf-8'</span>) <span class="keyword">if</span> k <span class="keyword">else</span> None
+)
+
+<span class="comment"># Send WITH key - all messages for same user go to same partition</span>
+<span class="comment"># This ensures ordering for that user's messages!</span>
+producer.send(
+    <span class="string">'email-requests'</span>,
+    key=user_id,        <span class="comment"># Partition key - same user = same partition</span>
+    value={
+        <span class="string">'type'</span>: <span class="string">'welcome'</span>,
+        <span class="string">'email'</span>: <span class="string">'deepak@example.com'</span>,
+        <span class="string">'name'</span>: <span class="string">'Deepak'</span>
+    }
+)
+
+<span class="comment"># Send WITHOUT key - round-robin across all partitions</span>
+producer.send(
+    <span class="string">'email-requests'</span>,
+    value={<span class="string">'type'</span>: <span class="string">'newsletter'</span>, <span class="string">'email'</span>: <span class="string">'sumit@example.com'</span>}
+)
+                    </div>
+
+                    <div class="code-block">
+<span class="comment"># 3. CONSUMER - Part of a consumer group</span>
+<span class="comment"># Multiple instances with same group_id share the workload</span>
+
+<span class="keyword">from</span> kafka <span class="keyword">import</span> KafkaConsumer
+<span class="keyword">import</span> json
+
+consumer = KafkaConsumer(
+    <span class="string">'email-requests'</span>,
+    bootstrap_servers=[<span class="string">'localhost:9092'</span>],
+    group_id=<span class="string">'email-senders'</span>,       <span class="comment"># Consumer group name</span>
+    auto_offset_reset=<span class="string">'earliest'</span>,   <span class="comment"># Start from beginning if new</span>
+    value_deserializer=<span class="keyword">lambda</span> m: json.loads(m.decode(<span class="string">'utf-8'</span>))
+)
+
+<span class="comment"># Kafka automatically assigns partitions to consumers in the group</span>
+<span class="comment"># Run 3 instances with same group_id = each gets ~2 partitions</span>
+
+<span class="keyword">for</span> message <span class="keyword">in</span> consumer:
+    print(f<span class="string">"Partition: {message.partition}"</span>)
+    print(f<span class="string">"Offset: {message.offset}"</span>)
+    print(f<span class="string">"Data: {message.value}"</span>)
+
+    <span class="comment"># Process the email</span>
+    process_email(message.value)
+                    </div>
+
+                    <div class="question-box">
+                        <h4>When to Use Partition Keys?</h4>
+                        <p>Use keys when message ordering matters for a specific entity.</p>
+                        <button class="answer-reveal" onclick="toggleAnswer(this)">Reveal Examples</button>
+                        <div class="answer-content">
+                            <p><strong>Use key = user_id when:</strong></p>
+                            <ul>
+                                <li>User signs up, then verifies email, then resets password</li>
+                                <li>These must be processed IN ORDER for that user</li>
+                            </ul>
+                            <p><strong>Don't need keys when:</strong></p>
+                            <ul>
+                                <li>Sending newsletters to different users</li>
+                                <li>Order doesn't matter between different users</li>
+                                <li>Round-robin gives better load distribution</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 10: Resources -->
+        <div class="content-card">
+            <div class="section" id="section-10">
+                <div class="section-header" onclick="toggleSection(this.parentElement)">
+                    <h2><span class="icon">10.</span> Resources &amp; Tools</h2>
+                    <span class="toggle-icon">&#9660;</span>
+                </div>
+                <div class="section-content">
+                    <h3>Interactive Visualizations</h3>
+                    <div style="margin: 20px 0;">
+                        <a href="https://softwaremill.com/kafka-visualisation/" target="_blank" class="external-link">Kafka Visualization Tool</a>
+                        <a href="https://kafka.apache.org/documentation/" target="_blank" class="external-link">Official Kafka Docs</a>
+                    </div>
+
+                    <h3>Recommended Reading</h3>
+                    <ul>
+                        <li><strong>Kafka: The Definitive Guide</strong> - O&apos;Reilly</li>
+                        <li><strong>Designing Data-Intensive Applications</strong> - Martin Kleppmann</li>
+                    </ul>
+
+                    <h3>Practice Exercises</h3>
+                    <ol>
+                        <li>Add order confirmation email to the system</li>
+                        <li>Implement retry logic for failed emails</li>
+                        <li>Add multiple consumers to handle load</li>
+                        <li>Create a dead-letter queue for failed messages</li>
+                    </ol>
+
+                    <h3>Project Files</h3>
+                    <p>Check the <code>email_notification_project/</code> directory for the complete working code!</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Built for learning. Happy coding!</p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleSection(section) {
+            section.classList.toggle('active');
+            updateProgress();
+        }
+
+        function toggleAnswer(button) {
+            const answerContent = button.nextElementSibling;
+            answerContent.classList.toggle('show');
+            button.textContent = answerContent.classList.contains('show') ? 'Hide Answer' : 'Reveal Answer';
+        }
+
+        function revealCell(cell) {
+            if (!cell.classList.contains('revealed')) {
+                cell.classList.add('revealed');
+            }
+        }
+
+        function updateProgress() {
+            const sections = document.querySelectorAll('.section');
+            const activeSections = document.querySelectorAll('.section.active');
+            const progress = (activeSections.length / sections.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        document.querySelectorAll('.toc a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (!targetSection.classList.contains('active')) {
+                    targetSection.classList.add('active');
+                }
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                updateProgress();
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProgress();
+        });
+    </script>
+</body>
+</html>
