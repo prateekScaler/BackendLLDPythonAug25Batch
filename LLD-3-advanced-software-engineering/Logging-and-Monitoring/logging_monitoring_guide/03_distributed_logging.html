@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distributed Logging - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🌐</div>
+            <h1>Distributed Logging</h1>
+            <p class="subtitle">Tracing requests across multiple services</p>
+        </header>
+
+        <div class="section">
+            <h2>The Distributed Systems Challenge</h2>
+            <p>In a monolith, one request = one log file. In microservices, one request can touch 10+ services:</p>
+
+            <div class="diagram">
+<pre>
+USER REQUEST: "Buy this item"
+══════════════════════════════════════════════════════════════════════
+
+Client → API Gateway → Auth Service → Product Service → Inventory Service
+                           │               │                   │
+                           │               │                   ▼
+                           │               │            Stock Check
+                           │               ▼
+                           │         Get Product Details
+                           ▼
+                     Verify JWT Token
+                                    ↓
+         ┌──────────────────────────┴────────────────────────────────┐
+         │                                                           │
+         ▼                                                           ▼
+   Order Service ────────────────────────────────────────→ Payment Service
+         │                                                           │
+         │                                                           ▼
+         │                                                    Stripe API
+         ▼
+   Notification Service ──→ Email Service ──→ SendGrid API
+         │
+         ▼
+   Analytics Service
+
+EACH SERVICE HAS ITS OWN LOGS. How do you trace one user's request?
+</pre>
+            </div>
+
+            <div class="danger-box">
+                <strong>The Problem:</strong> User reports "My order failed." You have logs on 8 different servers. Which logs belong to THIS request? They're all mixed together with thousands of other requests!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Solution: Correlation IDs</h2>
+            <p>Every request gets a unique ID that travels with it through all services:</p>
+
+            <div class="diagram">
+<pre>
+CORRELATION ID FLOW
+═══════════════════
+
+┌─────────┐    request_id: "abc-123"    ┌─────────────┐
+│ Client  │ ────────────────────────────→│ API Gateway │
+└─────────┘                              └──────┬──────┘
+                                                │
+        Adds request_id to headers: X-Request-ID: abc-123
+                                                │
+    ┌───────────────────────┬───────────────────┼───────────────────┐
+    │                       │                   │                   │
+    ▼                       ▼                   ▼                   ▼
+┌────────┐            ┌──────────┐        ┌───────────┐      ┌─────────┐
+│Auth Svc│            │Product Svc│        │Order Svc  │      │Payment  │
+│abc-123 │            │abc-123    │        │abc-123    │      │abc-123  │
+└────────┘            └──────────┘        └───────────┘      └─────────┘
+
+Now: grep "abc-123" across ALL logs → Complete request trace!
+</pre>
+            </div>
+
+            <button class="toggle-btn" onclick="toggleSection('request-id-details')">How Does Request ID Work? (HTTP Protocol & API Gateway)</button>
+            <div class="toggle-content" id="request-id-details">
+                <div class="info-box" style="margin-top: 0.5rem;">
+                    <h4 style="margin-top: 0;">Is Request ID Part of HTTP Protocol?</h4>
+                    <p><strong>No.</strong> HTTP has no built-in request ID mechanism. The <code>X-Request-ID</code> header is a <strong>custom convention</strong>, not an official standard.</p>
+
+                    <p><strong>How API Gateway Adds It:</strong></p>
+                    <ul style="margin: 0.5rem 0;">
+                        <li><strong>Incoming request:</strong> Gateway checks if <code>X-Request-ID</code> header exists</li>
+                        <li><strong>If missing:</strong> Gateway generates a new UUID and injects it into the request headers</li>
+                        <li><strong>If present:</strong> Gateway uses the existing ID (see below)</li>
+                        <li><strong>Downstream:</strong> Gateway forwards the header to all backend services</li>
+                        <li><strong>Response:</strong> Gateway includes the same ID in response headers for client correlation</li>
+                    </ul>
+
+                    <p><strong>When might Request ID already be present?</strong></p>
+                    <ul style="margin: 0.5rem 0 0 0;">
+                        <li><strong>Mobile/Web apps:</strong> Client generates ID to track their own request through support tickets</li>
+                        <li><strong>Service-to-service:</strong> Another internal service calling your API passes its trace</li>
+                        <li><strong>External partners:</strong> B2B integrations where partner wants to correlate with their logs</li>
+                        <li><strong>Load balancers:</strong> Some LBs (like AWS ALB) add their own trace header upstream</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Beyond Correlation: Distributed Tracing</h2>
+
+            <div class="warning-box" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-top: 0;">What's Missing with Just Request ID?</h4>
+                <p>Request ID tells you <strong>which</strong> logs belong together, but NOT:</p>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><strong>How long</strong> each service took (timing)</li>
+                    <li><strong>Which service called which</strong> (causality/hierarchy)</li>
+                    <li><strong>Where the bottleneck is</strong> (was it Auth? DB? Payment?)</li>
+                </ul>
+                <p style="margin-top: 0.5rem; margin-bottom: 0;">You can grep logs by request ID, but you still have to <em>manually</em> piece together the timeline and figure out what called what.</p>
+            </div>
+
+            <div class="info-box" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-top: 0;">Trace ID = Request ID + Structure</h4>
+                <p><strong>Trace ID</strong> serves the same purpose as Request ID (linking logs), but it's part of a <strong>tracing system</strong> that automatically captures:</p>
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><strong>Start/end timestamps</strong> for each operation</li>
+                    <li><strong>Parent-child relationships</strong> (who called whom)</li>
+                    <li><strong>Spans</strong> - individual units of work with their own IDs</li>
+                </ul>
+                <p style="margin-top: 0.5rem; margin-bottom: 0;"><em>Think of it as: Request ID is a simple string you pass around. Trace ID is that same string, but with a whole infrastructure that records timing and hierarchy automatically.</em></p>
+            </div>
+
+            <p><strong>How does this give us a timeline view?</strong> Each service, when it starts and finishes work, sends a small report to a central collector:</p>
+            <pre style="background: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem;">{ trace_id: "abc-123", span_id: "s5", parent_id: "s4", service: "payment-svc", start: 200ms, end: 380ms }</pre>
+            <p>The tracing UI (Jaeger, Zipkin, etc.) collects all spans with the same <code>trace_id</code> and assembles them into this timeline:</p>
+
+            <div class="diagram">
+<pre>
+DISTRIBUTED TRACE: Order Creation (Trace ID: abc-123)
+═════════════════════════════════════════════════════
+
+Time (ms)  0       100      200      300      400      500
+           │        │        │        │        │        │
+API Gateway├────────┤        │        │        │        │
+           │ 50ms   │        │        │        │        │
+           │        │        │        │        │        │
+Auth Svc   │        ├───┤    │        │        │        │
+           │        │30ms│   │        │        │        │
+           │        │   │    │        │        │        │
+Product Svc│        │   ├────┤        │        │        │
+           │        │   │80ms│        │        │        │
+           │        │   │    │        │        │        │
+Order Svc  │        │   │    ├────────┤        │        │
+           │        │   │    │ 100ms  │        │        │
+           │        │   │    │        │        │        │
+Payment Svc│        │   │    │        ├────────┤        │
+           │        │   │    │        │ 120ms  │        │
+           │        │   │    │        │ (slow!)│        │
+           │        │   │    │        │        │        │
+DB Query   │        │   │    │        │   ├────┤        │
+           │        │   │    │        │   │80ms│        │
+                                           ▲
+                                           │
+                            "Payment service slow because DB query took 80ms"
+</pre>
+            </div>
+
+            <div class="info-box">
+                <h4 style="margin-top: 0;">Understanding Spans</h4>
+                <p>A <strong>Span</strong> = one unit of work with a start time, end time, and a unique ID.</p>
+
+                <div class="diagram" style="margin: 1rem 0;">
+<pre style="font-size: 0.85rem;">
+<strong>Example: User places an order</strong>
+
+Trace ID: abc-123 (same for ALL spans)
+
+├── <strong>Span 1</strong> [span_id: s1, parent: none]
+│   └── API Gateway receives request [0-500ms]
+│
+│   ├── <strong>Span 2</strong> [span_id: s2, parent: s1]
+│   │   └── Auth Service validates JWT [50-80ms]
+│   │
+│   ├── <strong>Span 3</strong> [span_id: s3, parent: s1]
+│   │   └── Product Service lookup [80-160ms]
+│   │
+│   └── <strong>Span 4</strong> [span_id: s4, parent: s1]
+│       └── Order Service [160-400ms]
+│
+│       └── <strong>Span 5</strong> [span_id: s5, parent: s4]
+│           └── Payment Service [200-380ms]
+│
+│           └── <strong>Span 6</strong> [span_id: s6, parent: s5]
+│               └── DB Query [250-330ms] ← <strong style="color: #ef4444;">Bottleneck found!</strong>
+</pre>
+                </div>
+
+                <ul style="margin: 0.5rem 0 0 0;">
+                    <li><strong>Trace ID:</strong> Same for ALL spans (<code>abc-123</code>) - links the entire request</li>
+                    <li><strong>Span ID:</strong> Unique per operation (<code>s1</code>, <code>s2</code>...) - identifies each unit of work</li>
+                    <li><strong>Parent Span ID:</strong> Points to caller (<code>s5</code>'s parent is <code>s4</code>) - builds the tree</li>
+                </ul>
+            </div>
+
+            <button class="toggle-btn" onclick="toggleSection('django-tracing')">How to Add Tracing in Django</button>
+            <div class="toggle-content" id="django-tracing">
+                <div class="info-box" style="margin-top: 0.5rem;">
+                    <p>For basic Request ID (correlation only):</p>
+                    <pre><code># middleware.py
+import uuid
+
+class RequestIDMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
+        response = self.get_response(request)
+        response['X-Request-ID'] = request.id
+        return response
+
+# settings.py → MIDDLEWARE = ['myapp.middleware.RequestIDMiddleware', ...]</code></pre>
+
+                    <p style="margin-top: 1rem;">For full tracing (with spans and timing), use <strong>OpenTelemetry</strong>:</p>
+                    <pre><code># Install: pip install opentelemetry-django opentelemetry-exporter-jaeger
+
+# settings.py
+INSTALLED_APPS = [..., 'opentelemetry.instrumentation.django']
+
+# In your app's ready() or wsgi.py:
+from opentelemetry import trace
+from opentelemetry.instrumentation.django import DjangoInstrumentor
+DjangoInstrumentor().instrument()
+
+# That's it! Django requests are now automatically traced.</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Log Aggregation Architecture</h2>
+            <p>Distributed logs need to be collected in one place for searching:</p>
+
+            <div class="diagram">
+<pre>
+LOG AGGREGATION PIPELINE
+════════════════════════
+
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   Server 1   │  │   Server 2   │  │   Server 3   │
+│  app logs    │  │  app logs    │  │  app logs    │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                 │
+       │    Log Shipper (Filebeat, Fluentd, etc.)
+       │                 │                 │
+       ▼                 ▼                 ▼
+┌──────────────────────────────────────────────────┐
+│                MESSAGE QUEUE                      │
+│            (Kafka, Redis, etc.)                   │
+│   Buffers logs, handles spikes, prevents loss    │
+└────────────────────────┬─────────────────────────┘
+                         │
+                         ▼
+┌──────────────────────────────────────────────────┐
+│              LOG PROCESSOR                        │
+│        (Logstash, Fluentd, Vector)               │
+│   Parse, enrich, transform, filter               │
+└────────────────────────┬─────────────────────────┘
+                         │
+                         ▼
+┌──────────────────────────────────────────────────┐
+│              LOG STORAGE                          │
+│     (Elasticsearch, ClickHouse, S3)              │
+│   Indexed for fast searching                     │
+└────────────────────────┬─────────────────────────┘
+                         │
+                         ▼
+┌──────────────────────────────────────────────────┐
+│              VISUALIZATION                        │
+│        (Kibana, Grafana, DataDog)                │
+│   Search, dashboards, alerts                     │
+└──────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <button class="toggle-btn" onclick="toggleSection('kafka-quiz')">Quick Recall: Kafka Architecture (from last class)</button>
+            <div class="toggle-content" id="kafka-quiz">
+                <div class="quiz-container" style="margin-top: 0.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                    <div class="quiz-question" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <p class="quiz-question-text" style="color: #1e293b; font-weight: 600;">1. Why does Kafka use partitions?</p>
+                        <div class="quiz-options" style="gap: 0.5rem;">
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq1')">A) To encrypt messages</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, true, 'kq1')">B) To enable parallel processing and horizontal scaling</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq1')">C) To compress log files</div>
+                        </div>
+                        <div class="quiz-feedback" id="kq1-feedback"></div>
+                        <div id="kq1-diagram" style="display: none; margin-top: 1rem;">
+                            <pre style="background: #1e293b; color: #e2e8f0; padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; overflow-x: auto;">Topic: "orders"
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│ Partition 0 │  │ Partition 1 │  │ Partition 2 │
+│ Consumer A  │  │ Consumer B  │  │ Consumer C  │
+│ (parallel)  │  │ (parallel)  │  │ (parallel)  │
+└─────────────┘  └─────────────┘  └─────────────┘
+     ↓                ↓                ↓
+  3x throughput vs single partition!</pre>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <p class="quiz-question-text" style="color: #1e293b; font-weight: 600;">2. What is the purpose of replication in Kafka?</p>
+                        <div class="quiz-options" style="gap: 0.5rem;">
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq2')">A) To speed up message delivery</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, true, 'kq2')">B) To ensure fault tolerance - if a broker dies, replicas have the data</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq2')">C) To reduce storage costs</div>
+                        </div>
+                        <div class="quiz-feedback" id="kq2-feedback"></div>
+                        <div id="kq2-diagram" style="display: none; margin-top: 1rem;">
+                            <pre style="background: #1e293b; color: #e2e8f0; padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; overflow-x: auto;">Partition 0 (replication factor = 3)
+┌──────────┐   ┌──────────┐   ┌──────────┐
+│ Broker 1 │   │ Broker 2 │   │ Broker 3 │
+│ (Leader) │   │ (Replica)│   │ (Replica)│
+│   [A,B,C]│   │   [A,B,C]│   │   [A,B,C]│
+└──────────┘   └──────────┘   └──────────┘
+      ↓              ↓
+Broker 1 dies? Broker 2 becomes leader!</pre>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <p class="quiz-question-text" style="color: #1e293b; font-weight: 600;">3. What is a Kafka broker?</p>
+                        <div class="quiz-options" style="gap: 0.5rem;">
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq3')">A) A client that produces messages</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, true, 'kq3')">B) A server that stores and serves messages (one node in the cluster)</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq3')">C) A tool for monitoring Kafka</div>
+                        </div>
+                        <div class="quiz-feedback" id="kq3-feedback"></div>
+                        <div id="kq3-diagram" style="display: none; margin-top: 1rem;">
+                            <pre style="background: #1e293b; color: #e2e8f0; padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; overflow-x: auto;">Kafka Cluster
+┌─────────────────────────────────────────┐
+│  ┌────────┐  ┌────────┐  ┌────────┐    │
+│  │Broker 1│  │Broker 2│  │Broker 3│    │
+│  │(server)│  │(server)│  │(server)│    │
+│  └────────┘  └────────┘  └────────┘    │
+│       ↑          ↑           ↑         │
+│       └──────────┴───────────┘         │
+│           Each broker = 1 machine      │
+└─────────────────────────────────────────┘</pre>
+                        </div>
+                    </div>
+
+                    <div class="quiz-question" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+                        <p class="quiz-question-text" style="color: #1e293b; font-weight: 600;">4. Why is Kafka's log "append-only"?</p>
+                        <div class="quiz-options" style="gap: 0.5rem;">
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq4')">A) To save disk space</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, false, 'kq4')">B) To make messages editable</div>
+                            <div class="quiz-option" style="background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1;" onclick="checkKafkaAnswer(this, true, 'kq4')">C) Sequential writes are fast, immutability simplifies replication and enables replay</div>
+                        </div>
+                        <div class="quiz-feedback" id="kq4-feedback"></div>
+                        <div id="kq4-diagram" style="display: none; margin-top: 1rem;">
+                            <pre style="background: #1e293b; color: #e2e8f0; padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; overflow-x: auto;">Append-only log:
+[msg1][msg2][msg3][msg4] ← new writes here
+  ↑                  ↑
+  │                  └─ Sequential = FAST (no seeking)
+  │
+  └─ Immutable = easy to replicate, replay anytime</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Popular Tracing Standards</h2>
+
+            <div class="info-box" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-top: 0;">Why Do We Need Tracing Standards?</h4>
+                <p><strong>The Problem:</strong> If Service A uses <code>X-Request-ID</code> and Service B uses <code>X-Trace-ID</code>, they can't talk to each other. Each tracing tool (Jaeger, Zipkin, Datadog) invented its own header format.</p>
+                <p><strong>The Solution:</strong> Industry-wide standards so all services and tools speak the same language. When Service A calls Service B, they both understand the same header format.</p>
+                <p style="margin-bottom: 0;"><strong>Think of it like:</strong> USB vs proprietary chargers. Standards let different vendors' tools work together.</p>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Standard</th>
+                        <th>Description</th>
+                        <th>Header Format</th>
+                    </tr>
+                    <tr>
+                        <td><strong>W3C Trace Context</strong></td>
+                        <td>Official W3C standard, widely adopted</td>
+                        <td><code>traceparent: 00-abc123-def456-01</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>B3 (Zipkin)</strong></td>
+                        <td>Originated from Twitter/Zipkin</td>
+                        <td><code>X-B3-TraceId</code>, <code>X-B3-SpanId</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jaeger</strong></td>
+                        <td>CNCF project, compatible with OpenTelemetry</td>
+                        <td><code>uber-trace-id: abc:def:0:1</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>OpenTelemetry</strong></td>
+                        <td>Unified standard (metrics + traces + logs)</td>
+                        <td>Uses W3C Trace Context</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="success-box">
+                <strong>Recommendation:</strong> Use OpenTelemetry - it's becoming the industry standard and supports all major backends (Jaeger, Zipkin, Datadog, etc.)
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Real Example: Tracing a Failed Order</h2>
+
+            <div class="log-viewer">
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.100</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[api-gateway]</span>
+                    <span class="log-message">trace_id=abc-123 Received POST /orders</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.150</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[auth-service]</span>
+                    <span class="log-message">trace_id=abc-123 JWT validated for user_id=u-789</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.200</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[product-svc]</span>
+                    <span class="log-message">trace_id=abc-123 Product p-456 found, price=$99</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.250</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[inventory-svc]</span>
+                    <span class="log-message">trace_id=abc-123 Stock check: 5 available</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.300</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[order-service]</span>
+                    <span class="log-message">trace_id=abc-123 Order created: order_id=o-111</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:45.350</span>
+                    <span class="log-level-text warn">WARN</span>
+                    <span class="log-context">[payment-svc]</span>
+                    <span class="log-message">trace_id=abc-123 First payment attempt failed, retrying...</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:46.500</span>
+                    <span class="log-level-text error">ERROR</span>
+                    <span class="log-context">[payment-svc]</span>
+                    <span class="log-message">trace_id=abc-123 Payment failed after 3 retries: card_declined</span>
+                </div>
+                <div class="log-line">
+                    <span class="log-timestamp">10:23:46.550</span>
+                    <span class="log-level-text info">INFO</span>
+                    <span class="log-context">[order-service]</span>
+                    <span class="log-message">trace_id=abc-123 Order o-111 marked as FAILED</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 1rem;">With trace_id=abc-123, we can see the complete journey and identify that the payment service was the failure point.</p>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Distributed Logging</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What is a Correlation ID used for?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Encrypting log messages</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Linking logs from different services for the same request</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Compressing log files</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What additional information does distributed tracing provide over correlation IDs?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) User authentication</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Timing information and parent-child relationships between services</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Log encryption</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. Why use a message queue (like Kafka) in the log aggregation pipeline?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">A) To buffer logs and handle traffic spikes without losing data</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">B) To encrypt logs in transit</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) To reduce log file sizes</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="02_logging_basics.html">← Logging Fundamentals</a>
+            <a href="04_cloud_logging.html">Next: Cloud Logging Services →</a>
+        </div>
+
+        <footer>
+            <p>Page 3 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleSection(id) {
+            const content = document.getElementById(id);
+            content.classList.toggle('show');
+        }
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Think about what problem each solution solves.';
+            }
+        }
+
+        function checkKafkaAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+            const diagram = document.getElementById(questionId + '-diagram');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. See the diagram below for how it works.';
+            }
+
+            // Always show the diagram after answering
+            if (diagram) {
+                diagram.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

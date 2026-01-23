@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Logging Services - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">☁️</div>
+            <h1>Cloud Logging Services</h1>
+            <p class="subtitle">AWS CloudWatch, GCP Logging, Azure Monitor, and more</p>
+        </header>
+
+        <div class="section">
+            <h2>Why Cloud Logging?</h2>
+            <p>Instead of building and maintaining your own logging infrastructure, cloud providers offer managed services:</p>
+
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>Self-Managed</h4>
+                    <ul>
+                        <li>Deploy Elasticsearch cluster</li>
+                        <li>Manage storage, scaling, backups</li>
+                        <li>Handle security, access control</li>
+                        <li>24/7 on-call for log infrastructure</li>
+                        <li>Team of 2-3 engineers needed</li>
+                    </ul>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Cloud-Managed</h4>
+                    <ul>
+                        <li>Enable service, start logging</li>
+                        <li>Auto-scales, infinite retention options</li>
+                        <li>Built-in IAM integration</li>
+                        <li>Provider handles availability</li>
+                        <li>Pay per use, no infrastructure team</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What Cloud Logging Helps You Do</h2>
+            <p>Instead of building your own logging infrastructure, cloud providers (AWS CloudWatch, GCP Cloud Logging, Azure Monitor) and SaaS tools (Datadog, Splunk) offer managed services that handle scale, storage, and security for you.</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔍</div>
+                    <h3>Search at Scale</h3>
+                    <p>Query terabytes of logs in seconds. Find that one error among billions of log lines.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📊</div>
+                    <h3>Create Dashboards</h3>
+                    <p>Visualize error rates, latency distributions, and custom metrics from logs.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔔</div>
+                    <h3>Set Up Alerts</h3>
+                    <p>Get notified when error rate spikes, specific patterns appear, or thresholds are crossed.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔗</div>
+                    <h3>Correlate Events</h3>
+                    <p>Link logs, metrics, and traces together to understand system behavior.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📁</div>
+                    <h3>Archive & Comply</h3>
+                    <p>Store logs for compliance (GDPR, HIPAA, SOC2) with configurable retention.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Secure Access</h3>
+                    <p>IAM integration controls who can view which logs. Encryption at rest and in transit.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Cost Considerations</h2>
+
+            <div class="warning-box">
+                <strong>Logging can get expensive!</strong> At scale, logging costs can exceed your compute costs. A typical microservices app generates 10-100 GB of logs per day. At $0.50/GB ingestion, that's $1,500/month just for logging!
+            </div>
+
+            <h3>Cost Optimization Strategies</h3>
+
+            <div class="info-box" style="margin-bottom: 1rem;">
+                <h4 style="margin-top: 0;">1. Log Sampling</h4>
+                <p><strong>Problem:</strong> Your payment service processes 10,000 transactions/minute. Each transaction logs: start, validation, DB query, external API call, success. That's 5 logs × 10,000 = <strong>50,000 logs/minute</strong> = 72 million logs/day!</p>
+                <p><strong>Solution:</strong> Don't log EVERY successful transaction. Sample them:</p>
+                <pre style="background: #f1f5f9; padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0;"><code># Log ALL errors (100%) - every error matters
+if payment_failed:
+    logger.error(f"Payment failed: {transaction_id}")
+
+# Log only 10% of successes - enough to spot patterns
+elif random.random() < 0.1:
+    logger.info(f"Payment success: {transaction_id}")</code></pre>
+                <p style="margin-bottom: 0;"><strong>Result:</strong> 90% fewer success logs, but you still see trends. All errors captured. Cost drops from $1,000/month to $100/month.</p>
+            </div>
+
+            <ul style="margin-top: 1rem;">
+                <li><strong>Shorter retention:</strong> 7 days "hot" storage for queries, archive older logs to S3/Glacier (7x cheaper)</li>
+                <li><strong>Filter before ingestion:</strong> Drop health check logs at source (17K useless logs/day per endpoint)</li>
+                <li><strong>Compress:</strong> JSON logs compress 5-10x with gzip before sending</li>
+            </ul>
+        </div>
+
+        <!-- Quiz: Should You Log This? -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Should You Log This?</div>
+            <p style="color: #64748b; margin-bottom: 1.5rem;">Real-world scenarios - decide if logging is appropriate and why.</p>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. Your API receives 1000 requests/second. Should you log every successful request?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Yes - more data is always better for debugging</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) No - sample successes (1-10%), log all errors</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) No - don't log requests at all</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. A user submits a payment with their credit card. What should you log?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) Log everything including card number for debugging</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">B) Log nothing - payments are too sensitive</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">C) Log transaction ID, amount, status - but NEVER card number or CVV</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. Your load balancer calls /health every 5 seconds. Should you log these?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Yes - health checks might reveal issues</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) No - filter them out at the source (17,000 useless logs/day)</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) Log only if the health check fails</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">4. An exception is caught and handled gracefully. Should you log it?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">A) No - it's handled, so no need to log</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q4')">B) Yes at WARN level - handled exceptions might indicate upstream issues</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">C) Yes at ERROR level - all exceptions are errors</div>
+                </div>
+                <div class="quiz-feedback" id="q4-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="03_distributed_logging.html">← Distributed Logging</a>
+            <a href="index.html">Back to Home →</a>
+        </div>
+
+        <footer>
+            <p>Page 4 of 4 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        const feedbackMessages = {
+            'q1': {
+                correct: 'Correct! At 1000 req/sec, logging everything = 86M logs/day. Sample successes, but keep ALL errors for debugging.',
+                incorrect: 'Think about cost and volume. 1000 req/sec = 86 million logs/day. Is every success log valuable enough?'
+            },
+            'q2': {
+                correct: 'Correct! Log what you need for debugging (transaction ID, status) but NEVER sensitive data like card numbers. PCI-DSS compliance requires this.',
+                incorrect: 'Think about security and compliance. Credit card numbers in logs = major security risk and PCI-DSS violation.'
+            },
+            'q3': {
+                correct: 'Correct! Health checks are noise - filter at source. If you need failure info, set up alerts on the load balancer instead.',
+                incorrect: 'Health checks every 5 sec × 24 hours = 17,280 logs/day per endpoint. Most are "healthy" - pure noise and cost.'
+            },
+            'q4': {
+                correct: 'Correct! WARN is appropriate - the exception was handled (not ERROR), but it might indicate a pattern worth investigating (e.g., upstream service degradation).',
+                incorrect: 'Handled exceptions are still worth logging - they might reveal patterns. But ERROR implies something broke; WARN implies "handled but notable".'
+            }
+        };
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = feedbackMessages[questionId]?.correct || 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = feedbackMessages[questionId]?.incorrect || 'Not quite. Think about the trade-offs.';
+            }
+        }
+    </script>
+</body>
+</html>

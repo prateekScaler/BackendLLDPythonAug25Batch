@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Fundamentals - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>Logging Fundamentals</h1>
+            <p class="subtitle">Log levels, formats, and traditional approaches</p>
+        </header>
+
+        <div class="section">
+            <h2>Log Levels: The Severity Hierarchy</h2>
+            <p>Not all logs are created equal. Log levels help you filter signal from noise.</p>
+
+            <button class="toggle-btn" onclick="toggleExample('logger-architecture')">View Logger Architecture Diagram</button>
+            <div class="toggle-content" id="logger-architecture">
+                <div class="diagram">
+<pre>
+PYTHON LOGGING FRAMEWORK - KEY COMPONENTS
+═════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        YOUR CODE                                │
+│         logger.info("User logged in", extra={...})              │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        LOGGER                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │    name     │  │    level    │  │       handlers[]        │  │
+│  │ "myapp.views"│  │    INFO     │  │ [FileHandler, Console]  │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+│                          │                                      │
+│         If message.level >= logger.level → pass to handlers     │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+┌──────────────────────┐       ┌──────────────────────┐
+│      HANDLER         │       │      HANDLER         │
+│  ┌────────────────┐  │       │  ┌────────────────┐  │
+│  │ class: FileHdlr│  │       │  │class: StreamHdlr│ │
+│  │ level: WARNING │  │       │  │ level: DEBUG   │  │
+│  │ formatter: ... │  │       │  │ formatter: ... │  │
+│  └────────────────┘  │       │  └────────────────┘  │
+│          │           │       │          │           │
+│          ▼           │       │          ▼           │
+│  ┌────────────────┐  │       │  ┌────────────────┐  │
+│  │   FORMATTER    │  │       │  │   FORMATTER    │  │
+│  │ format string  │  │       │  │  JSON format   │  │
+│  │ or custom class│  │       │  │  or custom     │  │
+│  └────────────────┘  │       │  └────────────────┘  │
+└──────────┬───────────┘       └──────────┬───────────┘
+           │                              │
+           ▼                              ▼
+      ┌─────────┐                   ┌──────────┐
+      │  FILE   │                   │  STDOUT  │
+      │ app.log │                   │ (console)│
+      └─────────┘                   └──────────┘
+
+KEY CLASSES:
+• Logger     - Entry point, filters by level, routes to handlers
+• Handler    - Sends logs to destination (file, console, network)
+• Formatter  - Formats the log record (text, JSON, custom)
+• Filter     - Additional filtering logic (optional)
+• LogRecord  - The actual log message object
+</pre>
+                </div>
+            </div>
+
+            <p>Here's how logging looks in real code:</p>
+
+            <pre><code>import logging
+
+logger = logging.getLogger(__name__)
+
+def process_payment(user_id, amount):
+    # DEBUG - Granular details for troubleshooting
+    logger.debug(f"Entering process_payment: user_id={user_id}, amount={amount}")
+
+    # INFO - Normal business events worth recording
+    logger.info(f"Processing payment of ${amount} for user {user_id}")
+
+    # WARNING - Something unexpected, but we handled it
+    if amount > 10000:
+        logger.warning(f"Large transaction detected: ${amount} for user {user_id}")
+
+    try:
+        result = charge_card(user_id, amount)
+    except CardDeclinedException as e:
+        # ERROR - Operation failed, needs attention
+        logger.error(f"Payment failed for user {user_id}: {e}")
+        raise
+    except DatabaseConnectionError as e:
+        # FATAL/CRITICAL - System cannot function
+        logger.fatal(f"Database unreachable, shutting down: {e}")
+        sys.exit(1)
+
+    logger.info(f"Payment successful: transaction_id={result.id}")</code></pre>
+
+            <p>Now let's understand what each level means. <strong>Click on the colored level badges</strong> to reveal details:</p>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Level</th>
+                        <th>When to Use</th>
+                        <th>Example</th>
+                        <th>Production Default</th>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-debug clickable-level" onclick="toggleRowContent(this)">DEBUG</span></td>
+                        <td><span class="hidden-answer">Detailed diagnostic info for developers</span></td>
+                        <td><span class="hidden-answer">Variable values, loop iterations</span></td>
+                        <td><span class="hidden-answer">Usually OFF</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-info clickable-level" onclick="toggleRowContent(this)">INFO</span></td>
+                        <td><span class="hidden-answer">Normal operations, milestones</span></td>
+                        <td><span class="hidden-answer">Server started, user logged in</span></td>
+                        <td><span class="hidden-answer">ON</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-warn clickable-level" onclick="toggleRowContent(this)">WARN</span></td>
+                        <td><span class="hidden-answer">Unexpected but handled situations</span></td>
+                        <td><span class="hidden-answer">Retry succeeded, cache miss, deprecated API used</span></td>
+                        <td><span class="hidden-answer">ON</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-error clickable-level" onclick="toggleRowContent(this)">ERROR</span></td>
+                        <td><span class="hidden-answer">Operation failed, needs attention</span></td>
+                        <td><span class="hidden-answer">Payment failed, DB query error</span></td>
+                        <td><span class="hidden-answer">ON + Alert</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-fatal clickable-level" onclick="toggleRowContent(this)">FATAL</span></td>
+                        <td><span class="hidden-answer">Application cannot continue</span></td>
+                        <td><span class="hidden-answer">Out of memory, critical config missing</span></td>
+                        <td><span class="hidden-answer">ON + Page</span></td>
+                    </tr>
+                </table>
+            </div>
+
+            <style>
+                .clickable-level {
+                    cursor: pointer;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .clickable-level:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                }
+                .hidden-answer {
+                    visibility: hidden;
+                    background: #e5e7eb;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    color: transparent;
+                    user-select: none;
+                }
+                .hidden-answer.revealed {
+                    visibility: visible;
+                    background: transparent;
+                    color: inherit;
+                }
+            </style>
+
+            <div class="diagram">
+<pre>
+LOG LEVEL HIERARCHY (Higher = More Severe)
+═══════════════════════════════════════════
+
+    FATAL ████████████████████████████████  (App crashing)
+    ERROR ██████████████████████████        (Operation failed)
+    WARN  ████████████████████              (Something odd)
+    INFO  ██████████████                    (Normal events)
+    DEBUG ████████                          (Developer details)
+
+If you set level to WARN, you see: WARN, ERROR, FATAL
+If you set level to DEBUG, you see: ALL levels
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Traditional Logging: File-Based</h2>
+            <p>The classic approach writes logs to files on the server:</p>
+
+            <div class="diagram">
+<pre>
+TRADITIONAL FILE-BASED LOGGING
+══════════════════════════════
+
+┌──────────────────┐
+│   Application    │
+│                  │
+│  logger.info()   │
+│  logger.error()  │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐     Rotation: app.log → app.log.1 → app.log.2
+│   Log File       │     ─────────────────────────────────────────
+│  /var/log/app.log│ →→→ When file reaches 100MB, rotate
+└──────────────────┘     Keep last 7 days, delete older
+
+Common locations:
+  - Linux: /var/log/myapp/
+  - Windows: C:\Logs\myapp\
+  - Container: stdout (captured by runtime)
+</pre>
+            </div>
+
+            <p><strong>Click to expand logging setup for your use case:</strong></p>
+
+            <div class="comparison-grid" style="margin-bottom: 1.5rem;">
+                <div class="comparison-item" style="cursor: pointer;" onclick="toggleCard('django-card')">
+                    <h4 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                        Django Logging
+                        <span id="django-card-icon" style="font-size: 1.2rem;">+</span>
+                    </h4>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #6b7280;">Built-in, configure in settings.py</p>
+                    <div id="django-card" class="card-content" style="display: none; margin-top: 1rem; text-align: left;">
+                        <p><strong>Does Django include logging?</strong> Yes! Uses Python's built-in <code>logging</code>. No middleware needed.</p>
+                        <p><strong>Where to configure?</strong> <code>settings.py</code> → <code>LOGGING</code> dict:</p>
+                        <pre><code># settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/django/app.log',
+        },
+    },
+    'root': {
+        'handlers': ['file'],
+        'level': 'INFO',
+    },
+}
+
+# In views.py - just use it!
+import logging
+logger = logging.getLogger(__name__)
+logger.info("Request received")</code></pre>
+                    </div>
+                </div>
+                <div class="comparison-item" style="cursor: pointer;" onclick="toggleCard('standalone-card')">
+                    <h4 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                        Standalone Python
+                        <span id="standalone-card-icon" style="font-size: 1.2rem;">+</span>
+                    </h4>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #6b7280;">Scripts, CLI tools, non-Django apps</p>
+                    <div id="standalone-card" class="card-content" style="display: none; margin-top: 1rem; text-align: left;">
+                        <p>Use <code>logging.basicConfig()</code> for quick setup:</p>
+                        <pre><code>import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()  # Also print to console
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+# Usage
+logger.info("Application started")
+logger.warning("Cache miss for user 123")
+logger.error("Failed to connect", exc_info=True)
+
+# Output:
+# 2024-01-15 10:23:45,123 - __main__ - INFO - Application started</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Log Formats: Text vs Structured</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('text')">Plain Text</button>
+                <button class="tab-btn" onclick="showTab('structured')">Structured (JSON)</button>
+            </div>
+
+            <div id="text" class="tab-content active">
+                <pre><code>2024-01-15 10:23:45 INFO  [order-service] Processing order #12345 for user john@example.com
+2024-01-15 10:23:46 ERROR [order-service] Payment failed: Card declined
+2024-01-15 10:23:47 INFO  [order-service] Retry payment with backup processor</code></pre>
+
+                <div class="warning-box">
+                    <strong>Problems:</strong> Hard to parse programmatically, can't easily search by field, multiline messages break parsers
+                </div>
+            </div>
+
+            <div id="structured" class="tab-content">
+                <pre><code>{"timestamp":"2024-01-15T10:23:45.123Z","level":"INFO","service":"order-service","message":"Processing order","order_id":"12345","user_email":"john@example.com"}
+{"timestamp":"2024-01-15T10:23:46.456Z","level":"ERROR","service":"order-service","message":"Payment failed","error":"Card declined","order_id":"12345"}
+{"timestamp":"2024-01-15T10:23:47.789Z","level":"INFO","service":"order-service","message":"Retry payment","processor":"backup","order_id":"12345"}</code></pre>
+
+                <div class="success-box">
+                    <strong>Benefits:</strong> Machine-parseable, easy to query (WHERE order_id = '12345'), consistent schema, works with log aggregation tools
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Log Rotation: Don't Fill the Disk!</h2>
+
+            <p>Without rotation, logs will eventually fill your disk and crash the server:</p>
+
+            <div class="diagram">
+<pre>
+LOG ROTATION STRATEGIES
+═══════════════════════
+
+1. SIZE-BASED:
+   app.log (100MB) → FULL! → Rotate
+   ↓
+   app.log.1 (previous)
+   app.log.2 (older)
+   app.log.3 (oldest) → DELETE
+
+2. TIME-BASED:
+   app.log → At midnight → Rotate
+   ↓
+   app-2024-01-15.log
+   app-2024-01-14.log
+   app-2024-01-13.log → DELETE after 7 days
+
+3. COMBINED (most common):
+   Rotate at 100MB OR daily, whichever comes first
+   Keep last 7 files, compress old ones (.gz)
+</pre>
+            </div>
+
+            <p><strong>Click to expand implementation:</strong></p>
+
+            <div class="comparison-grid" style="margin-bottom: 1.5rem;">
+                <div class="comparison-item" style="cursor: pointer;" onclick="toggleCard('rotation-standalone-card')">
+                    <h4 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                        Standalone Python
+                        <span id="rotation-standalone-card-icon" style="font-size: 1.2rem;">+</span>
+                    </h4>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #6b7280;">RotatingFileHandler + logrotate</p>
+                    <div id="rotation-standalone-card" class="card-content" style="display: none; margin-top: 1rem; text-align: left;">
+                        <pre><code># Python RotatingFileHandler
+from logging.handlers import RotatingFileHandler
+
+handler = RotatingFileHandler(
+    'app.log',
+    maxBytes=100*1024*1024,  # 100 MB
+    backupCount=5            # Keep 5 old files
+)
+
+# Linux logrotate config (/etc/logrotate.d/myapp)
+# /var/log/myapp/*.log {
+#     daily
+#     rotate 7
+#     compress
+#     missingok
+#     notifempty
+# }</code></pre>
+                    </div>
+                </div>
+                <div class="comparison-item" style="cursor: pointer;" onclick="toggleCard('rotation-django-card')">
+                    <h4 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                        Django
+                        <span id="rotation-django-card-icon" style="font-size: 1.2rem;">+</span>
+                    </h4>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #6b7280;">Size-based & time-based in settings.py</p>
+                    <div id="rotation-django-card" class="card-content" style="display: none; margin-top: 1rem; text-align: left;">
+                        <pre><code># settings.py - Rotating file handler in Django
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {name} {message}',
+            'style': '{',
+        },
+    },
+
+    'handlers': {
+        # SIZE-BASED ROTATION
+        'rotating_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/django/app.log',
+            'maxBytes': 104857600,  # 100 MB (100*1024*1024)
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+
+        # TIME-BASED ROTATION (daily)
+        'timed_rotating': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': '/var/log/django/app.log',
+            'when': 'midnight',  # rotate at midnight
+            'interval': 1,       # every 1 day
+            'backupCount': 7,    # keep 7 days
+            'formatter': 'verbose',
+        },
+    },
+
+    'root': {
+        'handlers': ['rotating_file'],  # or 'timed_rotating'
+        'level': 'INFO',
+    },
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Interactive: What Level Should This Be?</h2>
+            <p>Click to reveal the correct log level for each scenario:</p>
+
+            <div id="level-quiz">
+                <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="revealLevel(this, 'INFO')">
+                    <p><strong>Scenario:</strong> User successfully logged in</p>
+                    <p class="level-answer" style="display: none; color: var(--info-color);"><strong>Answer: INFO</strong> - Normal operation, worth recording for audit</p>
+                </div>
+                <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="revealLevel(this, 'WARN')">
+                    <p><strong>Scenario:</strong> API rate limit reached, request queued for retry</p>
+                    <p class="level-answer" style="display: none; color: var(--warning-color);"><strong>Answer: WARN</strong> - Unusual but handled, might indicate load issues</p>
+                </div>
+                <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="revealLevel(this, 'ERROR')">
+                    <p><strong>Scenario:</strong> Credit card payment declined</p>
+                    <p class="level-answer" style="display: none; color: var(--danger-color);"><strong>Answer: ERROR</strong> - Operation failed, user affected</p>
+                </div>
+                <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="revealLevel(this, 'DEBUG')">
+                    <p><strong>Scenario:</strong> Cache lookup result: key='user_123', hit=True, latency=2ms</p>
+                    <p class="level-answer" style="display: none; color: var(--log-debug);"><strong>Answer: DEBUG</strong> - Developer diagnostic, too verbose for production</p>
+                </div>
+                <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="revealLevel(this, 'FATAL')">
+                    <p><strong>Scenario:</strong> Cannot connect to database after 10 retries, shutting down</p>
+                    <p class="level-answer" style="display: none; color: var(--log-fatal);"><strong>Answer: FATAL</strong> - Application cannot function, crashing</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Logging Fundamentals</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. If your log level is set to WARN, which messages will you see?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Only WARN messages</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) WARN, ERROR, and FATAL</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) All messages including DEBUG</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. Why is structured (JSON) logging preferred over plain text?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) It uses less disk space</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) It's machine-parseable and easy to query/filter</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) It's more human-readable</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. What happens if you don't implement log rotation?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Logs automatically compress</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">B) Logs are sent to the cloud</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">C) Logs fill up the disk, potentially crashing the server</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">4. Which design pattern does Python/Django's logging module primarily use?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">A) Singleton</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">B) Factory</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q4')">C) Chain of Responsibility</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">D) Observer</div>
+                </div>
+                <div class="quiz-feedback" id="q4-feedback"></div>
+
+                <!-- Expandable explanation -->
+                <div id="chain-explanation" style="display: none; margin-top: 1rem;">
+                    <button class="toggle-btn" onclick="toggleExample('cor-what')">What is Chain of Responsibility?</button>
+                    <div class="toggle-content" id="cor-what">
+                        <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 1.5rem; color: #1e293b;">
+                            <h4 style="margin-top: 0; color: #0369a1;">Chain of Responsibility Pattern</h4>
+                            <p><strong>Intent:</strong> Avoid coupling the sender of a request to its receiver by giving multiple objects a chance to handle the request. Chain the receiving objects and pass the request along until an object handles it.</p>
+                            <p><strong>When to use:</strong></p>
+                            <ul style="margin: 0.5rem 0; color: #334155;">
+                                <li>Multiple objects may handle a request, and the handler isn't known in advance</li>
+                                <li>You want to issue a request without specifying the receiver explicitly</li>
+                                <li>The set of handlers should be specified dynamically</li>
+                            </ul>
+                            <p><strong>Real-world examples:</strong> Event bubbling in DOM, middleware in web frameworks, exception handling, logging systems</p>
+                        </div>
+                    </div>
+
+                    <button class="toggle-btn" onclick="toggleExample('cor-generic-uml')">Generic UML Diagram</button>
+                    <div class="toggle-content" id="cor-generic-uml" style="background: #1e293b; border-radius: 8px; padding: 1rem; overflow-x: auto;">
+<pre style="color: #e2e8f0; margin: 0; font-size: 0.85rem;">
+<span style="color: #38bdf8; font-weight: bold;">CHAIN OF RESPONSIBILITY - GENERIC UML</span>
+═════════════════════════════════════
+
+        ┌─────────────────────────────────────┐
+        │           <span style="color: #a78bfa;">&lt;&lt;interface&gt;&gt;</span>             │
+        │             <span style="color: #34d399;">Handler</span>                  │
+        ├─────────────────────────────────────┤
+        │ + setNext(handler: Handler)         │
+        │ + handle(request: Request)          │
+        └─────────────────┬───────────────────┘
+                          │
+                          │ <span style="color: #fbbf24;">implements</span>
+          ┌───────────────┴───────────────┐
+          │                               │
+          ▼                               ▼
+┌──────────────────────┐       ┌──────────────────────┐
+│   <span style="color: #34d399;">ConcreteHandler1</span>   │       │   <span style="color: #34d399;">ConcreteHandler2</span>   │
+├──────────────────────┤       ├──────────────────────┤
+│ - next: Handler      │       │ - next: Handler      │
+├──────────────────────┤       ├──────────────────────┤
+│ + handle(request)    │<span style="color: #f472b6;">──────▶</span>│ + handle(request)    │<span style="color: #f472b6;">──────▶</span> ...
+│   if canHandle:      │ <span style="color: #94a3b8;">next</span>  │   if canHandle:      │ <span style="color: #94a3b8;">next</span>
+│     process()        │       │     process()        │
+│   else:              │       │   else:              │
+│     next.handle()    │       │     next.handle()    │
+└──────────────────────┘       └──────────────────────┘
+
+<span style="color: #fbbf24;">CLIENT</span>
+───────
+Request <span style="color: #f472b6;">→</span> Handler1 <span style="color: #f472b6;">→</span> Handler2 <span style="color: #f472b6;">→</span> Handler3 <span style="color: #f472b6;">→</span> ... <span style="color: #f472b6;">→</span> (handled or dropped)
+</pre>
+                    </div>
+
+                    <button class="toggle-btn" onclick="toggleExample('cor-logger-uml')">Logger-Specific UML Diagram</button>
+                    <div class="toggle-content" id="cor-logger-uml" style="background: #1e293b; border-radius: 8px; padding: 1rem; overflow-x: auto;">
+<pre style="color: #e2e8f0; margin: 0; font-size: 0.85rem;">
+<span style="color: #38bdf8; font-weight: bold;">CHAIN OF RESPONSIBILITY IN PYTHON LOGGING</span>
+═════════════════════════════════════════
+
+                    ┌────────────────────────┐
+                    │     <span style="color: #34d399;">logging.Logger</span>     │
+                    ├────────────────────────┤
+                    │ - name: str            │
+                    │ - level: int           │
+                    │ - <span style="color: #f472b6;">parent: Logger</span>       │◄──── <span style="color: #fbbf24;">Chain link!</span>
+                    │ - handlers: List       │
+                    ├────────────────────────┤
+                    │ + info(msg)            │
+                    │ + error(msg)           │
+                    │ + handle(record)       │
+                    └───────────┬────────────┘
+                                │
+    ┌───────────────────────────┼───────────────────────────┐
+    │                           │                           │
+    ▼                           ▼                           ▼
+┌─────────────┐         ┌─────────────┐         ┌─────────────┐
+│Logger:      │ <span style="color: #94a3b8;">parent</span>  │Logger:      │ <span style="color: #94a3b8;">parent</span>  │Logger:      │
+│<span style="color: #a78bfa;">"myapp.views"</span>│<span style="color: #f472b6;">────────▶</span>│<span style="color: #a78bfa;">"myapp"</span>      │<span style="color: #f472b6;">────────▶</span>│<span style="color: #a78bfa;">"root"</span>       │
+│level: DEBUG │         │level: INFO  │         │level: WARN  │
+│handlers: [] │         │handlers: [] │         │handlers: <span style="color: #34d399;">[H]</span>│
+└─────────────┘         └─────────────┘         └─────────────┘
+
+<span style="color: #38bdf8; font-weight: bold;">FLOW WHEN YOU CALL: logger.info("message")</span>
+═══════════════════════════════════════════
+
+  <span style="color: #fbbf24;">Your Code</span>                <span style="color: #fbbf24;">Logger Chain</span>
+  ─────────                ────────────────────────────────────────
+
+  logger.info()  <span style="color: #f472b6;">──▶</span>  "myapp.views"     "myapp"         "root"
+                      │                  │               │
+                      │ level OK?        │ level OK?     │ level OK?
+                      │ handlers?        │ handlers?     │ handlers?
+                      │                  │               │
+                      │ <span style="color: #fb7185;">No handlers</span>      │ <span style="color: #fb7185;">No handlers</span>   │ <span style="color: #34d399;">✓ Has handler</span>
+                      │ Pass to parent <span style="color: #f472b6;">─▶</span>│ Pass to <span style="color: #f472b6;">─────▶</span>│ <span style="color: #34d399;">HANDLE IT!</span>
+                      │                  │ parent        │
+                                                         ▼
+                                                    ┌─────────┐
+                                                    │ <span style="color: #34d399;">Handler</span> │
+                                                    │ → File  │
+                                                    │ → Console│
+                                                    └─────────┘
+
+<span style="color: #fbbf24; font-weight: bold;">WHY CHAIN OF RESPONSIBILITY HERE?</span>
+─────────────────────────────────
+<span style="color: #38bdf8;">1.</span> <span style="color: #34d399;">Decoupling:</span> Your code doesn't know which logger will handle the message
+<span style="color: #38bdf8;">2.</span> <span style="color: #34d399;">Flexibility:</span> Add/remove loggers without changing calling code
+<span style="color: #38bdf8;">3.</span> <span style="color: #34d399;">Hierarchy:</span> "myapp.views" inherits from "myapp" inherits from "root"
+<span style="color: #38bdf8;">4.</span> <span style="color: #34d399;">Propagation:</span> Message bubbles up until a handler processes it
+</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="01_why_logging.html">← Why Print Isn't Enough</a>
+            <a href="03_distributed_logging.html">Next: Distributed Logging →</a>
+        </div>
+
+        <footer>
+            <p>Page 2 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function revealLevel(element, level) {
+            const answer = element.querySelector('.level-answer');
+            answer.style.display = 'block';
+        }
+
+        function toggleRowContent(levelBadge) {
+            const row = levelBadge.closest('tr');
+            const hiddenAnswers = row.querySelectorAll('.hidden-answer');
+            hiddenAnswers.forEach(answer => answer.classList.toggle('revealed'));
+        }
+
+        function toggleExample(id) {
+            const content = document.getElementById(id);
+            content.classList.toggle('show');
+        }
+
+        function toggleCard(cardId) {
+            const card = document.getElementById(cardId);
+            const icon = document.getElementById(cardId + '-icon');
+            if (card.style.display === 'none') {
+                card.style.display = 'block';
+                icon.textContent = '−';
+            } else {
+                card.style.display = 'none';
+                icon.textContent = '+';
+            }
+        }
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the content above.';
+            }
+
+            // Show chain explanation for q4 regardless of answer
+            if (questionId === 'q4') {
+                document.getElementById('chain-explanation').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

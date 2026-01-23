@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging & Monitoring Guide - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn nav-btn-active">Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📊</div>
+            <h1>Logging & Monitoring Guide</h1>
+            <p class="subtitle">From print() to Production Observability</p>
+        </header>
+
+        <div class="section">
+            <h2>Why This Matters</h2>
+            <p>When your code runs on your laptop, you can use <code>print()</code> to debug. But what happens when your code runs on 100 servers, handling 10,000 requests per second, at 3 AM when you're asleep?</p>
+
+            <div class="danger-box">
+                <strong>The Reality:</strong> You can't SSH into every server and tail logs. You can't add print statements to production. You need a system that captures, aggregates, and alerts you about problems automatically.
+            </div>
+
+            <div class="info-box">
+                <strong>What You'll Learn:</strong>
+                <ul>
+                    <li>Why print() and debuggers fail in production</li>
+                    <li>Log levels and structured logging</li>
+                    <li>Distributed logging challenges and solutions</li>
+                    <li>Cloud services and cost optimization</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Observability Triad</h2>
+            <p>Modern systems need three pillars of observability:</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-left: 4px solid #0d6efd;">
+                    <div class="card-icon">📝</div>
+                    <h3>Logs</h3>
+                    <p>Discrete events with context. "User X did Y at time Z"</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #198754;">
+                    <div class="card-icon">📈</div>
+                    <h3>Metrics</h3>
+                    <p>Numeric measurements over time. "CPU at 80%", "500 req/sec"</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #6f42c1;">
+                    <div class="card-icon">🔗</div>
+                    <h3>Traces</h3>
+                    <p>Request journey across services. "Request took 2s, 500ms in DB"</p>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="margin: 2rem 0 1rem; text-align: center;">Logging Topics</h2>
+
+        <div class="card-grid">
+            <a href="01_why_logging.html" class="card">
+                <div class="card-icon">🚫</div>
+                <h3>1. Why Print Isn't Enough</h3>
+                <p>The limitations of print() and debuggers in production</p>
+            </a>
+
+            <a href="02_logging_basics.html" class="card">
+                <div class="card-icon">📋</div>
+                <h3>2. Logging Fundamentals</h3>
+                <p>Log levels, formats, and traditional logging approaches</p>
+            </a>
+
+            <a href="03_distributed_logging.html" class="card">
+                <div class="card-icon">🌐</div>
+                <h3>3. Distributed Logging</h3>
+                <p>Correlation IDs, request tracing, and log aggregation</p>
+            </a>
+
+            <a href="04_cloud_logging.html" class="card">
+                <div class="card-icon">☁️</div>
+                <h3>4. Cloud Logging Services</h3>
+                <p>AWS CloudWatch, GCP Logging, Azure Monitor, Datadog</p>
+            </a>
+        </div>
+
+        <div class="section" style="margin-top: 2rem;">
+            <h2>Famous Outages: Why This Matters</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Year</th>
+                        <th>Company</th>
+                        <th>Issue</th>
+                        <th>Root Cause</th>
+                    </tr>
+                    <tr>
+                        <td>2017</td>
+                        <td>Amazon S3</td>
+                        <td>4-hour outage</td>
+                        <td>Typo in command, insufficient monitoring caught it late</td>
+                    </tr>
+                    <tr>
+                        <td>2021</td>
+                        <td>Facebook</td>
+                        <td>6-hour global outage</td>
+                        <td>BGP misconfiguration, monitoring tools were also down</td>
+                    </tr>
+                    <tr>
+                        <td>2019</td>
+                        <td>Cloudflare</td>
+                        <td>27-minute outage</td>
+                        <td>Regex caused CPU spike, alerts detected within 3 mins</td>
+                    </tr>
+                    <tr>
+                        <td>2020</td>
+                        <td>Slack</td>
+                        <td>Multiple hours</td>
+                        <td>Database migration, monitoring showed cascading failures</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="anecdote-box">
+                <h4>The Knight Capital Disaster (2012)</h4>
+                <p>Knight Capital lost $440 million in 45 minutes due to a software bug. Their monitoring system showed unusual activity, but by the time humans noticed, they had executed 4 million trades. Better alerting could have stopped the bleeding in minutes, not 45.</p>
+            </div>
+        </div>
+
+        <!-- Quick Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quick Check: Are You Ready?</div>
+            <p style="margin-bottom: 1rem;">What's the main limitation of using print() for debugging in production?</p>
+            <div class="quiz-options">
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    A) print() is too slow
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, true)">
+                    B) You can't add print statements to running production code, and output is lost when process restarts
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    C) print() doesn't work in Python 3
+                </div>
+                <div class="quiz-option" onclick="checkAnswer(this, false)">
+                    D) print() uses too much memory
+                </div>
+            </div>
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+
+        <div class="page-nav">
+            <span></span>
+            <a href="01_why_logging.html">Start: Why Print Isn't Enough →</a>
+        </div>
+
+        <footer>
+            <p>Logging & Monitoring Guide - Part of the Backend Engineering Series</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect) {
+            const options = document.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById('quiz-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = "Correct! In production, you can't modify code to add print statements, and even if logs go to stdout, they're typically lost when the process restarts or rotates.";
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = "Not quite. The real issue is that production code is immutable - you can't just add print() statements when something goes wrong at 3 AM!";
+            }
+        }
+    </script>
+</body>
+</html>
