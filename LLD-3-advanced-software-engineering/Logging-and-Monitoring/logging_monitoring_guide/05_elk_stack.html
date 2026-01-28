@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The ELK Stack - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🦌</div>
+            <h1>The ELK Stack</h1>
+            <p class="subtitle">Elasticsearch, Logstash, Kibana - The open-source powerhouse</p>
+        </header>
+
+        <div class="section">
+            <h2>What is the ELK Stack?</h2>
+            <p>ELK is the most popular open-source log management solution, used by Netflix, LinkedIn, Medium, and thousands of companies:</p>
+
+            <div class="diagram">
+<pre>
+THE ELK STACK
+═════════════
+
+┌──────────────────────────────────────────────────────────────────┐
+│                                                                  │
+│   E = Elasticsearch    L = Logstash        K = Kibana           │
+│   ═══════════════      ═══════════         ═══════════          │
+│   Search & Storage     Ingest & Transform  Visualize & Search   │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+
+DATA FLOW:
+══════════
+
+┌─────────┐    ┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────┐
+│ Your    │    │ Beats   │    │  Logstash   │    │Elasticsearch│    │ Kibana  │
+│ Servers │───▶│(shipper)│───▶│ (processor) │───▶│  (storage)  │───▶│  (UI)   │
+└─────────┘    └─────────┘    └─────────────┘    └─────────────┘    └─────────┘
+                  │                 │                  │                 │
+             Collect logs      Parse, filter,    Index & store      Search,
+             from files        enrich, transform  for fast search   dashboards
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><a href="https://demo.elastic.co" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 2px dashed #4299e1;">Elasticsearch: The Search Engine</a> <span style="font-size: 0.6em; vertical-align: middle;">🔗</span></h2>
+            <p>Elasticsearch is a distributed search engine built on Apache Lucene. It's what makes searching billions of logs fast.</p>
+
+            <div class="info-box">
+                <strong>Why Elasticsearch?</strong>
+                <ul>
+                    <li>Full-text search in milliseconds across terabytes of data</li>
+                    <li>Distributed - scales horizontally across many nodes</li>
+                    <li>Near real-time - logs searchable within 1 second</li>
+                    <li>Schema-free JSON documents</li>
+                </ul>
+            </div>
+
+            <h3>Why Not Just Use a Regular Database?</h3>
+            <p>Traditional databases use <strong>B-tree indexes</strong> - perfect for their use case, but not designed for text search.</p>
+
+            <div class="comparison-grid" style="margin: 1rem 0;">
+                <div class="comparison-item bad">
+                    <h4>B-tree Index (What It's Built For)</h4>
+                    <p><strong>Great at:</strong> Exact matches & range queries</p>
+                    <pre style="font-size: 0.8rem; background: #f8fafc; padding: 0.5rem; border-radius: 4px;">B-tree keeps keys SORTED in a tree:
+
+       user_id index
+          [50]
+         /    \
+      [25]    [75]
+      /  \    /  \
+   [10] [30][60] [90]
+
+WHERE user_id = 30  → O(log n) ✓
+WHERE user_id > 50  → O(log n) ✓
+
+But for: "Find logs containing 'timeout'"
+→ B-tree can't help! Must scan every row
+→ O(n) = 1 million rows = 1 million checks</pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Inverted Index (Elasticsearch)</h4>
+                    <p><strong>Built for:</strong> Text search</p>
+                    <pre style="font-size: 0.8rem; background: #f8fafc; padding: 0.5rem; border-radius: 4px;">INVERTED INDEX (word → documents)
+─────────────────────────────────
+"timeout"    → [doc2, doc4, doc1M]
+"connection" → [doc1, doc5, doc99]
+"error"      → [doc4, doc7, doc88]
+
+"Find logs containing 'timeout'"
+→ Lookup "timeout" in dictionary
+→ Instantly get [doc2, doc4, doc1M]
+→ O(1) = fast regardless of data size</pre>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h4 style="margin-top: 0;">Inverted Index = "Book Index" for Logs</h4>
+                <p>Like a book's index that maps <code>"Python" → pages 12, 45, 89</code>, an inverted index maps <code>"error" → document IDs 2, 4, 1000000</code>. Searching becomes a dictionary lookup instead of scanning every row.</p>
+            </div>
+
+            <h3>How Elasticsearch Stores Logs</h3>
+            <div class="diagram">
+<pre>
+ELASTICSEARCH DATA STRUCTURE
+════════════════════════════
+
+Index: logs-2024-01-15 (like a database table)
+├── Type: _doc
+│   ├── Document 1: {"timestamp": "...", "level": "ERROR", "message": "..."}
+│   ├── Document 2: {"timestamp": "...", "level": "INFO", "message": "..."}
+│   └── Document 3: {"timestamp": "...", "level": "WARN", "message": "..."}
+│
+├── Shard 0 (Primary)  ──▶  Shard 0 (Replica) [on different node]
+├── Shard 1 (Primary)  ──▶  Shard 1 (Replica) [on different node]
+└── Shard 2 (Primary)  ──▶  Shard 2 (Replica) [on different node]
+
+Sharding = Horizontal scaling (split data across nodes)
+Replicas = Fault tolerance (copy data for redundancy)
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Try it yourself:</strong> <a href="https://www.elastic.co/demo-gallery/kibana" target="_blank" style="color: #166534;">Elastic's Kibana Demo Gallery</a> lets you explore real dashboards without setup. Or try <a href="https://demo.elastic.co" target="_blank" style="color: #166534;">demo.elastic.co</a> for a sandbox environment.
+            </div>
+
+            <h3>Example: Querying Elasticsearch</h3>
+            <pre><code># Find all errors in the last hour
+GET /logs-*/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "level": "ERROR" } },
+        { "range": { "@timestamp": { "gte": "now-1h" } } }
+      ]
+    }
+  },
+  "sort": [{ "@timestamp": "desc" }],
+  "size": 100
+}
+
+# Count errors by service
+GET /logs-*/_search
+{
+  "size": 0,
+  "aggs": {
+    "errors_by_service": {
+      "terms": { "field": "service.keyword" }
+    }
+  }
+}</code></pre>
+        </div>
+
+        <div class="section">
+            <h2><a href="https://grokdebugger.com" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 2px dashed #4299e1;">Logstash: The Data Pipeline</a> <span style="font-size: 0.6em; vertical-align: middle;">🔗</span></h2>
+            <p>Logstash ingests data from multiple sources, transforms it, and sends it to Elasticsearch:</p>
+
+            <div class="diagram">
+<pre>
+LOGSTASH PIPELINE
+═════════════════
+
+         INPUT               FILTER                 OUTPUT
+    ┌─────────────┐     ┌─────────────┐      ┌─────────────┐
+    │             │     │             │      │             │
+    │ • Beats     │     │ • Grok      │      │• Elasticsearch
+    │ • Kafka     │────▶│ • Mutate    │─────▶│• S3         │
+    │ • HTTP      │     │ • Date      │      │• Kafka      │
+    │ • File      │     │ • GeoIP     │      │• Email      │
+    │ • Syslog    │     │ • JSON      │      │             │
+    │             │     │             │      │             │
+    └─────────────┘     └─────────────┘      └─────────────┘
+</pre>
+            </div>
+
+            <div class="success-box">
+                <strong>Logstash Superpowers:</strong>
+                <ul>
+                    <li><strong>Grok:</strong> Parse unstructured text into structured fields</li>
+                    <li><strong>GeoIP:</strong> Add location data from IP addresses</li>
+                    <li><strong>Mutate:</strong> Add, remove, rename fields</li>
+                    <li><strong>Conditional logic:</strong> Different processing for different log types</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><a href="https://www.elastic.co/demo-gallery/kibana" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 2px dashed #4299e1;">Kibana: The Visualization Layer</a> <span style="font-size: 0.6em; vertical-align: middle;">🔗</span></h2>
+            <p>Kibana provides the web UI for searching, visualizing, and creating dashboards:</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔍</div>
+                    <h3>Discover</h3>
+                    <p>Search and filter logs in real-time. Click to drill down into specific events.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📊</div>
+                    <h3>Visualize</h3>
+                    <p>Create charts, graphs, maps, and gauges from your log data.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📋</div>
+                    <h3>Dashboard</h3>
+                    <p>Combine visualizations into interactive dashboards for monitoring.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔔</div>
+                    <h3>Alerting</h3>
+                    <p>Set up alerts based on query results (available in paid version or via plugins).</p>
+                </div>
+            </div>
+
+            <h3>Example Kibana Query (KQL)</h3>
+            <pre><code># Find errors in order-service
+level: ERROR AND service: order-service
+
+# Find requests slower than 1 second
+response_time > 1000
+
+# Find failed logins from specific IP range
+event: "login_failed" AND client_ip: 192.168.1.*
+
+# Combine multiple conditions
+level: (ERROR OR WARN) AND NOT service: health-check</code></pre>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: ELK Stack</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What does the "E" in ELK stand for and what is its purpose?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">A) Elasticsearch - stores and indexes logs for fast searching</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">B) Email - sends log alerts</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Encryption - secures log data</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What is the role of Logstash in the ELK stack?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) Store logs permanently</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Ingest, parse, transform, and route logs</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Display dashboards</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+        </div>
+
+        <div class="page-nav">
+            <a href="04_cloud_logging.html">← Cloud Logging Services</a>
+            <a href="06_best_practices.html">Next: Best Practices & Costs →</a>
+        </div>
+
+        <footer>
+            <p>Page 5 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the ELK component roles above.';
+            }
+        }
+    </script>
+</body>
+</html>

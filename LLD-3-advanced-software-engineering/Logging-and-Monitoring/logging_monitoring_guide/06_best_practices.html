@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Practices & Costs - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">✅</div>
+            <h1>Best Practices & Costs</h1>
+            <p class="subtitle">What to log, what not to log, and managing expenses</p>
+        </header>
+
+        <div class="section">
+            <h2>What to Log</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Category</th>
+                        <th>What to Log</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Request/Response</strong></td>
+                        <td>Method, path, status, duration, request_id</td>
+                        <td><code>POST /api/orders 201 234ms req_id=abc123</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Errors</strong></td>
+                        <td>Error type, message, stack trace, context</td>
+                        <td><code>PaymentError: Card declined for order=123</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Business Events</strong></td>
+                        <td>User actions, state changes</td>
+                        <td><code>User u-456 placed order o-789, total=$99</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Security Events</strong></td>
+                        <td>Login attempts, permission changes, suspicious activity</td>
+                        <td><code>Failed login for user@email.com from IP 1.2.3.4</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Performance</strong></td>
+                        <td>Slow queries, cache misses, external API latency</td>
+                        <td><code>DB query took 5000ms: SELECT * FROM orders</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>System Events</strong></td>
+                        <td>Startup, shutdown, config changes, deployments</td>
+                        <td><code>Service started, version=2.3.1, env=prod</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What NOT to Log</h2>
+
+            <div class="danger-box">
+                <strong>Never log sensitive data!</strong> These should never appear in logs:
+            </div>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">🔐</div>
+                    <h3>Passwords</h3>
+                    <p>Never log passwords, even hashed ones. Log "login attempted" not the password.</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">💳</div>
+                    <h3>Payment Data</h3>
+                    <p>No credit card numbers, CVVs, or full bank accounts. PCI-DSS compliance!</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">🔑</div>
+                    <h3>API Keys/Secrets</h3>
+                    <p>No AWS keys, JWT secrets, or database passwords in logs.</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">👤</div>
+                    <h3>PII (Personal Data)</h3>
+                    <p>Be careful with SSN, full addresses, phone numbers. GDPR/CCPA!</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">🏥</div>
+                    <h3>Health Data</h3>
+                    <p>Medical records, diagnoses, prescriptions. HIPAA compliance!</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">📧</div>
+                    <h3>Session Tokens</h3>
+                    <p>Don't log full JWT tokens or session IDs - they can be stolen from logs!</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="section">
+            <h2>Logging Best Practices</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>DO</h4>
+                    <ul>
+                        <li>Use structured logging (JSON)</li>
+                        <li>Include correlation/request IDs</li>
+                        <li>Log at appropriate levels</li>
+                        <li>Include timestamp and service name</li>
+                        <li>Log business context (user_id, order_id)</li>
+                        <li>Make logs actionable</li>
+                        <li>Review logs regularly</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>DON'T</h4>
+                    <ul>
+                        <li>Log sensitive/PII data</li>
+                        <li>Use print() in production</li>
+                        <li>Log entire request/response bodies</li>
+                        <li>Ignore log rotation</li>
+                        <li>Log inside tight loops (performance!)</li>
+                        <li>Use inconsistent formats</li>
+                        <li>Log "just in case" - be intentional</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Cost of Logging</h2>
+
+            <div class="warning-box">
+                <strong>Real Talk:</strong> A medium-sized company with 50 microservices can easily generate 1TB of logs per day. At $0.50/GB ingestion + storage, that's $15,000+/month just for logging!
+            </div>
+
+            <h3>Cost Breakdown Example</h3>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Cost Category</th>
+                        <th>Low Volume (10GB/day)</th>
+                        <th>Medium (100GB/day)</th>
+                        <th>High (1TB/day)</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Ingestion</strong></td>
+                        <td>$150/month</td>
+                        <td>$1,500/month</td>
+                        <td>$15,000/month</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Storage (30 days)</strong></td>
+                        <td>$10/month</td>
+                        <td>$100/month</td>
+                        <td>$1,000/month</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Query/Search</strong></td>
+                        <td>$20/month</td>
+                        <td>$200/month</td>
+                        <td>$2,000/month</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td><strong>~$180/month</strong></td>
+                        <td><strong>~$1,800/month</strong></td>
+                        <td><strong>~$18,000/month</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <h3>Cost Optimization Strategies</h3>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📉</div>
+                    <h3>1. Log Sampling</h3>
+                    <p>Log 100% of errors, but only 10% of DEBUG. Sample successful health checks.</p>
+                    <pre style="font-size: 0.75rem;"><code>if random.random() < 0.1:
+    logger.debug(...)</code></pre>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">⏰</div>
+                    <h3>2. Tiered Retention</h3>
+                    <p>7 days hot (searchable), 30 days warm (slower), 1 year cold (S3 archive).</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🚫</div>
+                    <h3>3. Drop Noise</h3>
+                    <p>Filter out health checks, static asset requests, and redundant logs at ingestion.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📦</div>
+                    <h3>4. Compress</h3>
+                    <p>JSON logs compress 5-10x. Use gzip for storage and transit.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🎯</div>
+                    <h3>5. Log Levels</h3>
+                    <p>Set production to INFO, not DEBUG. Dynamic log levels for troubleshooting.</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📊</div>
+                    <h3>6. Metrics Instead</h3>
+                    <p>For counting, use metrics. "Error count: 42" costs less than 42 error logs.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Golden Rules of Logging</h2>
+
+            <div class="info-box">
+                <ol>
+                    <li><strong>Log for the future you:</strong> Will you understand this log at 3 AM, 6 months from now?</li>
+                    <li><strong>Log for automation:</strong> Can a machine parse this and create an alert?</li>
+                    <li><strong>Log for compliance:</strong> Can you prove what happened if asked?</li>
+                    <li><strong>Log for debugging:</strong> Can you trace a single request through the system?</li>
+                    <li><strong>Don't log for logging's sake:</strong> Every log line has a cost. Be intentional.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Interactive: Log Review Challenge</h2>
+            <p>Which of these log statements has problems? Click to reveal:</p>
+
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <pre><code>logger.info(f"User login: {user.email}, password: {user.password}")</code></pre>
+                <p class="level-answer" style="display: none; color: var(--danger-color);"><strong>Problem: Logs the password!</strong> Never log passwords.</p>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <pre><code>logger.error("Something went wrong")</code></pre>
+                <p class="level-answer" style="display: none; color: var(--danger-color);"><strong>Problem: Not actionable.</strong> What went wrong? For whom? What data?</p>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <pre><code>for item in items:  # 10,000 items
+    logger.debug(f"Processing item {item.id}")</code></pre>
+                <p class="level-answer" style="display: none; color: var(--danger-color);"><strong>Problem: 10,000 log lines!</strong> Log summary instead: "Processing 10,000 items"</p>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <pre><code>logger.info(json.dumps({
+    "event": "order_created",
+    "order_id": order.id,
+    "user_id": user.id,
+    "amount": order.total,
+    "request_id": request_id
+}))</code></pre>
+                <p class="level-answer" style="display: none; color: var(--success-color);"><strong>Good!</strong> Structured, includes context, no sensitive data, actionable.</p>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Best Practices</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. How can you reduce logging costs without losing important data?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Disable all logging</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Sample DEBUG logs, use tiered retention, filter noise</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Only log errors</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="05_elk_stack.html">← The ELK Stack</a>
+            <a href="07_monitoring_intro.html">Next: Monitoring Fundamentals →</a>
+        </div>
+
+        <footer>
+            <p>Page 6 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the best practices above.';
+            }
+        }
+    </script>
+</body>
+</html>

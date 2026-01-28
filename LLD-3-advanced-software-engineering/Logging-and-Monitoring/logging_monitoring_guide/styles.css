@@ -36,8 +36,9 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-secondary);
     color: var(--text-primary);
-    line-height: 1.6;
+    line-height: 1.8;
     min-height: 100vh;
+    font-size: 1.1rem;
 }
 
 /* Navbar */
@@ -132,39 +133,41 @@ body {
 .section {
     background: var(--bg-primary);
     border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-color);
 }
 
 .section h2 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
     color: var(--text-primary);
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.75rem;
     border-bottom: 2px solid var(--accent-color);
 }
 
 .section h3 {
-    font-size: 1.2rem;
-    margin: 1.5rem 0 0.75rem;
+    font-size: 1.35rem;
+    margin: 2rem 0 1rem;
     color: var(--text-secondary);
 }
 
 .section p {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     color: var(--text-secondary);
+    line-height: 1.9;
 }
 
 .section ul, .section ol {
-    margin: 1rem 0;
-    padding-left: 1.5rem;
+    margin: 1.25rem 0;
+    padding-left: 1.75rem;
 }
 
 .section li {
-    margin: 0.5rem 0;
+    margin: 0.75rem 0;
     color: var(--text-secondary);
+    line-height: 1.8;
 }
 
 /* Code blocks */
@@ -172,33 +175,34 @@ pre {
     background: var(--code-bg);
     border: 1px solid var(--code-border);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 1.5rem;
     overflow-x: auto;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
 }
 
 pre code {
     font-family: 'Fira Code', 'Monaco', monospace;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    font-size: 0.95rem;
+    line-height: 1.7;
     color: var(--text-primary);
 }
 
 code {
     font-family: 'Fira Code', 'Monaco', monospace;
     background: var(--code-bg);
-    padding: 0.2rem 0.4rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.85em;
+    font-size: 0.9em;
     color: var(--danger-color);
 }
 
 /* Info boxes */
 .info-box, .success-box, .warning-box, .danger-box {
-    padding: 1rem 1.25rem;
+    padding: 1.25rem 1.5rem;
     border-radius: 8px;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
     border-left: 4px solid;
+    line-height: 1.8;
 }
 
 .info-box {
@@ -224,19 +228,20 @@ code {
 /* Tables */
 .table-container {
     overflow-x: auto;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 th, td {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    line-height: 1.6;
 }
 
 th {
@@ -269,14 +274,14 @@ tr:hover {
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin: 1.5rem 0;
+    gap: 2rem;
+    margin: 2rem 0;
 }
 
 .card {
     background: var(--bg-primary);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1.75rem;
     border: 1px solid var(--border-color);
     transition: all 0.2s;
     text-decoration: none;
@@ -291,20 +296,21 @@ tr:hover {
 }
 
 .card-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
+    font-size: 2.75rem;
+    margin-bottom: 1.25rem;
 }
 
 .card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
     color: var(--text-primary);
 }
 
 .card p {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--text-muted);
     margin: 0;
+    line-height: 1.7;
 }
 
 /* Timeline */
@@ -359,31 +365,32 @@ tr:hover {
 .quiz-container {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 16px;
-    padding: 2rem;
-    margin: 2rem 0;
+    padding: 2.5rem;
+    margin: 2.5rem 0;
     color: white;
 }
 
 .quiz-title {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .quiz-options {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin: 1rem 0;
+    gap: 1rem;
+    margin: 1.25rem 0;
 }
 
 .quiz-option {
     background: rgba(255,255,255,0.15);
-    padding: 1rem;
+    padding: 1.25rem;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     border: 2px solid transparent;
+    line-height: 1.6;
 }
 
 .quiz-option:hover:not(.disabled) {
@@ -426,8 +433,8 @@ tr:hover {
 
 /* Multi-question quiz */
 .quiz-question {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
     border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 
@@ -438,7 +445,9 @@ tr:hover {
 
 .quiz-question-text {
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.1em;
+    line-height: 1.6;
 }
 
 /* Navigation */
@@ -479,24 +488,24 @@ footer {
     background: var(--code-bg);
     border: 1px solid var(--code-border);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 1.5rem;
     overflow-x: auto;
-    margin: 1rem 0;
+    margin: 1.5rem 0;
     font-family: 'Fira Code', monospace;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    font-size: 0.9rem;
+    line-height: 1.6;
 }
 
 /* Comparison grid */
 .comparison-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin: 1.5rem 0;
+    gap: 2rem;
+    margin: 2rem 0;
 }
 
 .comparison-item {
-    padding: 1.5rem;
+    padding: 1.75rem;
     border-radius: 12px;
 }
 
@@ -511,8 +520,9 @@ footer {
 }
 
 .comparison-item h4 {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     color: var(--text-primary);
+    font-size: 1.15rem;
 }
 
 /* Interactive log viewer */
@@ -772,3 +782,93 @@ code[class*="language-"] {
 .token.class-name { color: #22863a !important; }
 .token.operator { color: #d73a49 !important; }
 .token.punctuation { color: #24292e !important; }
+
+/* Large screens / Presentation mode */
+@media (min-width: 1200px) {
+    body {
+        font-size: 1.2rem;
+    }
+
+    .container {
+        max-width: 1000px;
+        padding: 2.5rem;
+    }
+
+    .page-header h1 {
+        font-size: 3rem;
+    }
+
+    .section {
+        padding: 3rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .section h2 {
+        font-size: 2rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .section h3 {
+        font-size: 1.5rem;
+        margin: 2.5rem 0 1.25rem;
+    }
+
+    pre code {
+        font-size: 1rem;
+        line-height: 1.8;
+    }
+
+    .diagram {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        padding: 2rem;
+    }
+
+    .card-icon {
+        font-size: 3rem;
+    }
+
+    .card h3 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Extra large screens / Projector mode */
+@media (min-width: 1600px) {
+    body {
+        font-size: 1.3rem;
+    }
+
+    .container {
+        max-width: 1200px;
+        padding: 3rem;
+    }
+
+    .page-header h1 {
+        font-size: 3.5rem;
+    }
+
+    .section {
+        padding: 3.5rem;
+    }
+
+    .section h2 {
+        font-size: 2.25rem;
+    }
+
+    .section h3 {
+        font-size: 1.65rem;
+    }
+
+    pre {
+        padding: 2rem;
+    }
+
+    pre code {
+        font-size: 1.1rem;
+    }
+
+    th, td {
+        padding: 1.25rem 1.5rem;
+    }
+}

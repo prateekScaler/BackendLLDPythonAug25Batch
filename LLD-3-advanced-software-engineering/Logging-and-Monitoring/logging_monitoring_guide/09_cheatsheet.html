@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet & Final Quiz - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn nav-btn-active">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>Cheat Sheet & Final Quiz</h1>
+            <p class="subtitle">Quick reference and test your knowledge</p>
+        </header>
+
+        <div class="section">
+            <h2>Log Levels Quick Reference</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Level</th>
+                        <th>Use When</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-debug">DEBUG</span></td>
+                        <td>Detailed diagnostic info</td>
+                        <td><code>Variable x = 42, entering loop</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-info">INFO</span></td>
+                        <td>Normal operations</td>
+                        <td><code>Server started on port 8080</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-warn">WARN</span></td>
+                        <td>Unexpected but handled</td>
+                        <td><code>Retry succeeded after 2 attempts</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-error">ERROR</span></td>
+                        <td>Operation failed</td>
+                        <td><code>Payment declined for order #123</code></td>
+                    </tr>
+                    <tr>
+                        <td><span class="log-level log-fatal">FATAL</span></td>
+                        <td>Application crashing</td>
+                        <td><code>Cannot connect to database, exiting</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Four Golden Signals</h2>
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <h3>Latency</h3>
+                    <p>Request duration (use p50, p99, not average)</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <h3>Traffic</h3>
+                    <p>Request rate (req/sec)</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <h3>Errors</h3>
+                    <p>Failure rate (% of requests)</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <h3>Saturation</h3>
+                    <p>Resource utilization (CPU, memory, etc.)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Metric Types</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Type</th>
+                        <th>Behavior</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Counter</strong></td>
+                        <td>Only increases</td>
+                        <td>Total requests, bytes sent</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gauge</strong></td>
+                        <td>Goes up and down</td>
+                        <td>CPU %, queue size</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Histogram</strong></td>
+                        <td>Distribution in buckets</td>
+                        <td>Request latency distribution</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>ELK Stack Components</h2>
+            <div class="diagram">
+<pre>
+E = Elasticsearch  → Store & search (the database)
+L = Logstash       → Ingest & transform (the pipeline)
+K = Kibana         → Visualize & query (the UI)
+
++ Beats (Filebeat) → Ship logs from servers (lightweight agents)
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>SLA/SLO/SLI</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Term</th>
+                        <th>What</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong>SLI</strong></td>
+                        <td>The metric</td>
+                        <td>% requests < 200ms</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SLO</strong></td>
+                        <td>Internal target</td>
+                        <td>99.9% success rate</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SLA</strong></td>
+                        <td>Customer contract</td>
+                        <td>99.9% or refund</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Error Budget Cheat Sheet</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>SLO</th>
+                        <th>Monthly Budget</th>
+                        <th>Daily Budget</th>
+                    </tr>
+                    <tr>
+                        <td>99%</td>
+                        <td>7.2 hours</td>
+                        <td>~14 minutes</td>
+                    </tr>
+                    <tr>
+                        <td>99.9%</td>
+                        <td>43.8 minutes</td>
+                        <td>~1.4 minutes</td>
+                    </tr>
+                    <tr>
+                        <td>99.99%</td>
+                        <td>4.4 minutes</td>
+                        <td>~8 seconds</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What to Log vs What NOT to Log</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>DO Log</h4>
+                    <ul>
+                        <li>Request ID, user ID</li>
+                        <li>Error messages + stack traces</li>
+                        <li>Business events (order created)</li>
+                        <li>Performance (slow queries)</li>
+                        <li>Security events (failed logins)</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>DON'T Log</h4>
+                    <ul>
+                        <li>Passwords (even hashed)</li>
+                        <li>Credit card numbers</li>
+                        <li>API keys / secrets</li>
+                        <li>Full session tokens</li>
+                        <li>PII without masking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Tools Summary</h2>
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Category</th>
+                        <th>Open Source</th>
+                        <th>Cloud/SaaS</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Metrics</strong></td>
+                        <td>Prometheus</td>
+                        <td>Datadog, CloudWatch</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Visualization</strong></td>
+                        <td>Grafana</td>
+                        <td>Datadog, New Relic</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Logs</strong></td>
+                        <td>ELK Stack, Loki</td>
+                        <td>CloudWatch, Splunk</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tracing</strong></td>
+                        <td>Jaeger, Zipkin</td>
+                        <td>Datadog APM, X-Ray</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Alerting</strong></td>
+                        <td>Alertmanager</td>
+                        <td>PagerDuty, OpsGenie</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Essential PromQL Queries</h2>
+            <pre><code># Request rate
+rate(http_requests_total[5m])
+
+# Error rate %
+rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100
+
+# p99 latency
+histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+
+# CPU usage
+100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>UUID Quick Reference</h2>
+            <div class="info-box">
+                <strong>UUID (Universally Unique Identifier):</strong>
+                <ul>
+                    <li>128-bit identifier, practically unique</li>
+                    <li>Format: <code>550e8400-e29b-41d4-a716-446655440000</code></li>
+                    <li>Used for request IDs, correlation IDs</li>
+                    <li>Python: <code>str(uuid.uuid4())</code></li>
+                    <li>No coordination needed between servers</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Comprehensive Final Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Final Quiz: Test Your Knowledge (10 Questions)</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. Why is print() insufficient for production logging?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) print() is deprecated in Python 3</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Can't add to running code, no levels, lost on restart</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) print() is too slow</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What is a correlation ID used for?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">A) Linking logs from different services for the same request</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">B) Encrypting sensitive data</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Compressing log files</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. In the ELK stack, what does Logstash do?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Store logs for searching</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) Ingest, parse, transform, and route logs</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) Display dashboards</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">4. Which should NEVER appear in logs?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">A) User email addresses</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">B) Request duration</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q4')">C) User passwords and API keys</div>
+                </div>
+                <div class="quiz-feedback" id="q4-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">5. What metric type would you use for "total HTTP requests since startup"?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q5')">A) Counter</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q5')">B) Gauge</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q5')">C) Histogram</div>
+                </div>
+                <div class="quiz-feedback" id="q5-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">6. Why is p99 latency more useful than average latency?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q6')">A) Average hides outliers; p99 shows worst-case experience</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q6')">B) p99 is easier to calculate</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q6')">C) p99 uses less storage</div>
+                </div>
+                <div class="quiz-feedback" id="q6-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">7. What are the Four Golden Signals?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q7')">A) Latency, Traffic, Errors, Saturation</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q7')">B) CPU, Memory, Disk, Network</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q7')">C) Logs, Metrics, Traces, Events</div>
+                </div>
+                <div class="quiz-feedback" id="q7-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">8. What's the difference between SLO and SLA?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q8')">A) They are the same thing</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q8')">B) SLO is internal target; SLA is customer contract with penalties</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q8')">C) SLA is always higher than SLO</div>
+                </div>
+                <div class="quiz-feedback" id="q8-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">9. With a 99.9% SLO, how much monthly downtime is allowed?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q9')">A) About 7 hours</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q9')">B) About 44 minutes</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q9')">C) About 4 minutes</div>
+                </div>
+                <div class="quiz-feedback" id="q9-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">10. What makes a good UUID for request tracing?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q10')">A) Auto-increment integer</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q10')">B) 128-bit random identifier that's unique without coordination</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q10')">C) Hash of the request body</div>
+                </div>
+                <div class="quiz-feedback" id="q10-feedback"></div>
+            </div>
+
+            <div id="quiz-result" style="margin-top: 2rem; display: none;">
+                <h3>Your Score: <span id="score">0</span>/10</h3>
+                <p id="score-message"></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Takeaways</h2>
+            <div class="success-box">
+                <ol>
+                    <li><strong>Logs are for debugging:</strong> What happened to this specific request?</li>
+                    <li><strong>Metrics are for trends:</strong> How is the system performing overall?</li>
+                    <li><strong>Traces are for flow:</strong> How did a request travel through services?</li>
+                    <li><strong>Alerts should be actionable:</strong> If you can't do anything, don't alert.</li>
+                    <li><strong>Error budget = risk budget:</strong> Spend it wisely on innovation.</li>
+                    <li><strong>Log costs add up:</strong> Be intentional about what you log.</li>
+                    <li><strong>Never log secrets:</strong> Passwords, keys, tokens, PII.</li>
+                    <li><strong>Correlation IDs are essential:</strong> Trace requests across services.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="08_monitoring_tools.html">← Tools, On-Call & SLAs</a>
+            <a href="index.html">Back to Home →</a>
+        </div>
+
+        <footer>
+            <p>Page 9 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        let correctCount = 0;
+        let answeredCount = 0;
+        const totalQuestions = 10;
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            // Check if already answered
+            if (container.dataset.answered) return;
+            container.dataset.answered = true;
+            answeredCount++;
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+                correctCount++;
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the material above.';
+            }
+
+            // Show final result when all questions answered
+            if (answeredCount === totalQuestions) {
+                const resultDiv = document.getElementById('quiz-result');
+                const scoreSpan = document.getElementById('score');
+                const messageP = document.getElementById('score-message');
+
+                resultDiv.style.display = 'block';
+                scoreSpan.textContent = correctCount;
+
+                if (correctCount === 10) {
+                    messageP.textContent = "Perfect! You've mastered logging and monitoring!";
+                } else if (correctCount >= 8) {
+                    messageP.textContent = "Great job! You have a solid understanding.";
+                } else if (correctCount >= 6) {
+                    messageP.textContent = "Good effort! Review the topics you missed.";
+                } else {
+                    messageP.textContent = "Keep studying! Review the guide again.";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

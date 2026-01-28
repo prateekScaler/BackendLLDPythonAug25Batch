@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Fundamentals - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📊</div>
+            <h1>Monitoring Fundamentals</h1>
+            <p class="subtitle">What metrics to track and why they matter</p>
+        </header>
+
+        <div class="section">
+            <h2>Logs vs Metrics: What's the Difference?</h2>
+            <p>Click each cell to reveal the answer:</p>
+
+            <div class="table-container">
+                <table id="logs-metrics-table">
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Logs</th>
+                        <th>Metrics</th>
+                    </tr>
+                    <tr>
+                        <td><strong>What they are</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Discrete events with context</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Numeric measurements over time</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Example</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">"User X did Y at time Z"</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">"CPU at 80%", "500 req/sec"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data density</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">High cardinality, detailed</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Aggregated, compact</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Best for</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Debugging specific issues</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Trends and alerting</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cost at scale</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Expensive ($$$)</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Cheap ($)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>Rule of Thumb:</strong> Use metrics for "how many/how much" questions. Use logs for "what exactly happened" questions.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Four Golden Signals</h2>
+            <p><a href="https://sre.google/sre-book/monitoring-distributed-systems/" target="_blank" style="color: #0d6efd;">Google's SRE book</a> recommends monitoring these four metrics for any service:</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default; border-left: 4px solid #0d6efd;">
+                    <div class="card-icon">⏱️</div>
+                    <h3>1. Latency</h3>
+                    <p>How long requests take. Track p50, p90, p99 percentiles, not just average!</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Example: "p99 latency is 500ms" means 99% of requests are faster than 500ms</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #198754;">
+                    <div class="card-icon">📈</div>
+                    <h3>2. Traffic</h3>
+                    <p>How much demand is on your system. Requests per second, concurrent users, etc.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Example: "1,000 req/sec to the API gateway"</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #dc3545;">
+                    <div class="card-icon">❌</div>
+                    <h3>3. Errors</h3>
+                    <p>Rate of failed requests. Both explicit (500s) and implicit (wrong data, timeouts).</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Example: "0.1% error rate" or "50 errors in last 5 minutes"</p>
+                </div>
+                <div class="card" style="cursor: default; border-left: 4px solid #ffc107;">
+                    <div class="card-icon">📊</div>
+                    <h3>4. Saturation</h3>
+                    <p>How "full" your service is. CPU, memory, disk, connections, queue depth.</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Example: "Database connection pool at 80% capacity"</p>
+                </div>
+            </div>
+
+            <h3>Why Percentiles Matter (for Latency)</h3>
+            <div class="diagram">
+<pre>
+LATENCY DISTRIBUTION (1000 requests)
+════════════════════════════════════
+
+    Number of requests
+    ▲
+100 │ ████
+ 80 │ ████████
+ 60 │ ████████████
+ 40 │ ████████████████
+ 20 │ ████████████████████████
+    └────────────────────────────────▶ Latency (ms)
+      50   100  200  500  1000 2000
+
+p50 (median) = 100ms  → 50% of requests faster than this
+p90 = 500ms           → 90% of requests faster than this
+p99 = 1000ms          → 99% of requests faster than this
+
+If you have 1M requests/day:
+- p99 = 1000ms means 10,000 requests take >1 second!
+- Average hides outliers. p99 catches them.
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Types of Metrics</h2>
+
+            <div class="comparison-grid" style="margin-bottom: 1.5rem;">
+                <div class="comparison-item" style="background: #f0f9ff; border: 1px solid #0ea5e9;">
+                    <h4>Counter</h4>
+                    <p>Only goes up (or resets to 0)</p>
+                    <pre style="font-size: 0.75rem; background: #fff; padding: 0.5rem; border-radius: 4px;">
+0 → 5 → 12 → 50 → 100 → 250
+        ↑ (never decreases)</pre>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>Use for:</strong> Total requests, error count, bytes sent</p>
+                </div>
+                <div class="comparison-item" style="background: #f0fdf4; border: 1px solid #22c55e;">
+                    <h4>Gauge</h4>
+                    <p>Goes up and down</p>
+                    <pre style="font-size: 0.75rem; background: #fff; padding: 0.5rem; border-radius: 4px;">
+80% → 45% → 92% → 60% → 75%
+     ↑↓ (fluctuates)</pre>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>Use for:</strong> CPU %, memory, queue size, connections</p>
+                </div>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-item" style="background: #fef3c7; border: 1px solid #f59e0b;">
+                    <h4>Histogram</h4>
+                    <p>Distribution across buckets</p>
+                    <pre style="font-size: 0.75rem; background: #fff; padding: 0.5rem; border-radius: 4px;">
+<100ms: ████████ 800
+<500ms: ██ 150
+<1s:    █ 50</pre>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>Use for:</strong> Latency distribution, response sizes</p>
+                </div>
+                <div class="comparison-item" style="background: #fdf2f8; border: 1px solid #ec4899;">
+                    <h4>Summary</h4>
+                    <p>Pre-calculated percentiles</p>
+                    <pre style="font-size: 0.75rem; background: #fff; padding: 0.5rem; border-radius: 4px;">
+p50: 100ms
+p90: 450ms
+p99: 980ms</pre>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>Use for:</strong> p50/p90/p99 latency values</p>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 1.5rem;">
+                <h4 style="margin-top: 0;">What is Prometheus?</h4>
+                <p><a href="https://prometheus.io/" target="_blank" style="color: #0d6efd;">Prometheus</a> is the industry-standard open-source metrics system. It collects metrics from your services, stores them as time-series data, and lets you query/alert on them. Used by: Kubernetes, GitLab, DigitalOcean, and most modern infrastructure.</p>
+            </div>
+
+            <h3>Prometheus Metric Examples</h3>
+            <pre><code># Counter: Total HTTP requests
+http_requests_total{method="GET", path="/api/users", status="200"} 1234567
+
+# Gauge: Current active connections
+active_connections{service="api-gateway"} 42
+
+# Histogram: Request duration buckets
+http_request_duration_seconds_bucket{le="0.1"} 10000  # 10k requests < 100ms
+http_request_duration_seconds_bucket{le="0.5"} 15000  # 15k requests < 500ms
+http_request_duration_seconds_bucket{le="1.0"} 16000  # 16k requests < 1s
+http_request_duration_seconds_bucket{le="+Inf"} 16500 # All requests</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>What Metrics to Monitor</h2>
+
+            <h3>Infrastructure Metrics</h3>
+            <div class="diagram">
+<pre>
+INFRASTRUCTURE MONITORING
+═════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│ SERVER                                                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
+│  │   CPU    │  │  Memory  │  │   Disk   │  │   Network    │   │
+│  │ • Usage %│  │ • Used % │  │ • Usage %│  │ • Bytes in/out│   │
+│  │ • Load   │  │ • Free   │  │ • IOPS   │  │ • Errors     │   │
+│  │ • Steal  │  │ • Swap   │  │ • Latency│  │ • Packets    │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>Application Metrics (The RED Method)</h3>
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📥</div>
+                    <h3>R - Rate</h3>
+                    <p>Requests per second your service is handling</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">❌</div>
+                    <h3>E - Errors</h3>
+                    <p>Number of failed requests per second</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">⏱️</div>
+                    <h3>D - Duration</h3>
+                    <p>Time taken to serve each request</p>
+                </div>
+            </div>
+
+            <h3>Database Metrics</h3>
+            <ul>
+                <li><strong>Query latency:</strong> How long queries take (p50, p95, p99)</li>
+                <li><strong>Connection pool:</strong> Active, idle, waiting connections</li>
+                <li><strong>Replication lag:</strong> How far behind replicas are</li>
+                <li><strong>Lock waits:</strong> Time spent waiting for locks</li>
+                <li><strong>Cache hit ratio:</strong> Buffer pool efficiency</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>API Metrics: What and Why</h2>
+            <p>Click each metric to reveal what it tells you and when to alert:</p>
+
+            <div class="card" style="margin-bottom: 0.75rem; cursor: pointer; border-left: 4px solid #0d6efd;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>Request Rate</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Traffic volume, usage patterns</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> Sudden drop (outage?) or spike (attack?)</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0.75rem; cursor: pointer; border-left: 4px solid #dc3545;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>Error Rate</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Service health, bugs in code</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> > 1% of requests failing</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0.75rem; cursor: pointer; border-left: 4px solid #198754;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>p50 Latency</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Typical user experience (median)</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> > 200ms for typical APIs</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0.75rem; cursor: pointer; border-left: 4px solid #ffc107;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>p99 Latency</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Worst-case user experience</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> > 1000ms (varies by service)</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0.75rem; cursor: pointer; border-left: 4px solid #6366f1;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>Availability</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Uptime percentage</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> < 99.9% (depending on SLA)</p>
+                </div>
+            </div>
+
+            <div class="card" style="cursor: pointer; border-left: 4px solid #0ea5e9;" onclick="revealMetricDetails(this)">
+                <p style="margin: 0;"><strong>Throughput</strong></p>
+                <div class="metric-details" style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                    <p style="margin: 0 0 0.5rem 0;"><strong>What it tells you:</strong> Data processed per second</p>
+                    <p style="margin: 0; color: #dc3545;"><strong>Alert when:</strong> Approaching capacity limits</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Interactive: What Metric Type?</h2>
+            <p>Click to reveal the correct metric type and see how it behaves:</p>
+
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <p><strong>Total number of HTTP 500 errors since server start</strong></p>
+                <div class="level-answer" style="display: none;">
+                    <p style="color: var(--accent-color); margin-bottom: 0.5rem;"><strong>Counter</strong> - Only increases, never decreases</p>
+                    <pre style="font-size: 0.8rem; background: #f1f5f9; padding: 0.5rem; border-radius: 4px; margin: 0;">errors_total: 0 → 1 → 3 → 7 → 15 → 42
+                    ↗ always goes up (or stays same)</pre>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <p><strong>Current number of items in the message queue</strong></p>
+                <div class="level-answer" style="display: none;">
+                    <p style="color: var(--accent-color); margin-bottom: 0.5rem;"><strong>Gauge</strong> - Goes up and down</p>
+                    <pre style="font-size: 0.8rem; background: #f1f5f9; padding: 0.5rem; border-radius: 4px; margin: 0;">queue_size: 5 → 12 → 8 → 3 → 20 → 0
+              ↗↘ fluctuates based on produce/consume</pre>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <p><strong>Distribution of API response times</strong></p>
+                <div class="level-answer" style="display: none;">
+                    <p style="color: var(--accent-color); margin-bottom: 0.5rem;"><strong>Histogram</strong> - Bucketed distribution</p>
+                    <pre style="font-size: 0.8rem; background: #f1f5f9; padding: 0.5rem; border-radius: 4px; margin: 0;">bucket_le_100ms:  850  ████████
+bucket_le_500ms:  120  ██
+bucket_le_1000ms: 30   █</pre>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom: 1rem; cursor: pointer;" onclick="this.querySelector('.level-answer').style.display='block'">
+                <p><strong>CPU usage percentage</strong></p>
+                <div class="level-answer" style="display: none;">
+                    <p style="color: var(--accent-color); margin-bottom: 0.5rem;"><strong>Gauge</strong> - Current value that fluctuates</p>
+                    <pre style="font-size: 0.8rem; background: #f1f5f9; padding: 0.5rem; border-radius: 4px; margin: 0;">cpu_percent: 45% → 82% → 60% → 95% → 30%
+             ↗↘ current snapshot, not cumulative</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Monitoring Fundamentals</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What are the "Four Golden Signals" from Google's SRE book?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">A) Latency, Traffic, Errors, Saturation</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">B) CPU, Memory, Disk, Network</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Logs, Metrics, Traces, Events</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. Why is p99 latency more useful than average latency?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) p99 is easier to calculate</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Average hides outliers; p99 shows worst-case user experience</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) p99 uses less storage</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. What metric type would you use for "current memory usage"?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Counter</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) Gauge</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) Histogram</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="06_best_practices.html">← Best Practices & Costs</a>
+            <a href="08_monitoring_tools.html">Next: Tools, On-Call & SLAs →</a>
+        </div>
+
+        <footer>
+            <p>Page 7 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function revealCell(cell) {
+            cell.style.background = 'transparent';
+            cell.style.color = 'inherit';
+            cell.style.cursor = 'default';
+        }
+
+        function revealMetricDetails(card) {
+            const details = card.querySelector('.metric-details');
+            if (details) {
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the concepts above.';
+            }
+        }
+    </script>
+</body>
+</html>

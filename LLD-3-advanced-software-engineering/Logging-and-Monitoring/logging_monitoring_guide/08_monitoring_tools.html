@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools, On-Call & SLAs - Logging Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Logging & Monitoring</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="09_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🛠️</div>
+            <h1>Tools, On-Call & SLAs</h1>
+            <p class="subtitle">Prometheus, Grafana, PagerDuty, and incident response</p>
+        </header>
+
+        <div class="section">
+            <h2>Monitoring Tools Landscape</h2>
+
+            <div class="diagram">
+<pre>
+MONITORING STACK ARCHITECTURE
+═════════════════════════════
+
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│ Your Apps   │  │ Databases   │  │Infrastructure│
+│ (metrics)   │  │ (metrics)   │  │  (metrics)   │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       └────────────────┼────────────────┘
+                        │
+                        ▼
+               ┌─────────────────┐
+               │   Prometheus    │  ← Collect & Store
+               │   (or similar)  │
+               └────────┬────────┘
+                        │
+           ┌────────────┼────────────┐
+           │            │            │
+           ▼            ▼            ▼
+    ┌───────────┐ ┌───────────┐ ┌───────────┐
+    │  Grafana  │ │Alertmanager│ │ Long-term │
+    │(visualize)│ │ (alerts)   │ │ Storage   │
+    └───────────┘ └─────┬─────┘ └───────────┘
+                        │
+                        ▼
+               ┌─────────────────┐
+               │   PagerDuty /   │  ← Notify humans
+               │   OpsGenie      │
+               └─────────────────┘
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Prometheus: The Industry Standard</h2>
+            <p>Open-source monitoring system, CNCF graduated project, used by everyone from startups to Netflix:</p>
+
+            <div class="info-box">
+                <strong>Key Features:</strong>
+                <ul>
+                    <li><strong>Pull-based:</strong> Prometheus scrapes metrics from your services</li>
+                    <li><strong>PromQL:</strong> Powerful query language for metrics</li>
+                    <li><strong>Multi-dimensional:</strong> Labels for filtering (service, instance, region)</li>
+                    <li><strong>Time-series database:</strong> Optimized for metric storage</li>
+                </ul>
+            </div>
+
+            <h3>PromQL Examples</h3>
+            <pre><code># Request rate (requests per second)
+rate(http_requests_total[5m])
+
+# Error rate percentage
+rate(http_requests_total{status=~"5.."}[5m])
+/
+rate(http_requests_total[5m])
+* 100
+
+# 99th percentile latency
+histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))
+
+# CPU usage by instance
+100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+# Memory usage percentage
+(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+/ node_memory_MemTotal_bytes * 100</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Grafana: Beautiful Dashboards</h2>
+            <p>The visualization layer that turns metrics into actionable insights:</p>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📊</div>
+                    <h3>Dashboards</h3>
+                    <p>Drag-and-drop panels, templates, variables for dynamic filtering</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔔</div>
+                    <h3>Alerting</h3>
+                    <p>Define alert rules, set thresholds, configure notifications</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">🔌</div>
+                    <h3>Data Sources</h3>
+                    <p>Prometheus, InfluxDB, CloudWatch, Elasticsearch, and 50+ more</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📱</div>
+                    <h3>Annotations</h3>
+                    <p>Mark deployments, incidents on graphs for correlation</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Alerting: Not Too Noisy, Not Too Quiet</h2>
+
+            <div class="warning-box">
+                <strong>Alert Fatigue is Real:</strong> If you get 100 alerts a day, you'll start ignoring them. Then you'll miss the one that matters.
+            </div>
+
+            <h3>Good Alert Design</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>Good Alerts</h4>
+                    <ul>
+                        <li>Actionable: You can do something about it</li>
+                        <li>Urgent: It needs attention now</li>
+                        <li>Symptoms, not causes: "Users seeing errors" not "CPU high"</li>
+                        <li>Include context: What, where, how bad</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>Bad Alerts</h4>
+                    <ul>
+                        <li>CPU at 80% (so what?)</li>
+                        <li>Disk at 70% (not urgent)</li>
+                        <li>One failed health check (might be transient)</li>
+                        <li>No runbook or context</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="section">
+            <h2>On-Call: The Human Side of Monitoring</h2>
+
+            <div class="info-box">
+                <strong>What is On-Call?</strong> Engineers take turns being available 24/7 to respond to production incidents. If something breaks at 3 AM, the on-call person gets paged.
+            </div>
+
+            <div class="diagram">
+<pre>
+ON-CALL ROTATION EXAMPLE
+════════════════════════
+
+Week 1: Praveen (Primary), Deepak (Secondary)
+Week 2: Deepak (Primary), Surya (Secondary)
+Week 3: Surya (Primary), Praveen (Secondary)
+... rotate ...
+
+INCIDENT ESCALATION PATH:
+═════════════════════════
+
+┌─────────┐     5 min     ┌─────────┐     15 min    ┌─────────┐
+│ Alert   │ ───────────▶ │ Primary │ ───────────▶ │Secondary│
+│ Fires   │  no response │ On-Call │  no response │ On-Call │
+└─────────┘               └─────────┘               └─────────┘
+                                                         │
+                                                    30 min │ no response
+                                                         ▼
+                                                   ┌───────────┐
+                                                   │  Jawahar  │
+                                                   │  (Manager)│
+                                                   └───────────┘
+</pre>
+            </div>
+
+            <h3>On-Call Best Practices</h3>
+            <ul>
+                <li><strong>Runbooks:</strong> Document how to handle each alert type</li>
+                <li><strong>Blameless postmortems:</strong> Learn from incidents, don't blame people</li>
+                <li><strong>Fair rotations:</strong> Spread the burden, compensate for nights/weekends</li>
+                <li><strong>Escalation paths:</strong> Know who to call if you can't fix it</li>
+                <li><strong>Alert hygiene:</strong> Fix noisy alerts, don't just mute them</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>SLAs, SLOs, and SLIs</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Term</th>
+                        <th>Definition</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong>SLI</strong><br>(Service Level Indicator)</td>
+                        <td>The metric you're measuring</td>
+                        <td>"Percentage of requests completing in < 200ms"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SLO</strong><br>(Service Level Objective)</td>
+                        <td>Internal target for the SLI</td>
+                        <td>"99.9% of requests should complete in < 200ms"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SLA</strong><br>(Service Level Agreement)</td>
+                        <td>Contract with customers (with consequences)</td>
+                        <td>"We guarantee 99.9% uptime or refund credits"</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="diagram">
+<pre>
+SLA vs SLO
+══════════
+
+SLO: 99.95% availability (internal target, stricter)
+       ▲
+       │ Buffer for safety
+       │
+SLA: 99.9% availability (customer promise)
+       │
+       │ If breached = refunds, penalties
+       ▼
+</pre>
+            </div>
+
+            <h3>Error Budget</h3>
+            <p>If your SLO is 99.9% uptime, you're allowed 0.1% downtime per month:</p>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>SLO</th>
+                        <th>Monthly Error Budget</th>
+                        <th>What It Means</th>
+                    </tr>
+                    <tr>
+                        <td>99%</td>
+                        <td>7.2 hours</td>
+                        <td>About 10 minutes per day</td>
+                    </tr>
+                    <tr>
+                        <td>99.9%</td>
+                        <td>43.8 minutes</td>
+                        <td>About 1.5 minutes per day</td>
+                    </tr>
+                    <tr>
+                        <td>99.99%</td>
+                        <td>4.38 minutes</td>
+                        <td>About 8 seconds per day</td>
+                    </tr>
+                    <tr>
+                        <td>99.999%</td>
+                        <td>26 seconds</td>
+                        <td>"Five nines" - extremely expensive to achieve</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="info-box">
+                <strong>Error Budget Philosophy:</strong> If you have budget remaining, you can take risks (deploy faster, experiment). If budget is exhausted, focus on reliability (slow down, fix issues).
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Who Uses What?</h2>
+            <p>Click each cell to reveal what different roles monitor and which tools they use:</p>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <th>Role</th>
+                        <th>What They Monitor</th>
+                        <th>Tools They Use</th>
+                    </tr>
+                    <tr>
+                        <td><strong>SRE / Platform</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Infrastructure, SLOs, error budgets</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Prometheus, Grafana, PagerDuty</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend Dev</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">API latency, errors, service health</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Datadog APM, application dashboards</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frontend Dev</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Page load time, JS errors, user metrics</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Real User Monitoring (RUM), Sentry</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Engineer</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Pipeline latency, data freshness</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Airflow metrics, custom dashboards</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Product Manager</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Business metrics, conversion rates</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Business dashboards, analytics</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Engineering Manager</strong></td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">Team SLOs, deployment frequency</td>
+                        <td class="reveal-cell" style="background: #e5e7eb; color: transparent; cursor: pointer;" onclick="revealCell(this)">DORA metrics, executive dashboards</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>PagerDuty / OpsGenie: Incident Management</h2>
+
+            <div class="card-grid">
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📱</div>
+                    <h3>Multi-Channel Alerts</h3>
+                    <p>Phone, SMS, Slack, email - keep trying until acknowledged</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">👥</div>
+                    <h3>Schedules</h3>
+                    <p>On-call rotations, overrides for vacations/sick days</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">⬆️</div>
+                    <h3>Escalations</h3>
+                    <p>If primary doesn't respond, escalate to secondary, then manager</p>
+                </div>
+                <div class="card" style="cursor: default;">
+                    <div class="card-icon">📊</div>
+                    <h3>Analytics</h3>
+                    <p>MTTR, incident frequency, on-call burden tracking</p>
+                </div>
+            </div>
+
+            <div class="anecdote-box">
+                <h4>The Pager Story</h4>
+                <p>The name "PagerDuty" comes from the actual pagers engineers used to carry. Before smartphones, on-call engineers had physical pagers clipped to their belts 24/7. The pager would beep, showing a phone number to call back. Some engineers still call alerts "pages" because of this history!</p>
+            </div>
+        </div>
+
+        <!-- Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Quiz: Tools & Concepts</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What is PromQL used for?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">A) Querying metrics stored in Prometheus</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">B) Writing SQL queries for databases</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Parsing log files</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What's the difference between SLO and SLA?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) They are the same thing</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) SLO is an internal target; SLA is a customer contract with consequences</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) SLA is stricter than SLO</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. If your SLO is 99.9% monthly uptime, how much downtime is allowed?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) About 7 hours</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) About 44 minutes</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) About 4 minutes</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="07_monitoring_intro.html">← Monitoring Fundamentals</a>
+            <a href="09_cheatsheet.html">Next: Cheat Sheet & Final Quiz →</a>
+        </div>
+
+        <footer>
+            <p>Page 8 of 9 - Logging & Monitoring Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function revealCell(cell) {
+            cell.style.background = 'transparent';
+            cell.style.color = 'inherit';
+            cell.style.cursor = 'default';
+        }
+
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) {
+                    opt.classList.add('correct');
+                }
+            });
+
+            if (isCorrect) {
+                element.classList.add('correct');
+                feedback.className = 'quiz-feedback show correct';
+                feedback.innerHTML = 'Correct!';
+            } else {
+                element.classList.add('incorrect');
+                feedback.className = 'quiz-feedback show incorrect';
+                feedback.innerHTML = 'Not quite. Review the concepts above.';
+            }
+        }
+    </script>
+</body>
+</html>
