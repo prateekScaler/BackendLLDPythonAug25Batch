@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing Dockerfiles - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📝</div>
+            <h1>Writing Dockerfiles</h1>
+            <p class="subtitle">Instructions, best practices, and patterns</p>
+        </header>
+
+        <div class="section">
+            <h2>Dockerfile Instructions</h2>
+
+            <p class="story">
+                A Dockerfile is a text file with instructions to build an image. Each instruction creates a layer.
+                Let's start with a simple, real-world example:
+            </p>
+
+            <h3>A Simple Django Dockerfile</h3>
+            <pre><code># Dockerfile for a Django application
+
+# 1. Start with a base image that has Python installed
+FROM python:3.11-slim
+
+# 2. Set the working directory inside the container
+WORKDIR /app
+
+# 3. Copy requirements first (for caching - explained later)
+COPY requirements.txt .
+
+# 4. Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. Copy the rest of your application code
+COPY . .
+
+# 6. Document which port the app uses (informational only)
+EXPOSE 8000
+
+# 7. Command to run when container starts
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
+
+            <h3>Line-by-Line Explanation</h3>
+            <table>
+                <tr>
+                    <th>Line</th>
+                    <th>What It Does</th>
+                    <th>Why It Matters</th>
+                </tr>
+                <tr>
+                    <td><code>FROM python:3.11-slim</code></td>
+                    <td>Downloads a pre-built image with Python 3.11 installed on Debian Linux (slim version)</td>
+                    <td>You don't install Python manually — you start from an image that already has it</td>
+                </tr>
+                <tr>
+                    <td><code>WORKDIR /app</code></td>
+                    <td>Creates <code>/app</code> directory and makes it the current directory</td>
+                    <td>Like doing <code>mkdir /app && cd /app</code> — all following commands run from here</td>
+                </tr>
+                <tr>
+                    <td><code>COPY requirements.txt .</code></td>
+                    <td>Copies <code>requirements.txt</code> from your computer into the container's <code>/app</code></td>
+                    <td>The <code>.</code> means "current directory" (which is <code>/app</code> because of WORKDIR)</td>
+                </tr>
+                <tr>
+                    <td><code>RUN pip install ...</code></td>
+                    <td>Executes this command <strong>at build time</strong> — installs all Python packages</td>
+                    <td>This happens once when building the image, not every time you start a container</td>
+                </tr>
+                <tr>
+                    <td><code>COPY . .</code></td>
+                    <td>Copies your entire project directory into the container</td>
+                    <td>Now your Django code is inside the image</td>
+                </tr>
+                <tr>
+                    <td><code>EXPOSE 8000</code></td>
+                    <td>Documentation that the app listens on port 8000</td>
+                    <td>Does NOT actually open the port — you still need <code>-p 8000:8000</code> when running</td>
+                </tr>
+                <tr>
+                    <td><code>CMD [...]</code></td>
+                    <td>The command to run when the container starts</td>
+                    <td>This runs <strong>at runtime</strong>, not build time. Starts the Django dev server.</td>
+                </tr>
+            </table>
+
+            <h3>How This Works in Production</h3>
+            <p class="story">
+                Let's trace the entire journey from your laptop to a production server:
+            </p>
+
+            <div class="diagram">
+<pre>
+YOUR LAPTOP                          PRODUCTION SERVER (AWS/GCP/etc.)
+════════════                         ════════════════════════════════
+
+┌─────────────────┐
+│  Your Django    │
+│  Project Files  │
+│  + Dockerfile   │
+└────────┬────────┘
+         │
+         ▼  docker build -t myapp:1.0 .
+┌─────────────────┐
+│   Docker Image  │ ─── docker push ───►  ┌─────────────────┐
+│   (myapp:1.0)   │                        │  Docker Registry │
+│                 │                        │  (Docker Hub /   │
+│ Contains:       │                        │   AWS ECR)       │
+│ • Python 3.11   │                        └────────┬─────────┘
+│ • Django        │                                 │
+│ • Your code     │                                 │ docker pull
+│ • All deps      │                                 ▼
+└─────────────────┘                  ┌─────────────────────────────┐
+                                     │     Production Server       │
+                                     │                             │
+                                     │  docker run -d -p 80:8000   │
+                                     │           myapp:1.0         │
+                                     │                             │
+                                     │  ┌───────────────────────┐  │
+                                     │  │     Container         │  │
+                                     │  │  • Python 3.11        │  │
+                                     │  │  • Django running     │  │
+                                     │  │  • Listening on 8000  │  │
+                                     │  └───────────────────────┘  │
+                                     │                             │
+                                     │  Port 80 → Container 8000   │
+                                     └─────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>The Production Flow Step by Step</h3>
+            <ol>
+                <li><strong>Build (on your laptop or CI/CD):</strong> <code>docker build -t myapp:1.0 .</code>
+                    <br>Docker reads the Dockerfile and creates an image with Python, Django, and your code baked in.</li>
+                <li><strong>Push to Registry:</strong> <code>docker push mycompany/myapp:1.0</code>
+                    <br>Upload the image to Docker Hub, AWS ECR, or your company's private registry.</li>
+                <li><strong>Pull on Production Server:</strong> <code>docker pull mycompany/myapp:1.0</code>
+                    <br>The server downloads the exact same image you built.</li>
+                <li><strong>Run:</strong> <code>docker run -d -p 80:8000 mycompany/myapp:1.0</code>
+                    <br>Start a container from the image. Map port 80 (external) to 8000 (container).</li>
+            </ol>
+
+            <div class="key-point">
+                <strong>The Magic:</strong> The production server doesn't need Python installed. It doesn't need pip.
+                It doesn't need to know about Django. All it needs is Docker. The image contains EVERYTHING.
+                This is why "it works on my machine" becomes "it works everywhere."
+            </div>
+
+            <div class="meme-box">
+                <div class="top-text">Production server setup</div>
+                <div class="meme-image">📦 → 🚀</div>
+                <div class="bottom-text">Just install Docker and run the image. That's it.</div>
+            </div>
+
+            <h3>Quick Reference: All Instructions</h3>
+            <table>
+                <tr>
+                    <th>Instruction</th>
+                    <th>Purpose</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td><code>FROM</code></td>
+                    <td>Base image to start from</td>
+                    <td><code>FROM python:3.11-slim</code></td>
+                </tr>
+                <tr>
+                    <td><code>WORKDIR</code></td>
+                    <td>Set working directory</td>
+                    <td><code>WORKDIR /app</code></td>
+                </tr>
+                <tr>
+                    <td><code>COPY</code></td>
+                    <td>Copy files into image</td>
+                    <td><code>COPY . .</code></td>
+                </tr>
+                <tr>
+                    <td><code>RUN</code></td>
+                    <td>Execute command at build time</td>
+                    <td><code>RUN pip install -r requirements.txt</code></td>
+                </tr>
+                <tr>
+                    <td><code>ENV</code></td>
+                    <td>Set environment variable</td>
+                    <td><code>ENV DJANGO_ENV=production</code></td>
+                </tr>
+                <tr>
+                    <td><code>EXPOSE</code></td>
+                    <td>Document which port (doesn't actually open it)</td>
+                    <td><code>EXPOSE 8000</code></td>
+                </tr>
+                <tr>
+                    <td><code>CMD</code></td>
+                    <td>Default command when container starts</td>
+                    <td><code>CMD ["python", "manage.py", "runserver"]</code></td>
+                </tr>
+                <tr>
+                    <td><code>ENTRYPOINT</code></td>
+                    <td>Fixed executable (can't be overridden easily)</td>
+                    <td><code>ENTRYPOINT ["python"]</code></td>
+                </tr>
+                <tr>
+                    <td><code>USER</code></td>
+                    <td>Switch to non-root user</td>
+                    <td><code>USER appuser</code></td>
+                </tr>
+                <tr>
+                    <td><code>ARG</code></td>
+                    <td>Build-time variable (not available at runtime)</td>
+                    <td><code>ARG VERSION=1.0</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>CMD vs ENTRYPOINT: What's the Difference?</h2>
+
+            <p class="story">
+                This trips up a lot of people. Both set the command to run, but they behave differently:
+            </p>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>CMD</h4>
+                    <ul>
+                        <li>Default command</li>
+                        <li>Fully replaceable at runtime</li>
+                        <li>Use for normal apps</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>ENTRYPOINT</h4>
+                    <ul>
+                        <li>Fixed executable</li>
+                        <li>CMD becomes its arguments</li>
+                        <li>Use when container IS the command</li>
+                    </ul>
+                </div>
+            </div>
+
+            <pre><code># With CMD — can be completely replaced
+FROM python:3.11
+CMD ["python", "app.py"]
+
+# docker run myimage             → runs: python app.py
+# docker run myimage bash        → runs: bash (CMD ignored!)
+
+# With ENTRYPOINT — CMD becomes arguments
+FROM python:3.11
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+
+# docker run myimage             → runs: python app.py
+# docker run myimage script.py   → runs: python script.py</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Best Practices (The Do's and Don'ts)</h2>
+
+            <div class="meme-box">
+                <div class="top-text">My Dockerfile</div>
+                <div class="meme-image">📄✨ vs 📄🔥</div>
+                <div class="bottom-text">Before vs after learning best practices</div>
+            </div>
+
+            <h3>1. Use Specific Tags (Never <code>:latest</code>)</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>Bad</h4>
+                    <pre><code>FROM python:latest</code></pre>
+                    <p>:latest changes without warning → non-reproducible builds</p>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Good</h4>
+                    <pre><code>FROM python:3.11.4-slim</code></pre>
+                    <p>Pinned version → predictable, reproducible</p>
+                </div>
+            </div>
+
+            <h3>2. Use Slim/Alpine Images</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>Bad (~1GB)</h4>
+                    <pre><code>FROM python:3.11</code></pre>
+                    <p>Full Debian with tons of extra packages</p>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Good (~150MB)</h4>
+                    <pre><code>FROM python:3.11-slim</code></pre>
+                    <p>Smaller = faster pulls, less attack surface</p>
+                </div>
+            </div>
+
+            <h3>3. Order for Cache Efficiency</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>Bad (cache busted every time)</h4>
+                    <pre><code>COPY . .
+RUN pip install -r requirements.txt</code></pre>
+                    <p>Any code change → reinstall all packages!</p>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Good (cached if deps unchanged)</h4>
+                    <pre><code>COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .</code></pre>
+                    <p>Only reinstall if requirements.txt changes</p>
+                </div>
+            </div>
+
+            <h4>🎬 Visualizing Layer Cache</h4>
+            <p class="story">Click "Rebuild" to see what happens when you change <code>app.py</code>:</p>
+
+            <style>
+                .cache-demo {
+                    display: flex;
+                    gap: 3rem;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    margin: 2rem 0;
+                }
+                .cache-scenario {
+                    text-align: center;
+                }
+                .cache-scenario h5 {
+                    margin-bottom: 1rem;
+                    font-size: 1.1rem;
+                }
+                .layer-stack {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    width: 220px;
+                }
+                .layer {
+                    padding: 0.75rem;
+                    border-radius: 6px;
+                    font-size: 0.85rem;
+                    font-family: 'Fira Code', monospace;
+                    text-align: center;
+                    transition: all 0.5s ease;
+                    position: relative;
+                }
+                .layer-base { background: #e0e7ff; color: #3730a3; }
+                .layer-copy { background: #fef3c7; color: #92400e; }
+                .layer-pip { background: #dbeafe; color: #1e40af; }
+                .layer-code { background: #d1fae5; color: #065f46; }
+
+                .layer.cached::after {
+                    content: '✓ CACHED';
+                    position: absolute;
+                    right: -80px;
+                    font-size: 0.75rem;
+                    color: #16a34a;
+                    font-weight: bold;
+                }
+                .layer.rebuilding {
+                    animation: rebuildPulse 0.8s ease infinite;
+                }
+                .layer.rebuilding::after {
+                    content: '⟳ REBUILD';
+                    position: absolute;
+                    right: -80px;
+                    font-size: 0.75rem;
+                    color: #dc2626;
+                    font-weight: bold;
+                }
+                @keyframes rebuildPulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.6; transform: scale(0.98); }
+                }
+                .cache-result {
+                    margin-top: 1rem;
+                    padding: 0.5rem 1rem;
+                    border-radius: 20px;
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                }
+                .result-bad { background: #fee2e2; color: #dc2626; }
+                .result-good { background: #d1fae5; color: #059669; }
+                .cache-controls {
+                    text-align: center;
+                    margin: 1.5rem 0;
+                }
+                .rebuild-btn {
+                    padding: 0.75rem 2rem;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+                    color: white;
+                    transition: all 0.3s ease;
+                }
+                .rebuild-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+                .reset-cache-btn {
+                    padding: 0.5rem 1rem;
+                    font-size: 0.85rem;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    background: white;
+                    margin-left: 0.5rem;
+                }
+            </style>
+
+            <div class="cache-demo">
+                <div class="cache-scenario">
+                    <h5>❌ Bad Order</h5>
+                    <div class="layer-stack" id="bad-stack">
+                        <div class="layer layer-base" data-layer="base">FROM python:3.11</div>
+                        <div class="layer layer-copy" data-layer="copy-all">COPY . .</div>
+                        <div class="layer layer-pip" data-layer="pip">pip install <span style="font-size:0.7rem">(slow!)</span></div>
+                    </div>
+                    <div class="cache-result result-bad" id="bad-result">⏱️ ~3 min rebuild</div>
+                </div>
+
+                <div class="cache-scenario">
+                    <h5>✅ Good Order</h5>
+                    <div class="layer-stack" id="good-stack">
+                        <div class="layer layer-base" data-layer="base">FROM python:3.11</div>
+                        <div class="layer layer-copy" data-layer="copy-req">COPY requirements.txt</div>
+                        <div class="layer layer-pip" data-layer="pip">pip install <span style="font-size:0.7rem">(slow!)</span></div>
+                        <div class="layer layer-code" data-layer="copy-code">COPY . .</div>
+                    </div>
+                    <div class="cache-result result-good" id="good-result">⚡ ~3 sec rebuild</div>
+                </div>
+            </div>
+
+            <div class="cache-controls">
+                <button class="rebuild-btn" onclick="simulateRebuild()">🔄 Simulate Rebuild (app.py changed)</button>
+                <button class="reset-cache-btn" onclick="resetCache()">Reset</button>
+            </div>
+
+            <script>
+                function simulateRebuild() {
+                    // Bad order: everything after COPY . . rebuilds
+                    const badStack = document.querySelectorAll('#bad-stack .layer');
+                    badStack[0].classList.add('cached');
+                    badStack[1].classList.add('rebuilding');
+                    badStack[2].classList.add('rebuilding');
+
+                    // Good order: only last layer rebuilds
+                    const goodStack = document.querySelectorAll('#good-stack .layer');
+                    goodStack[0].classList.add('cached');
+                    goodStack[1].classList.add('cached');
+                    goodStack[2].classList.add('cached');
+                    goodStack[3].classList.add('rebuilding');
+
+                    document.getElementById('bad-result').innerHTML = '😱 pip install runs AGAIN!';
+                    document.getElementById('good-result').innerHTML = '🎉 pip install SKIPPED!';
+                }
+
+                function resetCache() {
+                    document.querySelectorAll('.layer').forEach(l => {
+                        l.classList.remove('cached', 'rebuilding');
+                    });
+                    document.getElementById('bad-result').innerHTML = '⏱️ ~3 min rebuild';
+                    document.getElementById('good-result').innerHTML = '⚡ ~3 sec rebuild';
+                }
+            </script>
+
+            <div class="key-point">
+                <strong>💡 The Rule:</strong> Put things that change <em>rarely</em> (dependencies) at TOP.
+                Put things that change <em>often</em> (your code) at BOTTOM.
+            </div>
+
+            <h3>4. Combine RUN Commands & Clean Up</h3>
+            <div class="comparison-grid">
+                <div class="comparison-item bad">
+                    <h4>Bad (3 layers, cache not cleaned)</h4>
+                    <pre><code>RUN apt-get update
+RUN apt-get install -y curl
+RUN rm -rf /var/lib/apt/lists/*</code></pre>
+                </div>
+                <div class="comparison-item good">
+                    <h4>Good (1 layer, clean in same step)</h4>
+                    <pre><code>RUN apt-get update \
+ && apt-get install -y curl \
+ && rm -rf /var/lib/apt/lists/*</code></pre>
+                </div>
+            </div>
+
+            <h3>5. Don't Run as Root</h3>
+            <pre><code># Create non-root user and switch to it
+RUN useradd --create-home appuser
+USER appuser
+
+CMD ["python", "app.py"]</code></pre>
+
+            <div class="warning-box">
+                Running as root inside a container is a security risk. A container escape vulnerability
+                could give attackers root on your host.
+            </div>
+
+            <h3>6. Never Put Secrets in Dockerfile</h3>
+            <div class="danger-box">
+                <strong>NEVER do this:</strong>
+                <pre><code>ENV API_KEY=sk-1234567890abcdef</code></pre>
+                <p>Secrets in ENV are visible in <code>docker history</code>. Anyone with image access can extract them!</p>
+                <p><strong>Instead:</strong> Pass secrets at runtime with <code>-e</code> or use secret managers.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Multi-Stage Builds</h2>
+
+            <p class="story">
+                Here's a powerful pattern: use one stage to build, another for the final image.
+                The build stage has compilers and tools; the final image is lean.
+            </p>
+
+            <div class="diagram">
+<pre>
+Stage 1: BUILD                    Stage 2: RUNTIME
+─────────────────                 ─────────────────
+┌───────────────────┐             ┌───────────────────┐
+│ Full Python       │             │ Python slim       │
+│ + build tools     │    COPY     │ (no build tools)  │
+│ + gcc, make       │ ─────────►  │                   │
+│ + pip install     │  only what  │ Just the venv     │
+│                   │  you need   │ + app code        │
+│ Size: 1.2GB       │             │ Size: 200MB       │
+└───────────────────┘             └───────────────────┘
+     (discarded)                      (final image)
+</pre>
+            </div>
+
+            <pre><code># Stage 1: Build
+FROM python:3.11 AS builder
+WORKDIR /app
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Runtime (much smaller!)
+FROM python:3.11-slim
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+WORKDIR /app
+COPY . .
+USER 1000
+CMD ["python", "app.py"]</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Don't Forget .dockerignore</h2>
+
+            <p class="story">
+                Just like <code>.gitignore</code>, this file tells Docker what NOT to copy into the image.
+            </p>
+
+            <pre><code># .dockerignore
+.git
+__pycache__
+*.pyc
+.venv
+venv
+.env
+.env.local
+*.md
+Dockerfile
+docker-compose*.yml
+.idea
+.vscode
+node_modules
+*.log</code></pre>
+
+            <div class="info-box">
+                <strong>Why it matters:</strong> Faster builds (less to copy), no secrets leaked into image,
+                avoids cache invalidation from irrelevant files.
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🎯 Best Practices Quiz</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. Why copy requirements.txt before the rest of the code?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">A) So pip install layer is cached when only code changes</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">B) Docker requires this order</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What's the purpose of multi-stage builds?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) Run multiple containers</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Keep build tools out of final image (smaller size)</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="index.html">← Home</a>
+            <a href="01_history.html">How Containers Work →</a>
+        </div>
+
+        <footer>
+            <p>Page 1 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect ? 'Correct!' : 'Review the best practices above.';
+        }
+    </script>
+</body>
+</html>

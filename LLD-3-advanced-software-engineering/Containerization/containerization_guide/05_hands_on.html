@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hands-On Lab - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🔧</div>
+            <h1>Hands-On Lab</h1>
+            <p class="subtitle">Build and run your first containerized app</p>
+        </header>
+
+        <div class="section">
+            <h2>Prerequisites</h2>
+
+            <p class="story">
+                Before we start, make sure you have Docker running. If you followed the earlier section,
+                you should have Rancher Desktop or Colima set up.
+            </p>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> docker run hello-world
+<span class="output">Hello from Docker!</span>
+<span class="output">This message shows that your installation appears to be working correctly.</span></div>
+            </div>
+
+            <p class="story">
+                If you see "Hello from Docker!", you're ready. If not, check that Rancher Desktop/Colima is running.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Lab: Containerize a Flask App</h2>
+
+            <p class="story">
+                We'll build a simple Flask API, containerize it, and run it. This is exactly what you'd do
+                in a real project. Let's go step by step.
+            </p>
+
+            <h3>Step 1: Create the Project Structure</h3>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> mkdir flask-docker && cd flask-docker
+<span class="prompt">$</span> touch app.py requirements.txt Dockerfile</div>
+            </div>
+
+            <h3>Step 2: Write the Flask App</h3>
+
+            <p class="story">Create <code>app.py</code>:</p>
+
+            <pre><code># app.py
+from flask import Flask, jsonify
+import socket
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Hello from Docker! 🐳",
+        "hostname": socket.gethostname(),
+        "version": os.getenv("APP_VERSION", "1.0")
+    })
+
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)</code></pre>
+
+            <h3>Step 3: Create requirements.txt</h3>
+
+            <pre><code>flask==3.0.0</code></pre>
+
+            <h3>Step 4: Write the Dockerfile</h3>
+
+            <p class="story">This Dockerfile follows all the best practices we learned:</p>
+
+            <pre><code># Use specific, slim base image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependencies first (cache optimization!)
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN useradd --create-home appuser
+USER appuser
+
+# Document the port
+EXPOSE 5000
+
+# Run the app
+CMD ["python", "app.py"]</code></pre>
+
+            <h3>Step 5: Build the Image</h3>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> docker build -t flask-demo:1.0 .
+<span class="output">[+] Building 15.2s (10/10) FINISHED</span>
+<span class="output"> => [1/5] FROM python:3.11-slim</span>
+<span class="output"> => [2/5] WORKDIR /app</span>
+<span class="output"> => [3/5] COPY requirements.txt .</span>
+<span class="output"> => [4/5] RUN pip install --no-cache-dir -r requirements.txt</span>
+<span class="output"> => [5/5] COPY . .</span>
+<span class="output">Successfully tagged flask-demo:1.0</span></div>
+            </div>
+
+            <h3>Step 6: Run the Container</h3>
+
+            <div class="terminal">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> docker run -d -p 8080:5000 --name myflask flask-demo:1.0
+<span class="output">a1b2c3d4e5f6...</span>
+
+<span class="prompt">$</span> curl http://localhost:8080
+<span class="output">{"hostname":"a1b2c3d4e5f6","message":"Hello from Docker! 🐳","version":"1.0"}</span></div>
+            </div>
+
+            <div class="success-box">
+                <strong>🎉 Congratulations!</strong> You just built and ran your first containerized application!
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Debugging Commands</h2>
+
+            <p class="story">Things don't always work the first time. Here's how to debug:</p>
+
+            <pre><code># View logs
+docker logs myflask
+
+# Follow logs in real-time
+docker logs -f myflask
+
+# Shell into the running container
+docker exec -it myflask bash
+
+# See container resource usage
+docker stats myflask
+
+# Stop the container
+docker stop myflask
+
+# Remove the container
+docker rm myflask
+
+# Stop and remove in one command
+docker rm -f myflask</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Bonus: Docker Compose (Multi-Container)</h2>
+
+            <p class="story">
+                Real applications often need multiple services — a web app, a database, maybe Redis for caching.
+                Docker Compose lets you define all of them in one file.
+            </p>
+
+            <p class="story">Create <code>docker-compose.yml</code>:</p>
+
+            <pre><code>version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:5000"
+    environment:
+      - APP_VERSION=2.0
+      - DATABASE_URL=postgres://myuser:mypass@db:5432/mydb
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypass
+      - POSTGRES_DB=mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:</code></pre>
+
+            <h3>Compose Commands</h3>
+
+            <pre><code># Start all services in background
+docker compose up -d
+
+# View logs from all services
+docker compose logs -f
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (deletes database!)
+docker compose down -v</code></pre>
+
+            <div class="info-box">
+                <strong>Note:</strong> In Compose, services can reach each other by name.
+                The web service connects to <code>db:5432</code>, not <code>localhost:5432</code>.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Common Issues & Solutions</h2>
+
+            <table>
+                <tr>
+                    <th>Problem</th>
+                    <th>Likely Cause</th>
+                    <th>Solution</th>
+                </tr>
+                <tr>
+                    <td>Container exits immediately</td>
+                    <td>No foreground process / app crashed</td>
+                    <td><code>docker logs container_name</code> to see the error</td>
+                </tr>
+                <tr>
+                    <td>Port not accessible</td>
+                    <td>Wrong port mapping or port in use</td>
+                    <td>Check <code>-p HOST:CONTAINER</code> order. Try different host port.</td>
+                </tr>
+                <tr>
+                    <td>Changes not reflected</td>
+                    <td>Using old image</td>
+                    <td>Rebuild: <code>docker build --no-cache -t myapp .</code></td>
+                </tr>
+                <tr>
+                    <td>Can't connect to database in Compose</td>
+                    <td>Using localhost instead of service name</td>
+                    <td>Use <code>db</code> not <code>localhost</code> in connection string</td>
+                </tr>
+                <tr>
+                    <td>"Permission denied"</td>
+                    <td>Running as non-root, file permissions wrong</td>
+                    <td>Check file ownership or use root temporarily to debug</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Exercises (Try These!)</h2>
+
+            <div class="meme-box">
+                <div class="top-text">You just learned Docker</div>
+                <div class="meme-image">📚➡️💪🐳</div>
+                <div class="bottom-text">Now go containerize all the things</div>
+            </div>
+
+            <ol>
+                <li><strong>Add Redis:</strong> Add a Redis service to docker-compose.yml and use it for caching</li>
+                <li><strong>Hot reload:</strong> Mount your code as a volume so changes reflect without rebuilding</li>
+                <li><strong>Health check:</strong> Add a <code>HEALTHCHECK</code> instruction to your Dockerfile</li>
+                <li><strong>Multi-stage:</strong> Convert the Dockerfile to use multi-stage builds</li>
+            </ol>
+        </div>
+
+        <div class="page-nav">
+            <a href="03_docker_desktop.html">← Desktop vs Engine</a>
+            <a href="06_kubernetes.html">Kubernetes Basics →</a>
+        </div>
+
+        <footer>
+            <p>Page 5 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+</body>
+</html>

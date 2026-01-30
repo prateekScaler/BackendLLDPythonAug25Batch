@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn nav-btn-active">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📋</div>
+            <h1>Cheat Sheet</h1>
+            <p class="subtitle">Quick reference for Docker and Kubernetes commands</p>
+        </header>
+
+        <div class="meme-box">
+            <div class="top-text">Looking at this cheat sheet</div>
+            <div class="meme-image">🧠💡📋</div>
+            <div class="bottom-text">vs trying to remember commands from memory</div>
+        </div>
+
+        <div class="section">
+            <h2>Docker Image Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>docker build -t name:tag .</code></td>
+                    <td>Build image from Dockerfile in current directory</td>
+                </tr>
+                <tr>
+                    <td><code>docker images</code></td>
+                    <td>List all local images</td>
+                </tr>
+                <tr>
+                    <td><code>docker pull image:tag</code></td>
+                    <td>Download image from registry</td>
+                </tr>
+                <tr>
+                    <td><code>docker push image:tag</code></td>
+                    <td>Upload image to registry</td>
+                </tr>
+                <tr>
+                    <td><code>docker rmi image</code></td>
+                    <td>Remove an image</td>
+                </tr>
+                <tr>
+                    <td><code>docker history image</code></td>
+                    <td>Show image layers and sizes</td>
+                </tr>
+                <tr>
+                    <td><code>docker tag src:tag dst:tag</code></td>
+                    <td>Create a new tag for an image</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Docker Container Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>docker run image</code></td>
+                    <td>Create and start a container</td>
+                </tr>
+                <tr>
+                    <td><code>docker run -d image</code></td>
+                    <td>Run in background (detached)</td>
+                </tr>
+                <tr>
+                    <td><code>docker run -p 8080:80 image</code></td>
+                    <td>Map host port 8080 to container port 80</td>
+                </tr>
+                <tr>
+                    <td><code>docker run -v /host:/cont image</code></td>
+                    <td>Mount host directory into container</td>
+                </tr>
+                <tr>
+                    <td><code>docker run -e VAR=value image</code></td>
+                    <td>Set environment variable</td>
+                </tr>
+                <tr>
+                    <td><code>docker run --name myapp image</code></td>
+                    <td>Give the container a name</td>
+                </tr>
+                <tr>
+                    <td><code>docker run --rm image</code></td>
+                    <td>Auto-remove container when it stops</td>
+                </tr>
+                <tr>
+                    <td><code>docker run -it image bash</code></td>
+                    <td>Interactive mode with shell</td>
+                </tr>
+                <tr>
+                    <td><code>docker ps</code></td>
+                    <td>List running containers</td>
+                </tr>
+                <tr>
+                    <td><code>docker ps -a</code></td>
+                    <td>List ALL containers (including stopped)</td>
+                </tr>
+                <tr>
+                    <td><code>docker stop container</code></td>
+                    <td>Gracefully stop a container</td>
+                </tr>
+                <tr>
+                    <td><code>docker start container</code></td>
+                    <td>Start a stopped container</td>
+                </tr>
+                <tr>
+                    <td><code>docker rm container</code></td>
+                    <td>Remove a stopped container</td>
+                </tr>
+                <tr>
+                    <td><code>docker rm -f container</code></td>
+                    <td>Force remove a running container</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Docker Debugging Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>docker logs container</code></td>
+                    <td>View container logs</td>
+                </tr>
+                <tr>
+                    <td><code>docker logs -f container</code></td>
+                    <td>Follow logs in real-time (like tail -f)</td>
+                </tr>
+                <tr>
+                    <td><code>docker exec -it container bash</code></td>
+                    <td>Shell into a running container</td>
+                </tr>
+                <tr>
+                    <td><code>docker inspect container</code></td>
+                    <td>Detailed info in JSON format</td>
+                </tr>
+                <tr>
+                    <td><code>docker stats</code></td>
+                    <td>Live resource usage (CPU, memory)</td>
+                </tr>
+                <tr>
+                    <td><code>docker top container</code></td>
+                    <td>View processes running in container</td>
+                </tr>
+            </table>
+
+            <div class="meme-box">
+                <div class="top-text">Container not working?</div>
+                <div class="meme-image">🔍📋🐳</div>
+                <div class="bottom-text">docker logs is your best friend</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Docker Cleanup Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>docker system prune</code></td>
+                    <td>Remove stopped containers, unused networks, dangling images</td>
+                </tr>
+                <tr>
+                    <td><code>docker system prune -a</code></td>
+                    <td>Also remove all unused images (not just dangling)</td>
+                </tr>
+                <tr>
+                    <td><code>docker image prune</code></td>
+                    <td>Remove dangling images only</td>
+                </tr>
+                <tr>
+                    <td><code>docker volume prune</code></td>
+                    <td>Remove unused volumes (careful with data!)</td>
+                </tr>
+                <tr>
+                    <td><code>docker container prune</code></td>
+                    <td>Remove all stopped containers</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Docker Compose Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>docker compose up</code></td>
+                    <td>Start all services defined in docker-compose.yml</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose up -d</code></td>
+                    <td>Start in background (detached)</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose up --build</code></td>
+                    <td>Rebuild images before starting</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose down</code></td>
+                    <td>Stop and remove containers, networks</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose down -v</code></td>
+                    <td>Also remove volumes (deletes data!)</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose logs -f</code></td>
+                    <td>Follow logs from all services</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose exec service bash</code></td>
+                    <td>Shell into a specific service</td>
+                </tr>
+                <tr>
+                    <td><code>docker compose ps</code></td>
+                    <td>List running services</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Dockerfile Instructions</h2>
+
+            <table>
+                <tr>
+                    <th>Instruction</th>
+                    <th>Purpose</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td><code>FROM</code></td>
+                    <td>Base image to start from</td>
+                    <td><code>FROM python:3.11-slim</code></td>
+                </tr>
+                <tr>
+                    <td><code>WORKDIR</code></td>
+                    <td>Set working directory</td>
+                    <td><code>WORKDIR /app</code></td>
+                </tr>
+                <tr>
+                    <td><code>COPY</code></td>
+                    <td>Copy files into image</td>
+                    <td><code>COPY requirements.txt .</code></td>
+                </tr>
+                <tr>
+                    <td><code>RUN</code></td>
+                    <td>Execute command at build time</td>
+                    <td><code>RUN pip install -r requirements.txt</code></td>
+                </tr>
+                <tr>
+                    <td><code>ENV</code></td>
+                    <td>Set environment variable</td>
+                    <td><code>ENV NODE_ENV=production</code></td>
+                </tr>
+                <tr>
+                    <td><code>EXPOSE</code></td>
+                    <td>Document port (doesn't open it)</td>
+                    <td><code>EXPOSE 8080</code></td>
+                </tr>
+                <tr>
+                    <td><code>CMD</code></td>
+                    <td>Default command (can be overridden)</td>
+                    <td><code>CMD ["python", "app.py"]</code></td>
+                </tr>
+                <tr>
+                    <td><code>ENTRYPOINT</code></td>
+                    <td>Fixed executable (CMD becomes arguments)</td>
+                    <td><code>ENTRYPOINT ["python"]</code></td>
+                </tr>
+                <tr>
+                    <td><code>USER</code></td>
+                    <td>Switch to non-root user</td>
+                    <td><code>USER appuser</code></td>
+                </tr>
+                <tr>
+                    <td><code>ARG</code></td>
+                    <td>Build-time variable</td>
+                    <td><code>ARG VERSION=1.0</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Kubernetes kubectl Commands</h2>
+
+            <table>
+                <tr>
+                    <th>Command</th>
+                    <th>What It Does</th>
+                </tr>
+                <tr>
+                    <td><code>kubectl get pods</code></td>
+                    <td>List all pods</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl get all</code></td>
+                    <td>List all resources (pods, services, deployments)</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl get pods -o wide</code></td>
+                    <td>More details (node, IP address)</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl describe pod name</code></td>
+                    <td>Detailed info + events for debugging</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl logs pod</code></td>
+                    <td>View pod logs</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl logs -f pod</code></td>
+                    <td>Follow pod logs</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl exec -it pod -- bash</code></td>
+                    <td>Shell into a pod</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl apply -f file.yaml</code></td>
+                    <td>Apply/update configuration</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl delete -f file.yaml</code></td>
+                    <td>Delete resources defined in file</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl delete pod name</code></td>
+                    <td>Delete a specific pod</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl scale deployment/name --replicas=5</code></td>
+                    <td>Scale to 5 replicas</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl rollout status deployment/name</code></td>
+                    <td>Watch rollout progress</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl rollout undo deployment/name</code></td>
+                    <td>Rollback to previous version</td>
+                </tr>
+                <tr>
+                    <td><code>kubectl port-forward pod 8080:80</code></td>
+                    <td>Forward local port to pod</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Key Concepts at a Glance</h2>
+
+            <table>
+                <tr>
+                    <th>Concept</th>
+                    <th>Quick Definition</th>
+                </tr>
+                <tr>
+                    <td><strong>Container vs VM</strong></td>
+                    <td>Container: shared kernel, MBs, seconds to start. VM: full OS, GBs, minutes to start.</td>
+                </tr>
+                <tr>
+                    <td><strong>Image vs Container</strong></td>
+                    <td>Image: read-only template (like a class). Container: running instance (like an object).</td>
+                </tr>
+                <tr>
+                    <td><strong>Namespaces</strong></td>
+                    <td>Linux feature that isolates what a process can see (PID, network, filesystem).</td>
+                </tr>
+                <tr>
+                    <td><strong>Cgroups</strong></td>
+                    <td>Linux feature that limits how much resources a process can use (CPU, memory).</td>
+                </tr>
+                <tr>
+                    <td><strong>Layers</strong></td>
+                    <td>Each Dockerfile instruction creates a cached layer. Unchanged layers are reused.</td>
+                </tr>
+                <tr>
+                    <td><strong>Volume</strong></td>
+                    <td>Persistent storage that survives container deletion.</td>
+                </tr>
+                <tr>
+                    <td><strong>Docker Engine vs Desktop</strong></td>
+                    <td>Engine: free, open source. Desktop: commercial license for large companies.</td>
+                </tr>
+                <tr>
+                    <td><strong>Pod</strong></td>
+                    <td>K8s smallest unit. 1+ containers sharing network and storage.</td>
+                </tr>
+                <tr>
+                    <td><strong>Deployment</strong></td>
+                    <td>K8s object that manages pods — handles replicas, updates, rollbacks.</td>
+                </tr>
+                <tr>
+                    <td><strong>Service</strong></td>
+                    <td>K8s stable network endpoint for pods. Pods change, Service stays.</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Best Practices Summary</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>DO</h4>
+                    <ul>
+                        <li>Use specific image tags (<code>python:3.11-slim</code>)</li>
+                        <li>Use slim/alpine base images</li>
+                        <li>Copy dependencies first, then code (cache optimization)</li>
+                        <li>Combine RUN commands and clean up in same layer</li>
+                        <li>Use multi-stage builds for smaller images</li>
+                        <li>Run as non-root user</li>
+                        <li>Use .dockerignore</li>
+                        <li>Pass secrets at runtime via <code>-e</code> or secret managers</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>DON'T</h4>
+                    <ul>
+                        <li>Use <code>:latest</code> tag in production</li>
+                        <li>Put secrets in Dockerfile (visible in <code>docker history</code>!)</li>
+                        <li>Run containers as root</li>
+                        <li>Include unnecessary files in image</li>
+                        <li>Create many small RUN layers</li>
+                        <li>Leave apt/pip cache in image</li>
+                        <li>Use full base images when slim works</li>
+                        <li>Forget to add health checks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Troubleshooting Quick Reference</h2>
+
+            <table>
+                <tr>
+                    <th>Problem</th>
+                    <th>Likely Cause</th>
+                    <th>Solution</th>
+                </tr>
+                <tr>
+                    <td>Container exits immediately</td>
+                    <td>No foreground process or app crashed</td>
+                    <td><code>docker logs container</code> to see the error</td>
+                </tr>
+                <tr>
+                    <td>Port not accessible</td>
+                    <td>Wrong port mapping or port in use</td>
+                    <td>Check <code>-p HOST:CONTAINER</code> order, try different port</td>
+                </tr>
+                <tr>
+                    <td>Changes not reflected</td>
+                    <td>Using old/cached image</td>
+                    <td><code>docker build --no-cache</code> or check image tag</td>
+                </tr>
+                <tr>
+                    <td>Can't connect to database in Compose</td>
+                    <td>Using localhost instead of service name</td>
+                    <td>Use <code>db</code> not <code>localhost</code> in connection string</td>
+                </tr>
+                <tr>
+                    <td>"Permission denied"</td>
+                    <td>Non-root user, wrong file permissions</td>
+                    <td>Check file ownership, use correct USER in Dockerfile</td>
+                </tr>
+                <tr>
+                    <td>Image too large</td>
+                    <td>Full base image, no cleanup, no .dockerignore</td>
+                    <td>Use -slim base, multi-stage builds, add .dockerignore</td>
+                </tr>
+                <tr>
+                    <td>Build cache not working</td>
+                    <td>Copying code before dependencies</td>
+                    <td>COPY requirements.txt first, then pip install, then COPY code</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Docker Desktop Alternatives</h2>
+
+            <p class="story">
+                Remember: Docker Desktop requires a paid subscription for companies with 250+ employees or $10M+ revenue.
+                Use these free alternatives instead:
+            </p>
+
+            <table>
+                <tr>
+                    <th>Tool</th>
+                    <th>Platform</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td><strong>Rancher Desktop</strong></td>
+                    <td>Mac, Windows, Linux</td>
+                    <td>GUI included, K8s built-in. <code>brew install --cask rancher</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Colima</strong></td>
+                    <td>Mac, Linux</td>
+                    <td>CLI only, lightweight. <code>brew install colima && colima start</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Podman Desktop</strong></td>
+                    <td>Mac, Windows, Linux</td>
+                    <td>Daemonless, rootless. Can alias <code>docker=podman</code></td>
+                </tr>
+                <tr>
+                    <td><strong>WSL2 + Docker Engine</strong></td>
+                    <td>Windows</td>
+                    <td>Native Linux experience inside Windows</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Final Quiz -->
+        <div class="quiz-container">
+            <div class="quiz-title">Final Assessment</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What Linux features enable container isolation?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Virtual machines</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Namespaces and cgroups</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Docker and Kubernetes</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. Why is Docker Desktop banned at many companies?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) It's insecure</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Paid license required for 250+ employees or $10M+ revenue</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Docker Engine is better</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. Why copy requirements.txt before application code in a Dockerfile?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Docker requires this order</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) Dependencies layer is cached — code changes don't trigger reinstall</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) The file is smaller</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">4. What does <code>-v /data:/app/data</code> do?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">A) Creates a virtual network</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q4')">B) Mounts host /data directory to container /app/data</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q4')">C) Sets an environment variable</div>
+                </div>
+                <div class="quiz-feedback" id="q4-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">5. How should you handle secrets in Docker?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q5')">A) Use ENV in Dockerfile</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q5')">B) Pass at runtime via -e flag or use secret managers</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q5')">C) Copy a secrets.txt file into the image</div>
+                </div>
+                <div class="quiz-feedback" id="q5-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">6. In Kubernetes, what ensures crashed pods are automatically replaced?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q6')">A) Docker daemon</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q6')">B) Deployment controller (reconciliation loop)</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q6')">C) Manual restart is required</div>
+                </div>
+                <div class="quiz-feedback" id="q6-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">7. What's a free alternative to Docker Desktop for Mac?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q7')">A) Rancher Desktop or Colima</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q7')">B) Install Docker Engine directly on Mac</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q7')">C) There is no free alternative</div>
+                </div>
+                <div class="quiz-feedback" id="q7-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">8. What's the purpose of multi-stage builds?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q8')">A) Run multiple containers at once</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q8')">B) Keep build tools out of final image (smaller size)</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q8')">C) Deploy to multiple environments</div>
+                </div>
+                <div class="quiz-feedback" id="q8-feedback"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What's Next?</h2>
+
+            <p class="story">
+                You've covered the essentials! Here are topics to explore as you continue your container journey:
+            </p>
+
+            <ul>
+                <li><strong>Docker networking</strong> — bridge, host, overlay networks</li>
+                <li><strong>Docker Compose advanced</strong> — profiles, extends, health checks</li>
+                <li><strong>K8s deeper dive</strong> — StatefulSets, DaemonSets, Jobs, CronJobs</li>
+                <li><strong>CI/CD with containers</strong> — GitHub Actions, GitLab CI, Jenkins</li>
+                <li><strong>Service mesh</strong> — Istio, Linkerd for microservices</li>
+                <li><strong>GitOps</strong> — ArgoCD, Flux for declarative deployments</li>
+                <li><strong>Container security</strong> — scanning, signing, runtime protection</li>
+            </ul>
+
+            <div class="meme-box">
+                <div class="top-text">Finished the containerization guide</div>
+                <div class="meme-image">🎓🐳☸️</div>
+                <div class="bottom-text">Now go containerize all the things</div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="06_kubernetes.html">← Kubernetes Basics</a>
+            <a href="index.html">Back to Home →</a>
+        </div>
+
+        <footer>
+            <p>Page 7 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect ? 'Correct!' : 'Review the cheat sheet above.';
+        }
+    </script>
+</body>
+</html>

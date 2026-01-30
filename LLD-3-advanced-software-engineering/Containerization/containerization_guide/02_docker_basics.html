@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Fundamentals - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🐳</div>
+            <h1>Docker Fundamentals</h1>
+            <p class="subtitle">Images, containers, and the commands you'll use daily</p>
+        </header>
+
+        <div class="section">
+            <h2>The Docker Workflow</h2>
+
+            <p class="story">
+                Let's trace the journey from code to running container. There are four main stages:
+            </p>
+
+            <div class="diagram">
+<pre>
+   Dockerfile           docker build          docker run           docker push
+       │                    │                     │                    │
+       ▼                    ▼                     ▼                    ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Recipe     │ →  │    Image     │ →  │  Container   │ →  │   Registry   │
+│  (text file) │    │  (template)  │    │  (running)   │    │  (sharing)   │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+</pre>
+            </div>
+
+            <table>
+                <tr>
+                    <th>Stage</th>
+                    <th>What Happens</th>
+                    <th>Command</th>
+                </tr>
+                <tr>
+                    <td><strong>1. Write Dockerfile</strong></td>
+                    <td>Create a text file with build instructions</td>
+                    <td>(your editor)</td>
+                </tr>
+                <tr>
+                    <td><strong>2. Build Image</strong></td>
+                    <td>Execute Dockerfile to create read-only image</td>
+                    <td><code>docker build -t myapp:1.0 .</code></td>
+                </tr>
+                <tr>
+                    <td><strong>3. Run Container</strong></td>
+                    <td>Create a running instance from the image</td>
+                    <td><code>docker run myapp:1.0</code></td>
+                </tr>
+                <tr>
+                    <td><strong>4. Push to Registry</strong></td>
+                    <td>Share your image with others</td>
+                    <td><code>docker push mycompany/myapp:1.0</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Essential Commands</h2>
+
+            <p class="story">
+                Here are the commands you'll use 90% of the time. Memorize these.
+            </p>
+
+            <h3>Building & Running</h3>
+            <pre><code># Build an image from Dockerfile in current directory
+docker build -t myapp:1.0 .
+
+# Run a container (foreground)
+docker run myapp:1.0
+
+# Run in background (detached) with port mapping
+docker run -d -p 8080:80 myapp:1.0
+
+# Run with a name (easier to reference later)
+docker run -d --name mywebapp -p 8080:80 myapp:1.0</code></pre>
+
+            <h3>Managing Containers</h3>
+            <pre><code># List running containers
+docker ps
+
+# List ALL containers (including stopped)
+docker ps -a
+
+# Stop a container gracefully
+docker stop mywebapp
+
+# Start a stopped container
+docker start mywebapp
+
+# Remove a stopped container
+docker rm mywebapp
+
+# Force remove a running container
+docker rm -f mywebapp</code></pre>
+
+            <h3>Debugging</h3>
+            <pre><code># View container logs
+docker logs mywebapp
+
+# Follow logs (like tail -f)
+docker logs -f mywebapp
+
+# Shell into a running container
+docker exec -it mywebapp bash
+
+# View resource usage
+docker stats</code></pre>
+
+            <div class="meme-box">
+                <div class="top-text">Me debugging containers</div>
+                <div class="meme-image">🔍📋🐳</div>
+                <div class="bottom-text">docker logs is my best friend</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Important Flags Explained</h2>
+
+            <p class="story">
+                The <code>docker run</code> command has several flags. Here's what the important ones do:
+            </p>
+
+            <table>
+                <tr>
+                    <th>Flag</th>
+                    <th>What It Does</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td><code>-d</code></td>
+                    <td>Detached mode — run in background</td>
+                    <td><code>docker run -d nginx</code></td>
+                </tr>
+                <tr>
+                    <td><code>-p HOST:CONTAINER</code></td>
+                    <td>Map host port to container port</td>
+                    <td><code>-p 8080:80</code> (host 8080 → container 80)</td>
+                </tr>
+                <tr>
+                    <td><code>-v HOST:CONTAINER</code></td>
+                    <td>Mount a volume (persist data or share files)</td>
+                    <td><code>-v /my/code:/app</code></td>
+                </tr>
+                <tr>
+                    <td><code>-e VAR=value</code></td>
+                    <td>Set environment variable</td>
+                    <td><code>-e DATABASE_URL=postgres://...</code></td>
+                </tr>
+                <tr>
+                    <td><code>--name</code></td>
+                    <td>Give the container a name</td>
+                    <td><code>--name myapp</code></td>
+                </tr>
+                <tr>
+                    <td><code>--rm</code></td>
+                    <td>Automatically remove container when it stops</td>
+                    <td><code>docker run --rm myapp</code></td>
+                </tr>
+                <tr>
+                    <td><code>-it</code></td>
+                    <td>Interactive mode with terminal (for shells)</td>
+                    <td><code>docker run -it ubuntu bash</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Volumes: Persisting Data</h2>
+
+            <p class="story">
+                Here's a critical concept: <strong>containers are ephemeral</strong>. When a container is deleted,
+                everything inside it is gone. This is usually fine for stateless apps, but what about databases?
+            </p>
+
+            <div class="danger-box">
+                <strong>Without volumes:</strong> Delete the container = lose all data. Your Postgres database? Gone. 💀
+            </div>
+
+            <div class="success-box">
+                <strong>With volumes:</strong> Data lives on the host or in a named volume. Delete the container,
+                data survives. Spin up a new container, point it to the same volume. Crisis averted.
+            </div>
+
+            <pre><code># Named volume (Docker manages the location)
+docker run -v mydata:/var/lib/postgresql/data postgres
+
+# Bind mount (you specify the host path)
+docker run -v /home/user/pgdata:/var/lib/postgresql/data postgres
+
+# Also useful for development — mount your code for live reloading
+docker run -v $(pwd):/app myapp</code></pre>
+
+            <div class="analogy-box">
+                <div class="title">💾 The External Hard Drive Analogy</div>
+                <p>
+                    Think of volumes like an external hard drive. The container (your laptop) can be replaced,
+                    but your data on the external drive is safe. Just plug the drive into the new laptop.
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Port Mapping: A Closer Look</h2>
+
+            <p class="story">
+                The <code>-p</code> flag is one of the most confusing for beginners. Let's break it down:
+            </p>
+
+            <pre><code>docker run -p 8080:80 nginx
+           ────  ──
+            │    └── Container port (nginx listens on 80 inside)
+            └─────── Host port (you access localhost:8080)</code></pre>
+
+            <div class="diagram">
+<pre>
+Your Browser                    Docker Host                     Container
+─────────────                   ────────────                    ─────────
+
+http://localhost:8080  ───────►  Port 8080  ───────────────►  Port 80 (nginx)
+                                     │                              │
+                               Host Machine                    nginx process
+</pre>
+            </div>
+
+            <p class="story">
+                Common pattern: Your app listens on port 5000 inside the container, but you want to access it
+                on port 80 (standard HTTP). Use <code>-p 80:5000</code>.
+            </p>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🎯 Knowledge Check</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What does <code>docker run -d</code> do?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Deletes the container after running</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Runs the container in the background (detached)</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Downloads the image</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What does <code>-p 3000:80</code> mean?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) Opens ports 3000 through 80</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Maps host port 3000 to container port 80</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Sets the container's port to 3000</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. Why use volumes for databases?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Databases don't work without volumes</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) To persist data when the container is deleted</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">C) To make the database faster</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>Coming up:</strong> Before we write Dockerfiles, there's an important topic we need to cover —
+            Docker Desktop is banned at many companies. Why? And what should you use instead?
+        </div>
+
+        <div class="page-nav">
+            <a href="01_history.html">← How Containers Work</a>
+            <a href="03_docker_desktop.html">Desktop vs Engine →</a>
+        </div>
+
+        <footer>
+            <p>Page 3 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect ? 'Correct!' : 'Not quite — review the section above.';
+        }
+    </script>
+</body>
+</html>

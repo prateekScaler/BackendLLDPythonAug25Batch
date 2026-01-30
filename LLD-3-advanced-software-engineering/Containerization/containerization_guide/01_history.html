@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History & Concepts - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">📜</div>
+            <h1>History & Core Concepts</h1>
+            <p class="subtitle">How we got from bare metal to containers</p>
+        </header>
+
+        <div class="section">
+            <h2>The Linux Kernel Magic</h2>
+
+            <p class="story">
+                Here's a secret: containers aren't actually a new technology. The core concepts have existed in Linux
+                since 2008. Docker just made them <strong>really easy to use</strong> in 2013.
+            </p>
+
+            <p class="story">
+                Containers are possible because of two Linux kernel features: <strong>namespaces</strong> and <strong>cgroups</strong>.
+                Let's understand what these do.
+            </p>
+
+            <h3>Namespaces: Isolation (What Processes Can See)</h3>
+
+            <p class="story">
+                Imagine you're in a large office building, but you're placed in a room with frosted glass walls.
+                You can't see other rooms, you think you're alone in the building. That's what namespaces do for processes.
+            </p>
+
+            <table>
+                <tr>
+                    <th>Namespace</th>
+                    <th>What It Isolates</th>
+                    <th>Effect</th>
+                </tr>
+                <tr>
+                    <td><strong>PID</strong></td>
+                    <td>Process IDs</td>
+                    <td>Container sees its own PID 1 (but it's actually PID 4523 on host)</td>
+                </tr>
+                <tr>
+                    <td><strong>NET</strong></td>
+                    <td>Network interfaces</td>
+                    <td>Container has its own IP address, ports, routing tables</td>
+                </tr>
+                <tr>
+                    <td><strong>MNT</strong></td>
+                    <td>Mount points</td>
+                    <td>Container sees its own filesystem hierarchy</td>
+                </tr>
+                <tr>
+                    <td><strong>USER</strong></td>
+                    <td>User/Group IDs</td>
+                    <td>Root inside container ≠ root on host (rootless containers)</td>
+                </tr>
+                <tr>
+                    <td><strong>UTS</strong></td>
+                    <td>Hostname</td>
+                    <td>Container can have its own hostname</td>
+                </tr>
+            </table>
+
+            <h3>Cgroups: Resource Limits (What Processes Can Use)</h3>
+
+            <p class="story">
+                Namespaces handle isolation, but what stops a container from eating all your RAM? That's where
+                <strong>cgroups</strong> (control groups) come in. They're the resource police.
+            </p>
+
+            <div class="analogy-box">
+                <div class="title">💰 The Budget Analogy</div>
+                <p>
+                    Think of cgroups like giving each container a budget. "You get 512MB of RAM and 50% of one CPU core.
+                    That's it. No negotiation." The container can't exceed these limits, preventing one misbehaving
+                    app from taking down the entire system.
+                </p>
+            </div>
+
+            <div class="meme-box">
+                <div class="top-text">Container asking for more RAM</div>
+                <div class="meme-image">🐳: 🙏 cgroups: 🙅</div>
+                <div class="bottom-text">"We have RAM at home"</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What's Actually in a Container Image?</h2>
+
+            <p class="story">
+                Here's something that confuses beginners: when you see <code>FROM ubuntu:22.04</code>, you're NOT
+                getting a full Ubuntu OS with a kernel. Containers <strong>share the host kernel</strong>.
+            </p>
+
+            <div class="key-point">
+                <strong>Key Insight:</strong> A container image contains the <em>userland</em> — binaries like
+                <code>/bin/bash</code>, libraries like glibc, package managers like apt — everything EXCEPT the kernel.
+                That's why the Ubuntu image is ~77MB, not 2GB.
+            </div>
+
+            <p class="story">
+                This means you can run a CentOS container on an Ubuntu host. The CentOS image provides yum, rpm,
+                and CentOS-specific tools, but it uses the Ubuntu host's Linux kernel. Same kernel family = works fine.
+            </p>
+
+            <div class="diagram">
+<pre>
+┌──────────────────────────────────────┐
+│         Container (CentOS)           │
+│  ┌────────────────────────────────┐  │
+│  │ /bin/bash, yum, rpm, glibc     │  │
+│  │ CentOS userland tools          │  │  ← FROM centos:7
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
+                  │
+                  │ System calls
+                  ▼
+┌──────────────────────────────────────┐
+│         Host (Ubuntu 22.04)          │
+│  ┌────────────────────────────────┐  │
+│  │       Linux Kernel 5.15        │  │  ← Shared!
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
+</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Layers: The Efficiency Trick</h2>
+
+            <p class="story">
+                Docker images are built in <strong>layers</strong>. Each instruction in a Dockerfile creates a new
+                read-only layer. This is brilliant for two reasons:
+            </p>
+
+            <ol>
+                <li><strong>Caching:</strong> If you change line 8 of your Dockerfile, only layers 8+ rebuild. Layers 1-7 are cached.</li>
+                <li><strong>Sharing:</strong> If 10 containers use <code>python:3.11</code>, the base image is stored once on disk, not 10 times.</li>
+            </ol>
+
+            <div class="diagram">
+<pre>
+Dockerfile                     Image Layers (read-only)
+────────────────────           ──────────────────────────
+FROM python:3.11-slim    →     [Layer 1: Python base     ] 125 MB  ← Shared across images
+COPY requirements.txt .  →     [Layer 2: requirements.txt]   1 KB
+RUN pip install ...      →     [Layer 3: pip packages    ]  45 MB  ← Cached if unchanged
+COPY . .                 →     [Layer 4: Your code       ]  50 KB  ← Only this rebuilds
+CMD ["python", "app.py"] →     [Layer 5: CMD metadata    ]   0 KB
+                               ────────────────────────────
+                               Total: ~170 MB
+
+Container runs with a thin writable layer on top (for logs, temp files, etc.)
+</pre>
+            </div>
+
+            <div class="warning-box">
+                <strong>Why This Matters:</strong> Always order your Dockerfile with rarely-changing things first
+                (base image, system packages) and frequently-changing things last (your code). This maximizes cache hits.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Union Filesystem</h2>
+
+            <p class="story">
+                How do these layers stack together? Through a <strong>Union Filesystem</strong> (like OverlayFS).
+                It presents multiple directories as a single merged view.
+            </p>
+
+            <div class="analogy-box">
+                <div class="title">📚 The Transparent Sheets Analogy</div>
+                <p>
+                    Imagine stacking transparent sheets of paper. You can see through to all layers, but when you write,
+                    you only write on the top sheet. Lower sheets are untouched. That's copy-on-write — the container
+                    can "modify" files, but changes go to its private writable layer.
+                </p>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🎯 Knowledge Check</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What Linux feature limits a container's CPU and memory usage?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Namespaces</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) cgroups</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) OverlayFS</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. Does a container image include the Linux kernel?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">A) No — containers share the host kernel</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">B) Yes — each container has its own kernel</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">3. Why order Dockerfiles with stable things first?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q3')">A) Docker requires this order</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q3')">B) To maximize layer caching — unchanged layers don't rebuild</div>
+                </div>
+                <div class="quiz-feedback" id="q3-feedback"></div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>Next up:</strong> Now that you understand how containers work under the hood, let's learn
+            the practical Docker commands you'll use every day.
+        </div>
+
+        <div class="page-nav">
+            <a href="04_dockerfile.html">← Writing Dockerfiles</a>
+            <a href="02_docker_basics.html">Docker Fundamentals →</a>
+        </div>
+
+        <footer>
+            <p>Page 2 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect ? 'Correct!' : 'Not quite — review the section above.';
+        }
+    </script>
+</body>
+</html>

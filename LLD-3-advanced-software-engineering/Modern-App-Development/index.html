@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Application Development - Complete Guide</title>
+    <style>
+        :root {
+            --primary: #2d3748;
+            --accent: #5a67d8;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #e53e3e;
+            --info: #4299e1;
+            --docker: #0db7ed;
+            --bg: #f7fafc;
+            --card: #ffffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--primary);
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        /* Navigation */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 1000;
+            padding: 0 24px;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        .nav-logo {
+            font-weight: 700;
+            font-size: 1.2em;
+            padding: 16px 0;
+            color: var(--accent);
+        }
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+        .nav-link {
+            padding: 16px 20px;
+            text-decoration: none;
+            color: #718096;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 24px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 2.8em;
+            margin-bottom: 16px;
+        }
+        .hero p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Section styles */
+        .section {
+            padding: 60px 0;
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        h2 {
+            font-size: 2em;
+            margin-bottom: 24px;
+            color: var(--primary);
+        }
+        h3 {
+            font-size: 1.4em;
+            margin: 32px 0 16px;
+            color: var(--accent);
+        }
+        p { margin-bottom: 16px; }
+
+        /* Problem Card - 12 Factor */
+        .problem-card {
+            background: var(--card);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .problem-header {
+            padding: 20px 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: background 0.2s;
+            border-left: 5px solid #e2e8f0;
+        }
+        .problem-header:hover { background: #f8fafc; }
+        .problem-card.revealed .problem-header {
+            border-left-color: var(--success);
+        }
+        .problem-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--warning);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .problem-card.revealed .problem-number {
+            background: var(--success);
+        }
+        .problem-info { flex-grow: 1; }
+        .problem-title {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .problem-toggle {
+            font-size: 1.3em;
+            color: #a0aec0;
+            transition: transform 0.3s;
+        }
+        .problem-card.open .problem-toggle {
+            transform: rotate(180deg);
+        }
+        .problem-content {
+            display: none;
+            padding: 0 28px 28px;
+        }
+        .problem-card.open .problem-content {
+            display: block;
+        }
+
+        /* Scenario Box */
+        .scenario {
+            background: linear-gradient(135deg, #fff5f5 0%, #fffaf0 100%);
+            border: 2px solid #feb2b2;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+        .scenario-title {
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .scenario-code {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+            margin: 16px 0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* Think prompt */
+        .think-prompt {
+            background: #fef3c7;
+            border: 2px dashed #d69e2e;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .think-prompt p {
+            font-weight: 600;
+            color: #975a16;
+            margin-bottom: 16px;
+        }
+        .reveal-btn {
+            padding: 12px 28px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .reveal-btn:hover {
+            background: #4c51bf;
+            transform: translateY(-2px);
+        }
+
+        /* Solution Box - Hidden by default */
+        .solution {
+            display: none;
+            margin-top: 24px;
+        }
+        .problem-card.revealed .solution {
+            display: block;
+        }
+        .solution-header {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            border: 2px solid #9ae6b4;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .factor-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .solution-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #276749;
+            margin-bottom: 8px;
+        }
+        .solution-desc {
+            color: #2f855a;
+        }
+
+        /* Code blocks */
+        pre.code {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px 24px;
+            border-radius: 10px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+            margin: 16px 0;
+        }
+        pre.code .comment { color: #68d391; }
+        pre.code .keyword { color: #63b3ed; }
+        pre.code .string { color: #f6ad55; }
+        pre.code .good { color: #68d391; }
+        pre.code .bad { color: #fc8181; }
+        pre.code .highlight {
+            background: rgba(72, 187, 120, 0.2);
+            display: block;
+            margin: 0 -24px;
+            padding: 0 24px;
+        }
+
+        /* Concept Box */
+        .concept {
+            background: linear-gradient(135deg, #ebf8ff 0%, #e6f0ff 100%);
+            border-left: 5px solid var(--info);
+            padding: 20px 24px;
+            margin: 20px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .concept-title {
+            font-weight: 700;
+            color: var(--info);
+            margin-bottom: 10px;
+        }
+
+        /* Docker Section Styles */
+        .docker-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+        .docker-step {
+            text-align: center;
+            padding: 20px;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            min-width: 120px;
+        }
+        .docker-icon { font-size: 2.5em; margin-bottom: 8px; }
+        .docker-label { font-weight: 600; font-size: 0.95em; }
+        .docker-arrow { font-size: 1.8em; color: var(--docker); }
+
+        /* Dockerfile Levels */
+        .dockerfile-card {
+            background: var(--card);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .dockerfile-header {
+            padding: 18px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-left: 5px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .dockerfile-header:hover { background: #f8fafc; }
+        .dockerfile-card.unlocked .dockerfile-header {
+            border-left-color: var(--docker);
+        }
+        .dockerfile-card.locked {
+            opacity: 0.5;
+        }
+        .dockerfile-card.locked .dockerfile-header {
+            cursor: not-allowed;
+        }
+        .level-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .level-1 { background: #c6f6d5; color: #276749; }
+        .level-2 { background: #bee3f8; color: #2b6cb0; }
+        .level-3 { background: #fef3c7; color: #975a16; }
+        .level-4 { background: #fed7d7; color: #c53030; }
+        .level-5 { background: #e9d8fd; color: #6b46c1; }
+        .dockerfile-title { flex-grow: 1; font-weight: 600; }
+        .dockerfile-toggle {
+            color: #a0aec0;
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+        .dockerfile-card.open .dockerfile-toggle {
+            transform: rotate(180deg);
+        }
+        .dockerfile-content {
+            display: none;
+            padding: 0 24px 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .dockerfile-card.open .dockerfile-content {
+            display: block;
+        }
+        .whats-new {
+            background: #f0fff4;
+            border: 2px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 16px 0;
+        }
+        .whats-new-title {
+            font-weight: 700;
+            color: var(--success);
+            font-size: 0.9em;
+            margin-bottom: 6px;
+        }
+
+        /* CI/CD Pipeline */
+        .pipeline-visual {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            border-radius: 16px;
+            padding: 28px;
+            margin: 28px 0;
+            overflow-x: auto;
+        }
+        .pipeline-flow {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: max-content;
+        }
+        .pipeline-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 14px 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            min-width: 75px;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0.4;
+        }
+        .pipeline-stage.active {
+            opacity: 1;
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-4px);
+        }
+        .pipeline-stage.completed { opacity: 1; }
+        .pipeline-stage .stage-icon { font-size: 1.5em; margin-bottom: 6px; }
+        .pipeline-stage .stage-label {
+            color: white;
+            font-size: 0.7em;
+            text-align: center;
+            font-weight: 500;
+        }
+        .pipeline-arrow {
+            color: #4a5568;
+            font-size: 1.2em;
+            transition: color 0.3s;
+        }
+        .pipeline-arrow.active { color: var(--success); }
+        .pipeline-divider {
+            width: 2px;
+            height: 40px;
+            background: #4a5568;
+            margin: 0 6px;
+        }
+
+        /* Stage cards for CI/CD */
+        .cicd-card {
+            background: var(--card);
+            border-radius: 12px;
+            margin-bottom: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border-left: 4px solid #e2e8f0;
+        }
+        .cicd-card.active { border-left-color: var(--accent); }
+        .cicd-card.completed { border-left-color: var(--success); }
+        .cicd-card.locked { opacity: 0.5; }
+        .cicd-header {
+            padding: 16px 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .cicd-header:hover { background: #f8fafc; }
+        .cicd-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        .cicd-card.active .cicd-number,
+        .cicd-card.completed .cicd-number {
+            background: var(--accent);
+            color: white;
+        }
+        .cicd-card.completed .cicd-number { background: var(--success); }
+        .cicd-info { flex-grow: 1; }
+        .cicd-title { font-weight: 600; }
+        .cicd-subtitle { font-size: 0.85em; color: #718096; }
+        .cicd-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: 600;
+        }
+        .badge-ci { background: #bee3f8; color: #2b6cb0; }
+        .badge-cd { background: #c6f6d5; color: #276749; }
+        .badge-test { background: #fef3c7; color: #975a16; }
+        .cicd-toggle {
+            color: #a0aec0;
+            transition: transform 0.3s;
+        }
+        .cicd-card.open .cicd-toggle { transform: rotate(180deg); }
+        .cicd-content {
+            display: none;
+            padding: 0 22px 22px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .cicd-card.open .cicd-content { display: block; }
+
+        /* Environment boxes */
+        .env-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .env-box {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border-top: 4px solid #e2e8f0;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+        .env-box.active {
+            opacity: 1;
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .env-box.dev { border-top-color: var(--info); }
+        .env-box.staging { border-top-color: var(--warning); }
+        .env-box.prod { border-top-color: var(--success); }
+        .env-icon { font-size: 2em; margin-bottom: 8px; }
+        .env-name { font-weight: 700; }
+        @media (max-width: 768px) {
+            .env-row { grid-template-columns: 1fr; }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            padding: 10px 22px;
+            border: 2px solid var(--accent);
+            background: white;
+            color: var(--accent);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+        .control-btn.primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Summary section */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 32px 0;
+        }
+        .summary-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .summary-card h4 {
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Lists */
+        ul { margin: 12px 0 12px 24px; }
+        li { margin: 6px 0; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { font-size: 1rem; }
+            .hero h1 { font-size: 2em; }
+            .nav-links { display: none; }
+            pre.code { padding: 14px; font-size: 0.8em; }
+        }
+        @media (min-width: 1200px) {
+            body { font-size: 1.15rem; }
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+        .data-table th, .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table th { background: #f7fafc; font-weight: 600; }
+        .data-table tr:hover { background: #f8fafc; }
+
+        /* Progress bar */
+        .section-progress {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .section-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-logo">Modern App Dev</div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" onclick="showSection('principles')">12 Factors</a>
+                <a href="#" class="nav-link" onclick="showSection('docker')">Docker</a>
+                <a href="#" class="nav-link" onclick="showSection('cicd')">CI/CD</a>
+                <a href="#" class="nav-link" onclick="showSection('summary')">Summary</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+        <h1>Modern Application Development</h1>
+        <p>Learn the principles, tools, and practices that power Netflix, Spotify, and every modern tech company. From 12-Factor methodology to Docker and CI/CD pipelines.</p>
+    </div>
+
+    <!-- Section 1: 12 Factor Principles -->
+    <section id="principles" class="section active">
+        <div class="container">
+            <h2>The 12-Factor App: Problem-First Approach</h2>
+            <p>Each scenario below presents a <strong>real problem</strong> teams face. Think about what could go wrong, then reveal the solution. These aren't arbitrary rules — they're battle-tested patterns from deploying thousands of apps.</p>
+
+            <div class="section-progress">
+                <div class="section-progress-fill" id="factorProgress" style="width: 0%"></div>
+            </div>
+
+            <p style="text-align: center; color: #718096; margin-bottom: 32px;">
+                Progress: <span id="factorCount">0</span>/12 factors revealed
+            </p>
+
+            <!-- Factor 1: Codebase -->
+            <div class="problem-card" data-factor="1">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">1</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Diverging Codebases Disaster</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Your startup grew from 3 to 30 developers. To "move faster," teams created separate repositories:</p>
+                        <div class="scenario-code">/payment-service-dev/
+/payment-service-staging/
+/payment-service-prod-us/
+/payment-service-prod-eu/</div>
+                        <p>A critical security vulnerability is discovered. The fix is applied to <code>prod-us</code> but takes 3 weeks to reach other repos. Meanwhile, <code>prod-eu</code> has diverged so much that the patch doesn't even apply cleanly.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 What's the fundamental problem here?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #1</span>
+                            <div class="solution-title">Codebase: One codebase, many deploys</div>
+                            <p class="solution-desc">There should be exactly ONE repository per application. Dev, staging, and production are deployments of the same code — not different codebases.</p>
+                        </div>
+
+<pre class="code"><span class="good"># CORRECT: One repo, multiple deployments</span>
+/payment-service/              <span class="comment"># Single source of truth</span>
+    ├── deployed to → dev.internal.com
+    ├── deployed to → staging.myapp.com
+    ├── deployed to → us.myapp.com
+    └── deployed to → eu.myapp.com
+
+<span class="comment"># Region differences? Use configuration, not code forks</span>
+EU_COMPLIANCE_MODE=true        <span class="comment"># Environment variable</span></pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Why This Matters</div>
+                            <p>One fix = one commit = deployed everywhere. No "which repo has the latest code?" confusion. This is how Spotify manages thousands of microservices.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 2: Dependencies -->
+            <div class="problem-card" data-factor="2">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">2</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The "Works on My Machine" Mystery</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>New developer joins. Clones repo. Runs <code>python app.py</code>:</p>
+                        <div class="scenario-code">$ python app.py
+ModuleNotFoundError: No module named 'pandas'
+
+$ pip install pandas
+$ python app.py
+ModuleNotFoundError: No module named 'numpy'
+
+# 2 hours later...
+$ python app.py
+# Works! But crashes on image processing feature
+# Server has libxml2 v2.9, laptop has v2.10</div>
+                        <p>The app also mysteriously fails in production because someone installed a global npm package 6 months ago that nobody documented.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 Why does this keep happening? What's missing?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #2</span>
+                            <div class="solution-title">Dependencies: Explicitly declare and isolate</div>
+                            <p class="solution-desc">Never rely on system-wide packages. Declare ALL dependencies with exact versions. Isolate them from the system.</p>
+                        </div>
+
+<pre class="code"><span class="bad"># BAD: Implicit, hoping things are installed</span>
+import pandas       <span class="comment"># "just pip install it"</span>
+os.system("curl")   <span class="comment"># "every Linux has curl" (Alpine: nope)</span>
+
+<span class="good"># GOOD: Explicit declaration with versions</span>
+<span class="comment"># requirements.txt</span>
+pandas==2.0.3
+opencv-python==4.8.0
+flask==2.3.2
+
+<span class="comment"># Isolated environment</span>
+$ python -m venv venv
+$ pip install -r requirements.txt
+
+<span class="comment"># Or Docker (ultimate isolation)</span>
+FROM python:3.11-slim
+COPY requirements.txt .
+RUN pip install -r requirements.txt</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">The Docker Connection</div>
+                            <p>This is exactly why Docker became essential. A Dockerfile declares dependencies from the OS level up. <code>docker-compose up</code> gives every developer identical environments.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 3: Config -->
+            <div class="problem-card" data-factor="3">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">3</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The $50,000 AWS Bill</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Junior developer commits this file to a public GitHub repo:</p>
+                        <div class="scenario-code"># config.py
+DATABASE_URL = "postgres://admin:supersecret@prod-db.aws.com"
+AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+STRIPE_KEY = "sk_live_abc123..."</div>
+                        <p>Bots scan GitHub 24/7 for AWS keys. Within 15 minutes, someone spins up 200 GPU instances for crypto mining. Also: switching from staging to prod requires changing code and redeploying.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 What's the secure way to handle configuration?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #3</span>
+                            <div class="solution-title">Config: Store config in the environment</div>
+                            <p class="solution-desc">Anything that varies between deploys (credentials, URLs, feature flags) must come from environment variables — never hardcoded in code.</p>
+                        </div>
+
+<pre class="code"><span class="good"># GOOD: Read from environment</span>
+import os
+
+DATABASE_URL = os.environ["DATABASE_URL"]
+AWS_ACCESS_KEY = os.environ["AWS_ACCESS_KEY"]
+STRIPE_KEY = os.environ["STRIPE_KEY"]
+
+<span class="comment"># Different values per environment:</span>
+<span class="comment"># Development (.env file, never committed)</span>
+DATABASE_URL=postgres://localhost/dev
+STRIPE_KEY=sk_test_xxx
+
+<span class="comment"># Production (set in Kubernetes, AWS, etc.)</span>
+DATABASE_URL=postgres://prod-db.aws.com/prod
+STRIPE_KEY=sk_live_xxx</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">The Litmus Test</div>
+                            <p>Could you open-source your code <strong>right now</strong> without exposing any secrets? If not, you have config in code.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 4: Backing Services -->
+            <div class="problem-card" data-factor="4">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">4</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The 2 AM Database Migration</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Your self-hosted MySQL is dying. You need to migrate to AWS RDS immediately. But:</p>
+                        <div class="scenario-code"># Hardcoded across 47 files:
+db = mysql.connect("localhost", "root", "password", "myapp")
+
+# Redis connection buried in code:
+redis_client = redis.Redis(unix_socket="/tmp/redis.sock")
+
+# Email config scattered everywhere:
+smtp = smtplib.SMTP("mail.internal.company.com", 25)</div>
+                        <p>Estimated time to migrate: 2-3 weeks of refactoring. The database is on fire now.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How should external services be connected?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #4</span>
+                            <div class="solution-title">Backing Services: Treat as attached resources</div>
+                            <p class="solution-desc">Databases, caches, queues, email services — all should be attached via URLs in config. Swapping local MySQL for AWS RDS = change one URL.</p>
+                        </div>
+
+<pre class="code"><span class="good"># Resources attached via URL (from environment)</span>
+DATABASE_URL=postgres://localhost/myapp      <span class="comment"># Dev</span>
+DATABASE_URL=postgres://rds.aws.com/myapp    <span class="comment"># Prod</span>
+
+REDIS_URL=redis://localhost:6379             <span class="comment"># Dev</span>
+REDIS_URL=redis://elasticache.aws.com:6379   <span class="comment"># Prod</span>
+
+<span class="comment"># Code doesn't care where the service is:</span>
+db = create_engine(os.environ["DATABASE_URL"])
+redis = Redis.from_url(os.environ["REDIS_URL"])</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">The Netflix Pattern</div>
+                            <p>This is how Netflix survives AWS region failures. Database corrupted? Update the URL to point to the replica. Zero code changes, instant failover.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 5: Build, Release, Run -->
+            <div class="problem-card" data-factor="5">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">5</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The 3 AM Hotfix That Made Things Worse</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Production is down. A panicked engineer SSHes into the server:</p>
+                        <div class="scenario-code">$ ssh prod-server
+$ cd /var/www/app
+$ vim app.py          # Quick fix!
+$ systemctl restart app
+# It works! Everyone goes to sleep.
+
+# Next morning:
+"What changed last night?"
+"No idea, git log shows nothing"
+"Why doesn't git match what's running?"
+"How do we rollback?"</div>
+                        <p>The "fix" introduced a regression. Rolling back deploys old code that doesn't include the fix. The server is now a unique snowflake.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 What deployment process would prevent this?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #5</span>
+                            <div class="solution-title">Build, Release, Run: Strictly separate stages</div>
+                            <p class="solution-desc">Build (compile/package), Release (build + config), Run (execute). Releases are immutable. Never modify running code.</p>
+                        </div>
+
+<pre class="code"><span class="comment"># The correct pipeline:</span>
+
+<span class="keyword">BUILD</span>     git push → CI builds → Docker image v1.2.3
+              │
+              + Environment config
+              ▼
+<span class="keyword">RELEASE</span>   Image + Config = Release v1.2.3-prod (immutable!)
+              │
+              ▼
+<span class="keyword">RUN</span>       Kubernetes runs the containers
+
+<span class="bad"># NEVER: SSH → edit code → restart</span>
+<span class="good"># ALWAYS: git push → CI builds → deploy</span></pre>
+
+                        <div class="concept">
+                            <div class="concept-title">The CI/CD Connection</div>
+                            <p>This is exactly what CI/CD pipelines enforce. Every change goes through the pipeline. Releases are versioned and immutable. Rollback = re-deploy an older release.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 6: Processes -->
+            <div class="problem-card" data-factor="6">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">6</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Vanishing Shopping Carts</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>E-commerce site with 2 load-balanced servers:</p>
+                        <div class="scenario-code"># Server stores cart in memory
+shopping_carts = {}  # Python dict
+
+def add_to_cart(user_id, item):
+    shopping_carts[user_id].append(item)
+
+# User adds item (hits server-1)
+# User clicks checkout (hits server-2)
+# "Your cart is empty" 😱
+
+# Also: user uploads profile picture
+file.save("/tmp/uploads/avatar.jpg")  # Saved on server-1
+# Next request hits server-2: FileNotFoundError</div>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 Why does data disappear between requests?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #6</span>
+                            <div class="solution-title">Processes: Stateless and share-nothing</div>
+                            <p class="solution-desc">Processes must be stateless. Any data that needs to persist goes to a backing service (Redis, S3, database). Local memory/disk is scratch space only.</p>
+                        </div>
+
+<pre class="code"><span class="good"># CORRECT: State in backing services</span>
+def add_to_cart(user_id, item):
+    redis.lpush(f"cart:{user_id}", json.dumps(item))
+    <span class="comment"># Works on any server, survives restarts</span>
+
+def save_upload(file):
+    s3.upload_file(file, "uploads-bucket", file.name)
+    <span class="comment"># Accessible from any server</span>
+
+<span class="comment"># Sessions stored externally too:</span>
+app.config["SESSION_TYPE"] = "redis"</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Why Kubernetes Works This Way</div>
+                            <p>Kubernetes can kill and reschedule pods anywhere. If your app stores state locally, it breaks. Stateless processes enable horizontal scaling and self-healing.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 7: Port Binding -->
+            <div class="problem-card" data-factor="7">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">7</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Server Configuration Nightmare</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Deployment instructions for different apps:</p>
+                        <div class="scenario-code"># Java app:
+"Install Tomcat 9, deploy WAR file, configure server.xml..."
+
+# Python app:
+"Install Apache, enable mod_wsgi, configure virtual host..."
+
+# PHP app:
+"Install nginx, configure php-fpm pool, set socket path..."
+
+# Docker container won't start:
+"Error: Application requires external web server"</div>
+                        <p>Each app needs different web server configurations. Ops team maintains 50 different server configs.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How can apps be self-sufficient?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #7</span>
+                            <div class="solution-title">Port Binding: Export services via port binding</div>
+                            <p class="solution-desc">The app is completely self-contained. It embeds its own web server and binds to a port. No external web server injection needed.</p>
+                        </div>
+
+<pre class="code"><span class="good"># Self-contained app binds to a port</span>
+<span class="comment"># Python with Gunicorn</span>
+$ gunicorn --bind 0.0.0.0:$PORT app:app
+
+<span class="comment"># Dockerfile</span>
+FROM python:3.11-slim
+EXPOSE 8000
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
+
+<span class="comment"># One app becomes another's backing service:</span>
+USER_SERVICE_URL=http://user-service:8001
+ORDER_SERVICE_URL=http://order-service:8002</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Microservices Foundation</div>
+                            <p>This is how microservices work. Each service binds to a port and can be another service's backing service. Docker containers expose ports. Kubernetes routes by port.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 8: Concurrency -->
+            <div class="problem-card" data-factor="8">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">8</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Black Friday Scaling Crisis</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Traffic spikes 10x on Black Friday. You try vertical scaling:</p>
+                        <div class="scenario-code"># Monday: t3.medium (2 vCPU, 4GB)
+# Tuesday: t3.xlarge (4 vCPU, 16GB) - $150/month
+# Wednesday: t3.2xlarge (8 vCPU, 32GB) - $300/month
+# Thursday: m5.4xlarge (16 vCPU, 64GB) - $600/month
+# Friday: m5.24xlarge (96 vCPU, 384GB) - $4000/month
+# Still not enough. AWS doesn't have bigger instances.</div>
+                        <p>You've hit the ceiling of vertical scaling. The app is one giant process that can't be distributed.</p>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How do companies like Netflix handle 200M+ users?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #8</span>
+                            <div class="solution-title">Concurrency: Scale out via the process model</div>
+                            <p class="solution-desc">Scale horizontally by running more processes, not by making one process bigger. Different process types handle different work.</p>
+                        </div>
+
+<pre class="code"><span class="comment"># Procfile defines process types</span>
+web: gunicorn app:app            <span class="comment"># HTTP requests</span>
+worker: celery -A tasks worker   <span class="comment"># Background jobs</span>
+scheduler: celery beat           <span class="comment"># Scheduled tasks</span>
+
+<span class="comment"># Scale horizontally</span>
+$ kubectl scale deployment/web --replicas=20
+$ kubectl scale deployment/worker --replicas=10
+
+<span class="comment"># Kubernetes autoscaling</span>
+apiVersion: autoscaling/v2
+spec:
+  minReplicas: 2
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 70</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Enabled by Factor #6</div>
+                            <p>Horizontal scaling only works because processes are stateless. You can add/remove instances freely because none of them hold unique state.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 9: Disposability -->
+            <div class="problem-card" data-factor="9">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">9</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Deployment Downtime Problem</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Your app has problems at both ends:</p>
+                        <div class="scenario-code"># Startup: 3 minutes (loading ML models, warming caches)
+# Kubernetes health check times out at 30 seconds
+# Pod enters CrashLoopBackOff
+# During deploys: 3 min downtime per instance
+
+# Shutdown: Process receives SIGTERM
+# App immediately exits, dropping all requests
+# Users see: "Connection reset"
+# Database transaction left half-complete</div>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How should processes handle startup and shutdown?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #9</span>
+                            <div class="solution-title">Disposability: Fast startup and graceful shutdown</div>
+                            <p class="solution-desc">Processes should start in seconds and shutdown gracefully — finishing current work before exiting.</p>
+                        </div>
+
+<pre class="code"><span class="comment"># Graceful shutdown handler</span>
+import signal
+
+def graceful_shutdown(signum, frame):
+    print("SIGTERM received...")
+    server.stop_accepting_new_requests()
+    wait_for_active_requests(timeout=25)
+    db_connection.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, graceful_shutdown)
+
+<span class="comment"># Kubernetes config</span>
+spec:
+  terminationGracePeriodSeconds: 30
+  containers:
+    lifecycle:
+      preStop:
+        exec:
+          command: ["sh", "-c", "sleep 5"]</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Why 30 Seconds?</div>
+                            <p>Kubernetes sends SIGTERM, waits 30 seconds (configurable), then SIGKILL. Your app must finish work within this window. Design for instant startup and graceful shutdown.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 10: Dev/Prod Parity -->
+            <div class="problem-card" data-factor="10">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">10</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The "Works in Dev, Breaks in Prod" Bug</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Different tools in different environments:</p>
+                        <div class="scenario-code"># Development
+Database: SQLite        # "Easier to set up"
+Cache: Python dict      # "Don't need Redis locally"
+Queue: Synchronous      # "Celery is complex"
+
+# Production
+Database: PostgreSQL    # Different SQL dialect!
+Cache: Redis cluster    # Different API!
+Queue: RabbitMQ         # Different behavior!
+
+# Result: Feature works locally, fails in prod
+# "SQLite doesn't enforce foreign keys by default"</div>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How different should dev and prod be?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #10</span>
+                            <div class="solution-title">Dev/Prod Parity: Keep environments similar</div>
+                            <p class="solution-desc">Minimize gaps: time (deploy quickly), personnel (devs deploy), tools (same backing services everywhere).</p>
+                        </div>
+
+<pre class="code"><span class="good"># docker-compose.yml — Production-like local environment</span>
+services:
+  db:
+    image: postgres:15    <span class="comment"># Same as production</span>
+  cache:
+    image: redis:7        <span class="comment"># Same as production</span>
+  queue:
+    image: rabbitmq:3     <span class="comment"># Same as production</span>
+  storage:
+    image: minio/minio    <span class="comment"># S3-compatible locally</span>
+
+<span class="comment"># One command to start everything:</span>
+$ docker-compose up</pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Docker's Killer Feature</div>
+                            <p>Docker Compose gives you production parity locally. Same PostgreSQL version, same Redis, same everything. "Works on my machine" finally means "works in production."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 11: Logs -->
+            <div class="problem-card" data-factor="11">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">11</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Missing Evidence Investigation</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Security breach detected. You need to investigate:</p>
+                        <div class="scenario-code"># Logs written to files on each server
+$ ssh server-1
+$ cat /var/log/app.log
+"Disk full, old logs deleted"
+
+$ ssh server-2
+$ cat /var/log/app.log
+"Log file not found" (container restarted)
+
+$ ssh server-3 through server-20
+# 2 hours later, still grep-ing through servers
+
+# Evidence of the breach? Gone forever.</div>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How should applications handle logging?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #11</span>
+                            <div class="solution-title">Logs: Treat logs as event streams</div>
+                            <p class="solution-desc">Apps should not manage log files. Just write to stdout. The execution environment captures and routes logs to their destination.</p>
+                        </div>
+
+<pre class="code"><span class="bad"># BAD: App manages log files</span>
+logging.FileHandler('/var/log/app.log')
+
+<span class="good"># GOOD: Write to stdout</span>
+import logging
+import sys
+
+logging.basicConfig(stream=sys.stdout)
+logger.info("Order processed", extra={"order_id": 123})
+
+<span class="comment"># Platform captures stdout and routes it:</span>
+<span class="comment"># Docker:     docker logs → Fluentd → Elasticsearch</span>
+<span class="comment"># Kubernetes: kubectl logs → Loki → Grafana</span>
+<span class="comment"># AWS:        CloudWatch Logs (automatic)</span></pre>
+
+                        <div class="concept">
+                            <div class="concept-title">Centralized Logging</div>
+                            <p>The platform aggregates logs from all instances into one searchable system (ELK, Splunk, CloudWatch). One query searches all servers, all time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Factor 12: Admin Processes -->
+            <div class="problem-card" data-factor="12">
+                <div class="problem-header" onclick="toggleProblem(this)">
+                    <div class="problem-number">12</div>
+                    <div class="problem-info">
+                        <div class="problem-title">The Migration Script Disaster</div>
+                    </div>
+                    <span class="problem-toggle">▼</span>
+                </div>
+                <div class="problem-content">
+                    <div class="scenario">
+                        <div class="scenario-title">🔥 The Scenario</div>
+                        <p>Time for a database migration:</p>
+                        <div class="scenario-code"># Developer's laptop:
+$ git pull              # Might be outdated
+$ pip install -r req.txt # Different versions?
+$ python migrate.py     # Connected to prod DB!
+
+# Migration script had a bug
+# It was written against old schema
+# Production data corrupted
+
+# Also found later:
+# One-off cleanup script with hardcoded prod credentials
+# Sitting in someone's ~/scripts/ folder</div>
+                    </div>
+
+                    <div class="think-prompt">
+                        <p>🤔 How should admin tasks be run?</p>
+                        <button class="reveal-btn" onclick="revealSolution(this)">Reveal the Pattern</button>
+                    </div>
+
+                    <div class="solution">
+                        <div class="solution-header">
+                            <span class="factor-badge">Factor #12</span>
+                            <div class="solution-title">Admin Processes: Run as one-off processes</div>
+                            <p class="solution-desc">Migrations, scripts, and console sessions run in identical environments to the app — same code, same config, same dependencies.</p>
+                        </div>
+
+<pre class="code"><span class="good"># Run admin tasks in the SAME environment as the app</span>
+
+<span class="comment"># Kubernetes</span>
+$ kubectl exec -it deploy/myapp -- python manage.py migrate
+$ kubectl exec -it deploy/myapp -- flask shell
+
+<span class="comment"># Docker Compose</span>
+$ docker-compose run --rm web python manage.py migrate
+
+<span class="comment"># Heroku</span>
+$ heroku run python scripts/cleanup.py
+
+<span class="comment"># Scripts live in the repo, deployed with the app</span>
+<span class="comment"># Same image, same config, same dependencies!</span></pre>
+
+                        <div class="concept">
+                            <div class="concept-title">CI/CD for Admin Tasks</div>
+                            <p>Admin scripts should go through the same pipeline. Add to repo → PR review → deploy → run in production environment. No random scripts on laptops.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls" style="margin-top: 40px;">
+                <button class="control-btn" onclick="revealAllFactors()">Reveal All Factors</button>
+                <button class="control-btn" onclick="resetFactors()">Reset</button>
+                <button class="control-btn primary" onclick="showSection('docker')">Next: Docker →</button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Section 2: Docker -->
+    <section id="docker" class="section">
+        <div class="container">
+            <h2>Docker: Implementing the Factors</h2>
+            <p>Docker isn't just a tool — it's the implementation of several 12-factor principles. Let's see how.</p>
+
+            <div class="concept">
+                <div class="concept-title">Which Factors Does Docker Solve?</div>
+                <ul>
+                    <li><strong>#2 Dependencies</strong> — Dockerfile declares everything explicitly</li>
+                    <li><strong>#5 Build, Release, Run</strong> — Image is the immutable build artifact</li>
+                    <li><strong>#6 Processes</strong> — Containers are ephemeral by design</li>
+                    <li><strong>#10 Dev/Prod Parity</strong> — Same image runs everywhere</li>
+                </ul>
+            </div>
+
+            <h3>The Docker Workflow</h3>
+            <div class="docker-flow">
+                <div class="docker-step">
+                    <div class="docker-icon">📝</div>
+                    <div class="docker-label">Dockerfile</div>
+                </div>
+                <div class="docker-arrow">→</div>
+                <div class="docker-step">
+                    <div class="docker-icon">📦</div>
+                    <div class="docker-label">Image</div>
+                </div>
+                <div class="docker-arrow">→</div>
+                <div class="docker-step">
+                    <div class="docker-icon">🚀</div>
+                    <div class="docker-label">Container</div>
+                </div>
+                <div class="docker-arrow">→</div>
+                <div class="docker-step">
+                    <div class="docker-icon">☁️</div>
+                    <div class="docker-label">Registry</div>
+                </div>
+            </div>
+
+            <h3>Dockerfile Evolution: From Basic to Production</h3>
+            <p>Click each level to progress. Each builds on the previous:</p>
+
+            <div class="controls">
+                <button class="control-btn" onclick="resetDockerLevels()">Reset</button>
+                <button class="control-btn" onclick="revealAllDockerLevels()">Reveal All</button>
+            </div>
+
+            <!-- Level 1 -->
+            <div class="dockerfile-card unlocked open" data-level="1">
+                <div class="dockerfile-header" onclick="toggleDockerCard(this)">
+                    <span class="level-badge level-1">Level 1</span>
+                    <span class="dockerfile-title">Bare Minimum</span>
+                    <span class="dockerfile-toggle">▼</span>
+                </div>
+                <div class="dockerfile-content">
+<pre class="code"><span class="comment"># Start with Python</span>
+<span class="keyword">FROM</span> python:3.11
+
+<span class="comment"># Copy code</span>
+<span class="keyword">COPY</span> . /app
+
+<span class="comment"># Install dependencies</span>
+<span class="keyword">RUN</span> pip install flask
+
+<span class="comment"># Run</span>
+<span class="keyword">CMD</span> ["python", "/app/app.py"]</pre>
+                    <p><strong>Problems:</strong> No WORKDIR, copies junk files, no port exposed, slow rebuilds.</p>
+                    <button class="control-btn" onclick="unlockDockerLevel(2)">Unlock Next →</button>
+                </div>
+            </div>
+
+            <!-- Level 2 -->
+            <div class="dockerfile-card locked" data-level="2">
+                <div class="dockerfile-header" onclick="toggleDockerCard(this)">
+                    <span class="level-badge level-2">Level 2</span>
+                    <span class="dockerfile-title">Organized Structure</span>
+                    <span class="dockerfile-toggle">▼</span>
+                </div>
+                <div class="dockerfile-content">
+                    <div class="whats-new">
+                        <div class="whats-new-title">+ WORKDIR and EXPOSE</div>
+                    </div>
+<pre class="code"><span class="keyword">FROM</span> python:3.11
+
+<span class="highlight"><span class="keyword">WORKDIR</span> /app</span>
+
+<span class="keyword">COPY</span> . .
+<span class="keyword">RUN</span> pip install flask
+
+<span class="highlight"><span class="keyword">EXPOSE</span> 5000</span>
+
+<span class="keyword">CMD</span> ["python", "app.py"]</pre>
+                    <button class="control-btn" onclick="unlockDockerLevel(3)">Unlock Next →</button>
+                </div>
+            </div>
+
+            <!-- Level 3 -->
+            <div class="dockerfile-card locked" data-level="3">
+                <div class="dockerfile-header" onclick="toggleDockerCard(this)">
+                    <span class="level-badge level-3">Level 3</span>
+                    <span class="dockerfile-title">Smart Layer Caching</span>
+                    <span class="dockerfile-toggle">▼</span>
+                </div>
+                <div class="dockerfile-content">
+                    <div class="whats-new">
+                        <div class="whats-new-title">+ Dependencies cached separately</div>
+                    </div>
+<pre class="code"><span class="keyword">FROM</span> python:3.11
+<span class="keyword">WORKDIR</span> /app
+
+<span class="highlight"><span class="comment"># Copy deps first (cached layer)</span>
+<span class="keyword">COPY</span> requirements.txt .
+<span class="keyword">RUN</span> pip install --no-cache-dir -r requirements.txt</span>
+
+<span class="comment"># Then copy code (changes often)</span>
+<span class="keyword">COPY</span> . .
+
+<span class="keyword">EXPOSE</span> 5000
+<span class="keyword">CMD</span> ["python", "app.py"]</pre>
+                    <p><strong>Result:</strong> Code changes don't reinstall dependencies!</p>
+                    <button class="control-btn" onclick="unlockDockerLevel(4)">Unlock Next →</button>
+                </div>
+            </div>
+
+            <!-- Level 4 -->
+            <div class="dockerfile-card locked" data-level="4">
+                <div class="dockerfile-header" onclick="toggleDockerCard(this)">
+                    <span class="level-badge level-4">Level 4</span>
+                    <span class="dockerfile-title">Slim Image</span>
+                    <span class="dockerfile-toggle">▼</span>
+                </div>
+                <div class="dockerfile-content">
+                    <div class="whats-new">
+                        <div class="whats-new-title">+ Smaller base image (900MB → 150MB)</div>
+                    </div>
+<pre class="code"><span class="highlight"><span class="keyword">FROM</span> python:3.11-slim</span>
+<span class="keyword">WORKDIR</span> /app
+
+<span class="keyword">COPY</span> requirements.txt .
+<span class="keyword">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="keyword">COPY</span> . .
+<span class="keyword">EXPOSE</span> 5000
+<span class="keyword">CMD</span> ["python", "app.py"]</pre>
+                    <button class="control-btn" onclick="unlockDockerLevel(5)">Unlock Final →</button>
+                </div>
+            </div>
+
+            <!-- Level 5 -->
+            <div class="dockerfile-card locked" data-level="5">
+                <div class="dockerfile-header" onclick="toggleDockerCard(this)">
+                    <span class="level-badge level-5">Level 5</span>
+                    <span class="dockerfile-title">Production Ready</span>
+                    <span class="dockerfile-toggle">▼</span>
+                </div>
+                <div class="dockerfile-content">
+                    <div class="whats-new">
+                        <div class="whats-new-title">+ Non-root user, health check, production server</div>
+                    </div>
+<pre class="code"><span class="keyword">FROM</span> python:3.11-slim
+
+<span class="keyword">ENV</span> PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
+<span class="keyword">WORKDIR</span> /app
+
+<span class="highlight"><span class="comment"># Create non-root user</span>
+<span class="keyword">RUN</span> useradd --create-home appuser</span>
+
+<span class="keyword">COPY</span> requirements.txt .
+<span class="keyword">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="keyword">COPY</span> --chown=appuser . .
+
+<span class="highlight"><span class="keyword">USER</span> appuser</span>
+<span class="keyword">EXPOSE</span> 5000
+
+<span class="highlight"><span class="keyword">HEALTHCHECK</span> CMD curl -f http://localhost:5000/health || exit 1</span>
+
+<span class="highlight"><span class="keyword">CMD</span> ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]</span></pre>
+                </div>
+            </div>
+
+            <div class="controls" style="margin-top: 40px;">
+                <button class="control-btn primary" onclick="showSection('cicd')">Next: CI/CD Pipeline →</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: CI/CD -->
+    <section id="cicd" class="section">
+        <div class="container">
+            <h2>CI/CD: Automating Everything</h2>
+            <p>CI/CD is the automation of Factor #5 (Build, Release, Run). Every commit triggers the pipeline automatically.</p>
+
+            <div class="concept">
+                <div class="concept-title">CI vs CD</div>
+                <p><strong>CI (Continuous Integration)</strong> = Automatically build and test on every commit</p>
+                <p><strong>CD (Continuous Delivery)</strong> = Automatically deploy to staging, manual approval for prod</p>
+                <p><strong>CD (Continuous Deployment)</strong> = Automatically deploy all the way to production</p>
+            </div>
+
+            <h3>The Pipeline</h3>
+            <p>Click stages in sequence or use the button:</p>
+
+            <div class="pipeline-visual">
+                <div class="pipeline-flow" id="cicdPipeline">
+                    <div class="pipeline-stage" data-stage="1"><div class="stage-icon">👨‍💻</div><div class="stage-label">Commit</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="2"><div class="stage-icon">🔍</div><div class="stage-label">Lint</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="3"><div class="stage-icon">🧪</div><div class="stage-label">Test</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="4"><div class="stage-icon">🐳</div><div class="stage-label">Build</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="5"><div class="stage-icon">📦</div><div class="stage-label">Push</div></div>
+                    <div class="pipeline-divider"></div>
+                    <div class="pipeline-stage" data-stage="6"><div class="stage-icon">🔧</div><div class="stage-label">Dev</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="7"><div class="stage-icon">🎭</div><div class="stage-label">Staging</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="8"><div class="stage-icon">✅</div><div class="stage-label">Approve</div></div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-stage" data-stage="9"><div class="stage-icon">🌍</div><div class="stage-label">Prod</div></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn primary" onclick="nextCICDStage()">Next Stage →</button>
+                <button class="control-btn" onclick="resetCICD()">Reset</button>
+            </div>
+
+            <div class="env-row" id="cicdEnvRow">
+                <div class="env-box dev" data-env="dev"><div class="env-icon">🔧</div><div class="env-name">Development</div></div>
+                <div class="env-box staging" data-env="staging"><div class="env-icon">🎭</div><div class="env-name">Staging</div></div>
+                <div class="env-box prod" data-env="prod"><div class="env-icon">🌍</div><div class="env-name">Production</div></div>
+            </div>
+
+            <!-- CI/CD Stage Cards (shortened) -->
+            <div id="cicdCards">
+                <div class="cicd-card" data-stage="1">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">1</div>
+                        <div class="cicd-info"><div class="cicd-title">Commit & Trigger</div><div class="cicd-subtitle">Pipeline starts on git push</div></div>
+                        <span class="cicd-badge badge-ci">CI</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code"><span class="keyword">on:</span>
+  <span class="keyword">push:</span>
+    <span class="keyword">branches:</span> [main, develop]
+  <span class="keyword">pull_request:</span>
+    <span class="keyword">branches:</span> [main]</pre>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="2">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">2</div>
+                        <div class="cicd-info"><div class="cicd-title">Lint & Static Analysis</div><div class="cicd-subtitle">Code quality gates</div></div>
+                        <span class="cicd-badge badge-test">Quality</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code">- <span class="keyword">run:</span> flake8 src/
+- <span class="keyword">run:</span> mypy src/
+- <span class="keyword">run:</span> bandit -r src/</pre>
+                        <p>Fail fast on code style issues before running slower tests.</p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="3">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">3</div>
+                        <div class="cicd-info"><div class="cicd-title">Run Tests</div><div class="cicd-subtitle">Unit + Integration tests</div></div>
+                        <span class="cicd-badge badge-test">Test</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code"><span class="keyword">services:</span>
+  <span class="keyword">postgres:</span>
+    <span class="keyword">image:</span> postgres:15
+
+<span class="keyword">steps:</span>
+  - <span class="keyword">run:</span> pytest --cov=src</pre>
+                        <p>Tests run with real services (PostgreSQL, Redis) via service containers.</p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="4">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">4</div>
+                        <div class="cicd-info"><div class="cicd-title">Build Docker Image</div><div class="cicd-subtitle">Create deployable artifact</div></div>
+                        <span class="cicd-badge badge-ci">Build</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code">- <span class="keyword">uses:</span> docker/build-push-action@v5
+  <span class="keyword">with:</span>
+    <span class="keyword">tags:</span> ghcr.io/org/app:${{ github.sha }}</pre>
+                        <p>Tag with git SHA for traceability. Same image deploys everywhere.</p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="5">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">5</div>
+                        <div class="cicd-info"><div class="cicd-title">Push to Registry</div><div class="cicd-subtitle">Store artifact</div></div>
+                        <span class="cicd-badge badge-ci">CI</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+                        <p>Image pushed to container registry (GHCR, ECR, Docker Hub). <strong>CI complete!</strong></p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="6">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">6</div>
+                        <div class="cicd-info"><div class="cicd-title">Deploy to Dev</div><div class="cicd-subtitle">First environment</div></div>
+                        <span class="cicd-badge badge-cd">CD</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code"><span class="comment"># Same image + different config</span>
+kubectl set image deployment/app \
+  app=ghcr.io/org/app:${{ github.sha }}
+<span class="keyword">env:</span>
+  KUBECONFIG: ${{ secrets.DEV_KUBECONFIG }}</pre>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="7">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">7</div>
+                        <div class="cicd-info"><div class="cicd-title">Deploy to Staging</div><div class="cicd-subtitle">Production mirror</div></div>
+                        <span class="cicd-badge badge-cd">CD</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+                        <p>Same image, staging config. Run E2E tests here against real infrastructure.</p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="8">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">8</div>
+                        <div class="cicd-info"><div class="cicd-title">Manual Approval</div><div class="cicd-subtitle">Human gate</div></div>
+                        <span class="cicd-badge badge-cd">Gate</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+<pre class="code"><span class="keyword">environment:</span>
+  <span class="keyword">name:</span> production  <span class="comment"># Requires approval in GitHub</span></pre>
+                        <p>Optional for critical systems. Configure reviewers in GitHub environment settings.</p>
+                    </div>
+                </div>
+
+                <div class="cicd-card locked" data-stage="9">
+                    <div class="cicd-header" onclick="toggleCICDCard(this)">
+                        <div class="cicd-number">9</div>
+                        <div class="cicd-info"><div class="cicd-title">Deploy to Production</div><div class="cicd-subtitle">Ship it!</div></div>
+                        <span class="cicd-badge badge-cd">CD</span>
+                        <span class="cicd-toggle">▼</span>
+                    </div>
+                    <div class="cicd-content">
+                        <p>Same image that passed all tests, now serving real users. Rollback = re-deploy previous image.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls" style="margin-top: 40px;">
+                <button class="control-btn primary" onclick="showSection('summary')">View Summary →</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Summary -->
+    <section id="summary" class="section">
+        <div class="container">
+            <h2>Putting It All Together</h2>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h4>📋 12-Factor App</h4>
+                    <p>Principles for building scalable, maintainable apps:</p>
+                    <ul>
+                        <li>One codebase, many deploys</li>
+                        <li>Explicit dependencies</li>
+                        <li>Config in environment</li>
+                        <li>Stateless processes</li>
+                        <li>Disposable, fast startup</li>
+                    </ul>
+                </div>
+                <div class="summary-card">
+                    <h4>🐳 Docker</h4>
+                    <p>Implements the principles:</p>
+                    <ul>
+                        <li>Dockerfile = explicit deps</li>
+                        <li>Image = immutable artifact</li>
+                        <li>Container = stateless process</li>
+                        <li>Same image everywhere</li>
+                        <li>Config via env vars</li>
+                    </ul>
+                </div>
+                <div class="summary-card">
+                    <h4>🔄 CI/CD</h4>
+                    <p>Automates the workflow:</p>
+                    <ul>
+                        <li>Test on every commit</li>
+                        <li>Build Docker images</li>
+                        <li>Deploy to environments</li>
+                        <li>Same image flows through</li>
+                        <li>Rollback = re-deploy</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="concept" style="margin-top: 40px;">
+                <div class="concept-title">The Flow</div>
+<pre class="code" style="background: transparent; color: inherit; padding: 0;">
+Developer commits → CI tests → Docker builds → Push to registry
+                                    ↓
+            Prod ← Staging ← Dev ← Same image, different config
+</pre>
+            </div>
+
+            <div class="controls" style="margin-top: 40px;">
+                <button class="control-btn" onclick="showSection('principles')">← Back to 12 Factors</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector(`.nav-link[onclick="showSection('${sectionId}')"]`).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // 12 Factor Logic
+        let revealedFactors = 0;
+
+        function toggleProblem(header) {
+            header.parentElement.classList.toggle('open');
+        }
+
+        function revealSolution(btn) {
+            const card = btn.closest('.problem-card');
+            if (!card.classList.contains('revealed')) {
+                card.classList.add('revealed');
+                revealedFactors++;
+                updateFactorProgress();
+            }
+            btn.style.display = 'none';
+        }
+
+        function updateFactorProgress() {
+            document.getElementById('factorCount').textContent = revealedFactors;
+            document.getElementById('factorProgress').style.width = (revealedFactors / 12 * 100) + '%';
+        }
+
+        function revealAllFactors() {
+            document.querySelectorAll('.problem-card').forEach(card => {
+                card.classList.add('revealed', 'open');
+                const btn = card.querySelector('.reveal-btn');
+                if (btn) btn.style.display = 'none';
+            });
+            revealedFactors = 12;
+            updateFactorProgress();
+        }
+
+        function resetFactors() {
+            document.querySelectorAll('.problem-card').forEach(card => {
+                card.classList.remove('revealed', 'open');
+                const btn = card.querySelector('.reveal-btn');
+                if (btn) btn.style.display = 'inline-block';
+            });
+            revealedFactors = 0;
+            updateFactorProgress();
+        }
+
+        // Docker Level Logic
+        let dockerLevel = 1;
+
+        function toggleDockerCard(header) {
+            const card = header.parentElement;
+            if (card.classList.contains('locked')) return;
+            card.classList.toggle('open');
+        }
+
+        function unlockDockerLevel(level) {
+            if (level > dockerLevel) {
+                dockerLevel = level;
+                const card = document.querySelector(`.dockerfile-card[data-level="${level}"]`);
+                card.classList.remove('locked');
+                card.classList.add('unlocked', 'open');
+                document.querySelector(`.dockerfile-card[data-level="${level-1}"]`).classList.remove('open');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function revealAllDockerLevels() {
+            dockerLevel = 5;
+            document.querySelectorAll('.dockerfile-card').forEach(card => {
+                card.classList.remove('locked');
+                card.classList.add('unlocked');
+            });
+        }
+
+        function resetDockerLevels() {
+            dockerLevel = 1;
+            document.querySelectorAll('.dockerfile-card').forEach((card, i) => {
+                if (i === 0) {
+                    card.classList.remove('locked');
+                    card.classList.add('unlocked', 'open');
+                } else {
+                    card.classList.add('locked');
+                    card.classList.remove('unlocked', 'open');
+                }
+            });
+        }
+
+        // CI/CD Logic
+        let cicdStage = 0;
+
+        function updateCICDUI() {
+            document.querySelectorAll('#cicdPipeline .pipeline-stage').forEach((stage, i) => {
+                const num = parseInt(stage.dataset.stage);
+                stage.classList.remove('active', 'completed');
+                if (num === cicdStage) stage.classList.add('active');
+                else if (num < cicdStage) stage.classList.add('completed');
+            });
+
+            document.querySelectorAll('#cicdPipeline .pipeline-arrow').forEach((arrow, i) => {
+                arrow.classList.toggle('active', i < cicdStage - 1);
+            });
+
+            document.querySelectorAll('#cicdCards .cicd-card').forEach(card => {
+                const num = parseInt(card.dataset.stage);
+                card.classList.remove('active', 'completed', 'locked', 'open');
+                if (num === cicdStage) card.classList.add('active', 'open');
+                else if (num < cicdStage) card.classList.add('completed');
+                else card.classList.add('locked');
+            });
+
+            // Environments
+            const envs = document.querySelectorAll('#cicdEnvRow .env-box');
+            envs.forEach(e => e.classList.remove('active'));
+            if (cicdStage >= 6) document.querySelector('#cicdEnvRow .dev').classList.add('active');
+            if (cicdStage >= 7) document.querySelector('#cicdEnvRow .staging').classList.add('active');
+            if (cicdStage >= 9) document.querySelector('#cicdEnvRow .prod').classList.add('active');
+        }
+
+        function nextCICDStage() {
+            if (cicdStage < 9) {
+                cicdStage++;
+                updateCICDUI();
+            }
+        }
+
+        function resetCICD() {
+            cicdStage = 0;
+            updateCICDUI();
+        }
+
+        function toggleCICDCard(header) {
+            const card = header.parentElement;
+            if (card.classList.contains('locked')) return;
+            card.classList.toggle('open');
+        }
+
+        // Pipeline stage clicks
+        document.querySelectorAll('#cicdPipeline .pipeline-stage').forEach(stage => {
+            stage.addEventListener('click', () => {
+                const num = parseInt(stage.dataset.stage);
+                if (num <= cicdStage + 1) {
+                    cicdStage = num;
+                    updateCICDUI();
+                }
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                const activeSection = document.querySelector('.section.active').id;
+                if (activeSection === 'cicd') {
+                    e.preventDefault();
+                    nextCICDStage();
+                }
+            }
+        });
+
+        // Initialize
+        updateCICDUI();
+    </script>
+</body>
+</html>

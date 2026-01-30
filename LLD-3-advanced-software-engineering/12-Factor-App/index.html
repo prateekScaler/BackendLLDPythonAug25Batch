@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 12-Factor App - Interactive Guide</title>
+    <style>
+        :root {
+            --primary: #2d3748;
+            --accent: #4299e1;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --base-font: 1.1rem;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--primary);
+            line-height: 1.8;
+            padding: 24px;
+            font-size: var(--base-font);
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 2.5em;
+            letter-spacing: -0.5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+
+        .factor {
+            background: var(--card);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .factor-header {
+            padding: 22px 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: background 0.2s;
+        }
+        .factor-header:hover { background: #f0f4f8; }
+        .factor-num {
+            background: var(--accent);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        .factor-title {
+            font-weight: 600;
+            flex-grow: 1;
+            font-size: 1.25em;
+        }
+        .factor-toggle {
+            font-size: 1.5em;
+            color: #a0aec0;
+            transition: transform 0.3s;
+        }
+        .factor.open .factor-toggle { transform: rotate(180deg); }
+        .factor-content {
+            display: none;
+            padding: 8px 32px 32px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .factor.open .factor-content { display: block; }
+
+        .scenario {
+            background: linear-gradient(135deg, #fff5f5 0%, #fffaf0 100%);
+            border-left: 5px solid var(--warning);
+            padding: 24px 28px;
+            margin: 28px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .scenario-title {
+            font-weight: 700;
+            color: var(--warning);
+            margin-bottom: 14px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .scenario p {
+            line-height: 1.9;
+        }
+
+        .solution {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            border-left: 5px solid var(--success);
+            padding: 24px 28px;
+            margin: 28px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .solution-title {
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 14px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .solution p {
+            line-height: 1.9;
+            margin-bottom: 12px;
+        }
+
+        .context {
+            background: #f0f7ff;
+            border-left: 5px solid var(--accent);
+            padding: 24px 28px;
+            margin: 28px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .context-title {
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 14px;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .context p {
+            line-height: 1.9;
+        }
+
+        pre.example {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 24px 28px;
+            border-radius: 12px;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 0.95em;
+            margin: 28px 0;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.7;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        pre.example .comment { color: #68d391; }
+        pre.example .bad { color: #fc8181; }
+        pre.example .good { color: #68d391; }
+        pre.example .highlight { color: #f6e05e; }
+
+        .quiz {
+            background: #ebf8ff;
+            border-radius: 12px;
+            padding: 28px;
+            margin-top: 32px;
+            border: 2px solid #bee3f8;
+        }
+        .quiz-title {
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 18px;
+            font-size: 1.15em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .quiz-question {
+            margin-bottom: 20px;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .quiz-option {
+            padding: 16px 20px;
+            background: white;
+            border: 2px solid #bee3f8;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.02em;
+            line-height: 1.6;
+        }
+        .quiz-option:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+        .quiz-option.selected { border-color: var(--accent); background: #bee3f8; }
+        .quiz-option.correct { border-color: var(--success); background: #c6f6d5; }
+        .quiz-option.incorrect { border-color: var(--danger); background: #fed7d7; }
+
+        .quiz-feedback {
+            margin-top: 18px;
+            padding: 16px 20px;
+            border-radius: 10px;
+            display: none;
+            font-size: 1.02em;
+            line-height: 1.7;
+        }
+        .quiz-feedback.show { display: block; }
+        .quiz-feedback.correct { background: #c6f6d5; color: #276749; }
+        .quiz-feedback.incorrect { background: #fed7d7; color: #c53030; }
+
+        .fill-blank input {
+            border: 2px dashed var(--accent);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: monospace;
+            width: 160px;
+            font-size: 1em;
+        }
+        .fill-blank input.correct { border-color: var(--success); background: #c6f6d5; }
+        .fill-blank input.incorrect { border-color: var(--danger); background: #fed7d7; }
+
+        .check-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 18px;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+        .check-btn:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+
+        .tf-options {
+            display: flex;
+            gap: 16px;
+        }
+        .tf-btn {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid #bee3f8;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05em;
+            transition: all 0.2s;
+        }
+        .tf-btn:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .tf-btn.selected { border-color: var(--accent); background: #bee3f8; }
+        .tf-btn.correct { border-color: var(--success); background: #c6f6d5; }
+        .tf-btn.incorrect { border-color: var(--danger); background: #fed7d7; }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 28px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #667eea);
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .key-point {
+            display: inline-block;
+            background: #fef3c7;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1.02em;
+        }
+
+        .intro-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+        .intro-card h2 {
+            margin-bottom: 18px;
+            font-size: 1.6em;
+        }
+        .intro-card p {
+            opacity: 0.95;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        ul, ol {
+            margin: 16px 0 16px 28px;
+        }
+        li {
+            margin: 10px 0;
+            line-height: 1.8;
+        }
+        code {
+            background: #e2e8f0;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.92em;
+            font-family: 'Fira Code', 'Consolas', monospace;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+                font-size: 1rem;
+            }
+            .container {
+                padding: 0 12px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .factor-header {
+                padding: 18px 20px;
+                gap: 14px;
+            }
+            .factor-num {
+                width: 38px;
+                height: 38px;
+                font-size: 1em;
+            }
+            .factor-title {
+                font-size: 1.1em;
+            }
+            .factor-content {
+                padding: 8px 20px 24px;
+            }
+            .scenario, .solution, .context {
+                padding: 20px;
+                margin: 20px 0;
+            }
+            pre.example {
+                padding: 18px 16px;
+                font-size: 0.85em;
+                margin: 20px 0;
+            }
+            .quiz {
+                padding: 20px;
+            }
+            .intro-card {
+                padding: 28px;
+            }
+            .tf-options {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
+        /* Large screens / Presentation mode */
+        @media (min-width: 1200px) {
+            :root {
+                --base-font: 1.2rem;
+            }
+            .container {
+                max-width: 1100px;
+            }
+            h1 {
+                font-size: 2.8em;
+            }
+            .factor-title {
+                font-size: 1.35em;
+            }
+            pre.example {
+                font-size: 1em;
+                line-height: 1.8;
+            }
+        }
+
+        /* Extra large screens / Projector */
+        @media (min-width: 1600px) {
+            :root {
+                --base-font: 1.3rem;
+            }
+            .container {
+                max-width: 1300px;
+            }
+            body {
+                padding: 32px;
+            }
+            .factor-content {
+                padding: 12px 40px 40px;
+            }
+            .scenario, .solution, .context {
+                padding: 28px 32px;
+                margin: 32px 0;
+            }
+            pre.example {
+                padding: 28px 32px;
+                font-size: 1.05em;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Better focus states for accessibility */
+        .quiz-option:focus,
+        .tf-btn:focus,
+        .check-btn:focus {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The 12-Factor App</h1>
+        <p class="subtitle">A methodology for building modern, scalable, maintainable software</p>
+
+        <div class="intro-card">
+            <h2>Why does this exist?</h2>
+            <p>Born from Heroku's experience deploying thousands of apps. These patterns solve real pain points when apps grow, teams scale, and deployments multiply. Each factor addresses a specific "it worked on my machine" nightmare.</p>
+            <p style="margin-top: 12px; font-size: 0.9em; opacity: 0.85;">Think of it as: <strong>What would Netflix/Spotify engineers do?</strong></p>
+        </div>
+
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+        <!-- Factor 1: Codebase -->
+        <div class="factor" data-factor="1">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">1</div>
+                <div class="factor-title">Codebase — One repo, many deploys</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Your e-commerce startup grew. Team A copied the app folder to make a "production version". Team B created a separate repo for the EU region (GDPR compliance). Now there are 3 versions of "the same app" — bug fixes in one don't reach others. A security patch takes weeks to propagate. <strong>Which codebase is the "real" one?</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">One codebase tracked in version control, many deploys.</span></p>
+                    <ul>
+                        <li>There's exactly ONE repository per app</li>
+                        <li>Dev, staging, production are <em>deploys</em> of the same code</li>
+                        <li>Region/customer differences? Use config, not separate repos</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>At Spotify, one "service" = one repo. When they need to fix a bug, they fix it once. The same binary runs in test, staging, and production — only the <em>configuration</em> differs.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Multiple codebases for "same" app</span>
+/payment-service-dev/
+/payment-service-staging/
+/payment-service-prod-us/
+/payment-service-prod-eu/      <span class="comment"># Bug fix here won't reach others!</span>
+
+<span class="good"># GOOD: One codebase, multiple deployments</span>
+/payment-service/              <span class="comment"># Single source of truth</span>
+    ├── Deployed to → dev.internal.com
+    ├── Deployed to → staging.myapp.com
+    ├── Deployed to → us.myapp.com
+    └── Deployed to → eu.myapp.com
+
+<span class="comment"># Region differences handled via config (Factor 3)</span>
+<span class="highlight">EU_COMPLIANCE_MODE=true</span>      <span class="comment"># Not a code fork!</span></pre>
+
+                <div class="quiz" data-quiz="1">
+                    <div class="quiz-title">Quick Check</div>
+                    <p class="quiz-question">Your payment app needs PCI compliance in US but different regulations in EU. What's the 12-factor approach?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Fork the repo for each region</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Create branches: us-main, eu-main</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">One codebase with config flags per environment</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Copy-paste and maintain separately</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 2: Dependencies -->
+        <div class="factor" data-factor="2">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">2</div>
+                <div class="factor-title">Dependencies — Explicitly declare and isolate</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>New developer joins. Clones the repo. Runs <code>python app.py</code>. Error: <code>ModuleNotFoundError: No module named 'pandas'</code>. They install it. Another error. Another install. 2 hours later, app runs but crashes on a specific feature — turns out the server has <code>libxml2 v2.9</code> but their laptop has <code>v2.10</code>. Classic: <strong>"Works on my machine!"</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Explicitly declare AND isolate dependencies.</span></p>
+                    <ul>
+                        <li><strong>Declare:</strong> List ALL dependencies in a manifest (<code>requirements.txt</code>, <code>package.json</code>)</li>
+                        <li><strong>Isolate:</strong> Don't leak from/to system (<code>venv</code>, <code>node_modules</code>, Docker)</li>
+                        <li>Never assume anything is pre-installed — not even <code>curl</code></li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>This is why Docker became so popular. Your <code>Dockerfile</code> declares dependencies from the OS level up. A new dev runs <code>docker-compose up</code> and everything just works — same versions as production.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Implicit dependencies</span>
+import pandas       <span class="comment"># "Just pip install it globally"</span>
+import cv2          <span class="comment"># "You need opencv... and libGL... and..."</span>
+os.system("curl")   <span class="comment"># "Every Linux has curl, right?" (Alpine: nope)</span>
+
+<span class="good"># GOOD: Explicit declaration + isolation</span>
+<span class="comment"># requirements.txt — pinned versions!</span>
+pandas==2.0.3
+opencv-python==4.8.0
+flask==2.3.2
+
+<span class="comment"># Isolated environment</span>
+$ python -m venv venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+
+<span class="comment"># Or with Docker (ultimate isolation)</span>
+FROM python:3.11-slim
+COPY requirements.txt .
+RUN pip install -r requirements.txt</pre>
+
+                <div class="quiz tf-quiz" data-quiz="2">
+                    <div class="quiz-title">True or False</div>
+                    <p class="quiz-question">It's acceptable to rely on system packages like <code>curl</code> or <code>imagemagick</code> being pre-installed, since "every server has them".</p>
+                    <div class="tf-options">
+                        <div class="tf-btn" data-correct="false" onclick="selectTF(this)">True</div>
+                        <div class="tf-btn" data-correct="true" onclick="selectTF(this)">False</div>
+                    </div>
+                    <div class="quiz-feedback" data-explanation="Minimal Docker images (Alpine, distroless) strip everything. Cloud functions have nothing. Declare everything explicitly, or your app breaks in production."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 3: Config -->
+        <div class="factor" data-factor="3">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">3</div>
+                <div class="factor-title">Config — Store config in the environment</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Junior dev commits <code>settings.py</code> with production database credentials to GitHub. The repo is public. Bots scrape GitHub 24/7 for AWS keys. Within minutes, someone spins up crypto miners on your AWS account. $50,000 bill. Also: switching from staging to prod requires changing code and redeploying. <strong>Your secrets are now on the internet forever.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Store configuration in environment variables.</span></p>
+                    <ul>
+                        <li><strong>Config</strong> = anything that varies between deploys: DB URLs, API keys, feature flags</li>
+                        <li><strong>Code</strong> stays constant; <strong>environment</strong> changes</li>
+                        <li>Litmus test: Could you open-source this repo <em>right now</em> without leaking secrets?</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>Every PaaS (Heroku, Render, Railway) and container orchestrator (Kubernetes, ECS) has first-class support for env vars. AWS Secrets Manager, HashiCorp Vault — all inject secrets as environment variables. This pattern is universal.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Hardcoded secrets (will end up on GitHub)</span>
+DB_HOST = "prod-db.aws.com"
+DB_PASSWORD = "super_secret_123"
+STRIPE_KEY = "sk_live_abc123..."
+
+<span class="good"># GOOD: Read from environment</span>
+import os
+
+DB_HOST = os.environ["DB_HOST"]
+DB_PASSWORD = os.environ["DB_PASSWORD"]
+STRIPE_KEY = os.environ["STRIPE_KEY"]
+
+<span class="comment"># Environment differs per deploy:</span>
+<span class="comment"># .env.development</span>
+<span class="highlight">DB_HOST=localhost
+STRIPE_KEY=sk_test_xxx</span>
+
+<span class="comment"># Production (set via Kubernetes Secret, AWS Parameter Store, etc.)</span>
+<span class="highlight">DB_HOST=prod-db.aws.com
+STRIPE_KEY=sk_live_xxx</span></pre>
+
+                <div class="quiz tf-quiz" data-quiz="3">
+                    <div class="quiz-title">True or False</div>
+                    <p class="quiz-question">Config is everything that varies between environments. The code should be the same across all environments.</p>
+                    <div class="tf-options">
+                        <div class="tf-btn" data-correct="true" onclick="selectTF(this)">True</div>
+                        <div class="tf-btn" data-correct="false" onclick="selectTF(this)">False</div>
+                    </div>
+                    <div class="quiz-feedback" data-explanation="Config (DB URLs, API keys, feature flags) changes per environment. Code stays constant — only config differs between dev, staging, and production."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 4: Backing Services -->
+        <div class="factor" data-factor="4">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">4</div>
+                <div class="factor-title">Backing Services — Treat as attached resources</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Your self-hosted MySQL is dying under load. You want to migrate to AWS RDS. But the database connection is scattered across 47 files with hardcoded <code>localhost:3306</code>. The caching layer uses a local Redis with a hardcoded Unix socket. Email sending has SMTP server details in 3 different places. <strong>Migration estimate: 2 weeks.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Treat backing services as attached resources.</span></p>
+                    <ul>
+                        <li>Database, cache, queue, email, storage = all <strong>resources attached via URL</strong></li>
+                        <li>Swapping local MySQL → AWS RDS = change one URL, zero code changes</li>
+                        <li>Your app doesn't care if Redis is local or across the internet</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>When your database corrupts at 2 AM, you need to failover to a replica instantly. With attached resources, it's a config change (update the URL). Without this pattern, it's a 3-hour deploy during an outage. This is how Netflix survives AWS region failures.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Tightly coupled to specific services</span>
+db = mysql.connect("localhost", "root", "password", "myapp")
+redis_client = redis.Redis(unix_socket="/tmp/redis.sock")
+smtp = smtplib.SMTP("localhost", 25)
+
+<span class="good"># GOOD: Resources are URLs (environment config)</span>
+<span class="highlight">DATABASE_URL</span>=mysql://user:pass@localhost:3306/myapp     <span class="comment"># Dev</span>
+<span class="highlight">DATABASE_URL</span>=mysql://user:pass@rds.aws.com:3306/myapp   <span class="comment"># Prod</span>
+
+<span class="highlight">REDIS_URL</span>=redis://localhost:6379                        <span class="comment"># Dev</span>
+<span class="highlight">REDIS_URL</span>=redis://elasticache.aws.com:6379              <span class="comment"># Prod</span>
+
+<span class="highlight">SMTP_URL</span>=smtp://localhost:1025                          <span class="comment"># Dev (Mailhog)</span>
+<span class="highlight">SMTP_URL</span>=smtp://user:pass@smtp.sendgrid.net:587         <span class="comment"># Prod</span>
+
+<span class="comment"># Code just reads the URL — resource is interchangeable</span>
+db = create_engine(os.environ["DATABASE_URL"])</pre>
+
+                <div class="quiz" data-quiz="4">
+                    <div class="quiz-title">Quick Check</div>
+                    <p class="quiz-question">Which of these is NOT a backing service?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">PostgreSQL database</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Amazon S3 for file storage</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Twilio for SMS</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Your app's HTTP routing logic</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 5: Build, Release, Run -->
+        <div class="factor" data-factor="5">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">5</div>
+                <div class="factor-title">Build, Release, Run — Strictly separate stages</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>3 AM. Production is down. Panicked engineer SSHs into the server, edits <code>app.py</code> directly with vim, saves, restarts. App works. Everyone goes to sleep. Next morning: "What changed?" No one knows. Git repo doesn't match production. The "fix" introduced a regression. Rolling back deploys the old (broken) code. <strong>The server is now a special snowflake.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Strictly separate build, release, and run stages.</span></p>
+                    <ul>
+                        <li><strong>Build:</strong> Convert code into executable (compile, bundle, create Docker image)</li>
+                        <li><strong>Release:</strong> Combine build artifact + config → immutable release</li>
+                        <li><strong>Run:</strong> Execute the release in the environment</li>
+                    </ul>
+                    <p style="margin-top: 8px;"><strong>Releases are immutable.</strong> Never modify running code.</p>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>This is why CI/CD pipelines exist. GitHub Actions builds your Docker image (build), tags it with config (release), and Kubernetes runs it (run). Every release has a version. Rollback = re-run an older release. Simple.</p>
+                </div>
+
+<pre class="example"><span class="comment"># The deployment pipeline</span>
+
+<span class="highlight">BUILD</span>     git commit → CI builds → Docker image (v1.2.3)
+            │
+            │ + Environment config
+            ▼
+<span class="highlight">RELEASE</span>   Docker image + CONFIG = Release (v1.2.3-prod)
+            │
+            │   (immutable! never modify)
+            ▼
+<span class="highlight">RUN</span>       Kubernetes runs the release containers
+
+<span class="bad"># NEVER DO THIS</span>
+$ ssh prod-server
+$ vim /app/main.py      <span class="comment"># "Just a quick fix..."</span>
+$ systemctl restart app  <span class="comment"># Now git doesn't match prod</span>
+
+<span class="good"># ALWAYS DO THIS</span>
+$ git commit -m "Fix bug"
+$ git push               <span class="comment"># CI/CD handles the rest</span>
+<span class="comment"># Automatic: build → release → deploy</span></pre>
+
+                <div class="quiz tf-quiz" data-quiz="5">
+                    <div class="quiz-title">True or False</div>
+                    <p class="quiz-question">During a critical production outage, it's acceptable to SSH in and patch the code directly to minimize downtime.</p>
+                    <div class="tf-options">
+                        <div class="tf-btn" data-correct="false" onclick="selectTF(this)">True</div>
+                        <div class="tf-btn" data-correct="true" onclick="selectTF(this)">False</div>
+                    </div>
+                    <div class="quiz-feedback" data-explanation="Never! Push a fix through the pipeline. If your pipeline is too slow for emergencies, that's the real problem to fix. Hotfix branches and fast-track deploys exist for this."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 6: Processes -->
+        <div class="factor" data-factor="6">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">6</div>
+                <div class="factor-title">Processes — Stateless and share-nothing</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>User uploads a profile picture. It's saved to <code>/tmp/uploads</code> on server-1. Next request (load balanced) hits server-2. <code>FileNotFoundError</code>. Meanwhile, you store shopping carts in a Python dictionary. Server restarts for deployment. All carts vanish. Customer complaints flood in. <strong>Your app has amnesia every time it restarts.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Execute the app as one or more stateless processes.</span></p>
+                    <ul>
+                        <li>Processes are <strong>stateless</strong> — no sticky sessions, no local file storage</li>
+                        <li>Any data that must persist → backing service (DB, Redis, S3)</li>
+                        <li>Process memory/filesystem is ephemeral scratch space only</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>This is why AWS Lambda is stateless by design. Your function might run on a different machine each invocation. Kubernetes pods can be killed and rescheduled anywhere. If your app assumes "I'll be on this server with these files," it will break at scale.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: State in process memory (dies on restart)</span>
+shopping_carts = {}  <span class="comment"># Gone when process restarts!</span>
+user_sessions = {}   <span class="comment"># Gone when load balanced to another server!</span>
+
+def add_to_cart(user_id, item):
+    shopping_carts[user_id].append(item)
+
+def save_upload(file):
+    file.save(f"/tmp/uploads/{file.name}")  <span class="comment"># Only on this server!</span>
+
+<span class="good"># GOOD: State in backing services (survives everything)</span>
+def add_to_cart(user_id, item):
+    redis.lpush(f"cart:{user_id}", json.dumps(item))
+    <span class="comment"># Works on any server, survives restarts</span>
+
+def save_upload(file):
+    s3.upload_file(file, "uploads-bucket", file.name)
+    <span class="comment"># Accessible from any server</span>
+
+<span class="comment"># Session storage</span>
+app.config["SESSION_TYPE"] = "redis"  <span class="comment"># Not "filesystem"!</span></pre>
+
+                <div class="quiz" data-quiz="6">
+                    <div class="quiz-title">What's Wrong Here?</div>
+                    <pre style="background:#2d3748;color:#e2e8f0;padding:12px;border-radius:6px;margin:10px 0;font-size:0.85em;">rate_limits = {}  # Track API calls per user
+
+@app.route('/api/data')
+def get_data():
+    user = get_current_user()
+    rate_limits[user.id] = rate_limits.get(user.id, 0) + 1
+    if rate_limits[user.id] > 100:
+        return "Rate limited", 429</pre>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">The rate limit of 100 is too low</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Rate limits stored in process memory won't work with multiple servers</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Missing authentication check</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Should use a class instead of dict</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 7: Port Binding -->
+        <div class="factor" data-factor="7">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">7</div>
+                <div class="factor-title">Port Binding — Export services via port binding</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Your Java app requires Tomcat to be installed and configured. Python app needs Apache with mod_wsgi. PHP needs nginx with php-fpm. Each deployment requires ops to configure web servers differently. Container won't start because it expects an external webserver. <strong>Your app can't run on its own.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">The app is completely self-contained.</span></p>
+                    <ul>
+                        <li>App embeds its own web server (Gunicorn, Uvicorn, Puma)</li>
+                        <li>Exports HTTP by binding to a port</li>
+                        <li>No dependency on runtime injection of a webserver</li>
+                        <li>One app can become another app's backing service</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>This is how microservices work. Your user-service runs on port 8001, order-service on 8002. They're backing services to each other. Docker containers expose ports. Kubernetes Services route to pods by port. The app must be self-sufficient.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Requires external webserver</span>
+<span class="comment"># "Deploy this WAR file to Tomcat"</span>
+<span class="comment"># "Configure Apache with mod_wsgi"</span>
+<span class="comment"># "Set up nginx to proxy to this socket"</span>
+
+<span class="good"># GOOD: Self-contained, binds to a port</span>
+<span class="comment"># Python with Gunicorn</span>
+$ gunicorn --bind 0.0.0.0:$PORT app:app
+
+<span class="comment"># Node.js</span>
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0');
+
+<span class="comment"># Dockerfile exposes the port</span>
+FROM python:3.11
+EXPOSE 8000
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
+
+<span class="comment"># Now user-service can be a backing service for order-service:</span>
+<span class="highlight">USER_SERVICE_URL=http://user-service:8001</span></pre>
+
+                <div class="quiz tf-quiz" data-quiz="7">
+                    <div class="quiz-title">True or False</div>
+                    <p class="quiz-question">A 12-factor app can become a backing service for another app by exposing itself via a port.</p>
+                    <div class="tf-options">
+                        <div class="tf-btn" data-correct="true" onclick="selectTF(this)">True</div>
+                        <div class="tf-btn" data-correct="false" onclick="selectTF(this)">False</div>
+                    </div>
+                    <div class="quiz-feedback" data-explanation="This is how microservices architecture works. Your auth-service is a backing service for every other service that needs authentication."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 8: Concurrency -->
+        <div class="factor" data-factor="8">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">8</div>
+                <div class="factor-title">Concurrency — Scale out via the process model</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Black Friday traffic spike. Your monolith can't handle it. You upgrade to a bigger server (vertical scaling): more RAM, faster CPU. You hit AWS's largest instance type. Still not enough. You're stuck. You can't add more CPU to a single machine. <strong>Vertical scaling has a ceiling.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Scale out via the process model.</span></p>
+                    <ul>
+                        <li>Different <strong>process types</strong> for different work: web, worker, scheduler</li>
+                        <li>Need more capacity? Run more processes (horizontal scaling)</li>
+                        <li>This is enabled by Factor 6 (stateless processes)</li>
+                        <li>Processes are first-class citizens, managed by the OS/platform</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>Kubernetes Horizontal Pod Autoscaler watches CPU usage and spins up more pods automatically. Heroku lets you <code>heroku ps:scale web=10</code> to handle traffic spikes. Netflix runs thousands of instances of the same service across availability zones.</p>
+                </div>
+
+<pre class="example"><span class="comment"># Procfile defines process types</span>
+<span class="highlight">web:</span> gunicorn app:app                  <span class="comment"># Handles HTTP</span>
+<span class="highlight">worker:</span> celery -A tasks worker         <span class="comment"># Background jobs</span>
+<span class="highlight">scheduler:</span> celery -A tasks beat        <span class="comment"># Cron-like tasks</span>
+
+<span class="comment"># Scale horizontally by process type</span>
+$ heroku ps:scale web=4 worker=2
+
+<span class="comment"># Kubernetes deployment</span>
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  <span class="highlight">replicas: 10</span>  <span class="comment"># 10 identical web processes</span>
+
+<span class="comment"># Autoscaling based on load</span>
+apiVersion: autoscaling/v2
+spec:
+  minReplicas: 2
+  maxReplicas: 50
+  <span class="highlight">targetCPUUtilizationPercentage: 70</span></pre>
+
+                <div class="quiz" data-quiz="8">
+                    <div class="quiz-title">Quick Check</div>
+                    <p class="quiz-question">Your app is CPU-bound and can't handle load. What's the 12-factor approach?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Get a bigger server with more CPU cores</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Run more process instances behind a load balancer</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Add more threads within the single process</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Rewrite in a faster language</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 9: Disposability -->
+        <div class="factor" data-factor="9">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">9</div>
+                <div class="factor-title">Disposability — Fast startup and graceful shutdown</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Your app takes 3 minutes to start (loading ML models, warming caches). Kubernetes health check times out. Pod restart loop. During deployments, there's 3 minutes of downtime per instance. Also: when killed with SIGTERM, your app immediately dies, dropping all in-flight requests mid-transaction. <strong>Database left in inconsistent state.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Maximize robustness with fast startup and graceful shutdown.</span></p>
+                    <ul>
+                        <li><strong>Fast startup:</strong> Seconds, not minutes. Enables rapid scaling and deploys.</li>
+                        <li><strong>Graceful shutdown:</strong> On SIGTERM, stop accepting new work, finish current work, then exit.</li>
+                        <li><strong>Crash-resistant:</strong> Workers should return jobs to the queue if interrupted.</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>Kubernetes sends SIGTERM, waits 30 seconds (terminationGracePeriodSeconds), then SIGKILL. Your app must handle this. AWS Lambda has a 10-second shutdown window. Heroku gives 30 seconds. Use them wisely.</p>
+                </div>
+
+<pre class="example"><span class="comment"># Graceful shutdown in Python</span>
+import signal
+import sys
+
+def graceful_shutdown(signum, frame):
+    print("SIGTERM received, shutting down...")
+    server.stop_accepting_connections()   <span class="comment"># No new requests</span>
+    wait_for_active_requests(timeout=25)  <span class="comment"># Finish in-flight</span>
+    db_connection.close()                 <span class="comment"># Cleanup</span>
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, graceful_shutdown)
+
+<span class="comment"># For Celery workers: acknowledge AFTER completion</span>
+@celery.task(<span class="highlight">acks_late=True</span>)  <span class="comment"># Job returns to queue if worker dies</span>
+def process_payment(order_id):
+    ...
+
+<span class="comment"># Gunicorn graceful shutdown</span>
+$ gunicorn --graceful-timeout 30 app:app
+
+<span class="comment"># Kubernetes config</span>
+spec:
+  <span class="highlight">terminationGracePeriodSeconds: 30</span>
+  containers:
+    lifecycle:
+      preStop:
+        exec:
+          command: ["sh", "-c", "sleep 5"]  <span class="comment"># Drain connections</span></pre>
+
+                <div class="quiz" data-quiz="9">
+                    <div class="quiz-title">Quick Check</div>
+                    <p class="quiz-question">When a process receives SIGTERM, what should it do?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Immediately terminate to free up resources quickly</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Stop accepting new work, finish current requests, then exit cleanly</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Ignore the signal and continue running</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Restart the process automatically</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 10: Dev/Prod Parity -->
+        <div class="factor" data-factor="10">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">10</div>
+                <div class="factor-title">Dev/Prod Parity — Keep environments similar</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Dev uses SQLite because "it's easier." Prod uses PostgreSQL. Feature works in dev, fails in prod — turns out SQLite doesn't enforce foreign keys by default. Also: code was committed 3 months ago, dev who wrote it left, and only the "ops team" can deploy. <strong>Three gaps compound into chaos.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Keep development, staging, and production as similar as possible.</span></p>
+                    <p>Three gaps to minimize:</p>
+                    <ul>
+                        <li><strong>Time gap:</strong> Hours between code and deploy, not weeks</li>
+                        <li><strong>Personnel gap:</strong> Developers who write code also deploy it</li>
+                        <li><strong>Tools gap:</strong> Same backing services in dev and prod</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p>Docker Compose gives you prod-parity locally. <code>docker-compose up</code> starts the same PostgreSQL, Redis, and Elasticsearch you use in production. No more "works on my machine" because your machine runs the same stack.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Different services per environment</span>
+<span class="comment"># Development</span>
+Database: SQLite          <span class="comment"># Different SQL dialect!</span>
+Cache: Python dict        <span class="comment"># Not even Redis!</span>
+Storage: Local filesystem
+Email: print() to console
+
+<span class="comment"># Production</span>
+Database: PostgreSQL      <span class="comment"># Foreign keys behave differently</span>
+Cache: Redis cluster
+Storage: S3
+Email: SendGrid
+
+<span class="good"># GOOD: Same services everywhere (use Docker!)</span>
+<span class="comment"># docker-compose.yml (development)</span>
+services:
+  db:
+    image: <span class="highlight">postgres:15</span>    <span class="comment"># Same as prod</span>
+  cache:
+    image: <span class="highlight">redis:7</span>        <span class="comment"># Same as prod</span>
+  storage:
+    image: <span class="highlight">minio/minio</span>    <span class="comment"># S3-compatible</span>
+  email:
+    image: <span class="highlight">mailhog/mailhog</span> <span class="comment"># Catches emails locally</span>
+
+<span class="comment"># Production: Same services, just managed versions</span>
+Database: AWS RDS (PostgreSQL 15)
+Cache: AWS ElastiCache (Redis 7)
+Storage: AWS S3
+Email: SendGrid</pre>
+
+                <div class="quiz" data-quiz="10">
+                    <div class="quiz-title">Quick Check</div>
+                    <p class="quiz-question">Which gap is the MOST dangerous for code quality?</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Dev has 100 rows, prod has 10 million rows</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Dev uses SQLite, prod uses PostgreSQL</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Dev runs 1 process, prod runs 10</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Dev doesn't use HTTPS</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 11: Logs -->
+        <div class="factor" data-factor="11">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">11</div>
+                <div class="factor-title">Logs — Treat logs as event streams</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Logs written to <code>/var/log/app.log</code> on each server. You have 20 servers. To debug, you SSH into each and <code>grep</code>. Disk fills up. Old logs auto-deleted. Crucial evidence of the breach? Gone. Container restarts, logs vanish. <strong>Your app is managing something the platform should handle.</strong></p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Treat logs as event streams.</span></p>
+                    <ul>
+                        <li>App writes to <code>stdout</code> — nothing else</li>
+                        <li>App never manages log files, rotation, or archival</li>
+                        <li>Execution environment captures and routes logs (to ELK, Splunk, CloudWatch)</li>
+                        <li>Unified logging across all instances</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p><code>docker logs</code> captures stdout. Kubernetes has Fluentd/Fluent Bit shipping logs to Elasticsearch. CloudWatch captures Lambda logs. The platform aggregates logs from hundreds of instances into one searchable place.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: App manages its own logs</span>
+import logging
+logging.basicConfig(
+    filename='/var/log/app.log',  <span class="comment"># App manages file</span>
+    maxBytes=10485760,             <span class="comment"># App manages rotation</span>
+    backupCount=5                  <span class="comment"># App manages archival</span>
+)
+
+<span class="good"># GOOD: Write to stdout, let platform handle everything</span>
+import logging
+import sys
+
+logging.basicConfig(
+    <span class="highlight">stream=sys.stdout</span>,             <span class="comment"># Just stdout!</span>
+    format='%(asctime)s %(levelname)s %(name)s: %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+logger.info("Order processed", extra={"order_id": 123})
+
+<span class="comment"># Platform captures stdout:</span>
+<span class="comment"># Docker:     docker logs myapp</span>
+<span class="comment"># Kubernetes: kubectl logs pod/myapp → Fluentd → Elasticsearch</span>
+<span class="comment"># Heroku:     heroku logs --tail</span>
+<span class="comment"># AWS:        CloudWatch Logs (automatic for ECS/Lambda)</span></pre>
+
+                <div class="quiz tf-quiz" data-quiz="11">
+                    <div class="quiz-title">True or False</div>
+                    <p class="quiz-question">A 12-factor app should implement log rotation and configure retention policies for its log files.</p>
+                    <div class="tf-options">
+                        <div class="tf-btn" data-correct="false" onclick="selectTF(this)">True</div>
+                        <div class="tf-btn" data-correct="true" onclick="selectTF(this)">False</div>
+                    </div>
+                    <div class="quiz-feedback" data-explanation="The app just writes to stdout. The execution environment handles capture, routing, storage, rotation, archival, and search. Separation of concerns."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Factor 12: Admin Processes -->
+        <div class="factor" data-factor="12">
+            <div class="factor-header" onclick="toggleFactor(this)">
+                <div class="factor-num">12</div>
+                <div class="factor-title">Admin Processes — Run as one-off processes</div>
+                <div class="factor-toggle">▼</div>
+            </div>
+            <div class="factor-content">
+                <div class="scenario">
+                    <div class="scenario-title">The Problem</div>
+                    <p>Time for database migration. Dev clones the repo to their laptop (might be outdated), installs dependencies (might be different versions), runs migration against prod DB. The migration has a bug — it was written against an old schema. <strong>Production data corrupted.</strong> Also: someone wrote a one-off cleanup script on their laptop with hardcoded credentials.</p>
+                </div>
+
+                <div class="solution">
+                    <div class="solution-title">The Factor</div>
+                    <p><span class="key-point">Run admin/management tasks as one-off processes.</span></p>
+                    <ul>
+                        <li>Migrations, console sessions, scripts run in <strong>identical environment</strong> to the app</li>
+                        <li>Same codebase, same config, same dependencies</li>
+                        <li>Ship admin scripts with the app code (not separate)</li>
+                        <li>Run against a release, not against checked-out code</li>
+                    </ul>
+                </div>
+
+                <div class="context">
+                    <div class="context-title">Real-World Context</div>
+                    <p><code>heroku run bash</code> gives you a shell in the same environment as your web dynos. <code>kubectl exec</code> runs commands in a pod with the exact same image. Rails' <code>rails console</code> in production is this pattern.</p>
+                </div>
+
+<pre class="example"><span class="bad"># BAD: Run admin tasks from random environment</span>
+<span class="comment"># On developer laptop:</span>
+$ git pull                 <span class="comment"># Maybe outdated</span>
+$ pip install -r req.txt   <span class="comment"># Maybe different versions</span>
+$ python migrate.py        <span class="comment"># Connected to prod DB... boom</span>
+
+<span class="good"># GOOD: Run in identical environment to production</span>
+<span class="comment"># Heroku</span>
+$ heroku run python manage.py migrate
+$ heroku run python scripts/cleanup.py
+$ heroku run python manage.py shell
+
+<span class="comment"># Kubernetes</span>
+$ kubectl exec -it deploy/myapp -- python manage.py migrate
+$ kubectl exec -it deploy/myapp -- flask shell
+
+<span class="comment"># Docker Compose</span>
+$ docker-compose run --rm web python manage.py migrate
+$ docker-compose run --rm web python scripts/fix_data.py
+
+<span class="comment"># Same image, same config, same deps as production!</span>
+<span class="comment"># Admin scripts live in the repo, deployed with the app</span></pre>
+
+                <div class="quiz" data-quiz="12">
+                    <div class="quiz-title">Final Challenge</div>
+                    <p class="quiz-question">You need to run a one-time script to fix corrupted data in production. The 12-factor approach is:</p>
+                    <div class="quiz-options">
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">SSH into a prod server and run the script there</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Run from your laptop with prod database credentials</div>
+                        <div class="quiz-option" data-correct="true" onclick="selectOption(this)">Add script to repo, deploy, run as one-off process in prod environment</div>
+                        <div class="quiz-option" data-correct="false" onclick="selectOption(this)">Create a scheduled cron job on the server</div>
+                    </div>
+                    <div class="quiz-feedback"></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align:center; padding: 40px 20px; margin-top: 30px; background: var(--card); border-radius: 12px;">
+            <h2>Summary</h2>
+            <p style="color:#718096; margin: 20px 0;">The 12 factors boil down to these principles:</p>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px;">
+                <span class="key-point">Automation over manual</span>
+                <span class="key-point">Explicit over implicit</span>
+                <span class="key-point">Immutable releases</span>
+                <span class="key-point">Stateless processes</span>
+                <span class="key-point">Environment parity</span>
+                <span class="key-point">Config in environment</span>
+            </div>
+            <p style="margin-top: 30px; color:#718096;">Score: <span id="finalScore">0</span>/12 quizzes completed</p>
+        </div>
+    </div>
+
+    <script>
+        let completedQuizzes = new Set();
+
+        function toggleFactor(header) {
+            const factor = header.parentElement;
+            factor.classList.toggle('open');
+            updateProgress();
+        }
+
+        function selectOption(option) {
+            const quiz = option.closest('.quiz');
+            const options = quiz.querySelectorAll('.quiz-option');
+            const feedback = quiz.querySelector('.quiz-feedback');
+
+            if (quiz.classList.contains('answered')) return;
+
+            options.forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+
+            const isCorrect = option.dataset.correct === 'true';
+
+            if (isCorrect) {
+                option.classList.add('correct');
+                feedback.textContent = 'Correct!';
+                feedback.className = 'quiz-feedback show correct';
+                markQuizComplete(quiz);
+            } else {
+                option.classList.add('incorrect');
+                feedback.textContent = 'Not quite. Think about what makes apps truly portable and scalable.';
+                feedback.className = 'quiz-feedback show incorrect';
+                options.forEach(opt => {
+                    if (opt.dataset.correct === 'true') {
+                        opt.classList.add('correct');
+                    }
+                });
+            }
+            quiz.classList.add('answered');
+        }
+
+        function selectTF(btn) {
+            const quiz = btn.closest('.quiz');
+            const buttons = quiz.querySelectorAll('.tf-btn');
+            const feedback = quiz.querySelector('.quiz-feedback');
+
+            if (quiz.classList.contains('answered')) return;
+
+            buttons.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            const isCorrect = btn.dataset.correct === 'true';
+            const explanation = feedback.dataset.explanation;
+
+            if (isCorrect) {
+                btn.classList.add('correct');
+                feedback.textContent = 'Correct! ' + explanation;
+                feedback.className = 'quiz-feedback show correct';
+                markQuizComplete(quiz);
+            } else {
+                btn.classList.add('incorrect');
+                buttons.forEach(b => {
+                    if (b.dataset.correct === 'true') b.classList.add('correct');
+                });
+                feedback.textContent = explanation;
+                feedback.className = 'quiz-feedback show incorrect';
+            }
+            quiz.classList.add('answered');
+        }
+
+        function checkFillBlank(id1, id2, answer1, answers2) {
+            const input1 = document.getElementById(id1);
+            const input2 = document.getElementById(id2);
+            const quiz = input1.closest('.quiz');
+            const feedback = quiz.querySelector('.quiz-feedback');
+
+            const val1 = input1.value.trim().toLowerCase();
+            const val2 = input2.value.trim().toLowerCase();
+
+            const isCorrect1 = val1.includes(answer1.toLowerCase()) || val1 === 'environments' || val1 === 'deployment';
+            const isCorrect2 = answers2.some(a => val2.includes(a.toLowerCase()));
+
+            input1.className = isCorrect1 ? 'correct' : 'incorrect';
+            input2.className = isCorrect2 ? 'correct' : 'incorrect';
+
+            if (isCorrect1 && isCorrect2) {
+                feedback.textContent = 'Correct! Config varies between deploys; code stays the same everywhere.';
+                feedback.className = 'quiz-feedback show correct';
+                markQuizComplete(quiz);
+            } else {
+                feedback.textContent = 'Hint: What changes between dev/staging/prod? What should NOT change?';
+                feedback.className = 'quiz-feedback show incorrect';
+            }
+        }
+
+        function checkFillBlank2(id1, id2, answer1, answers2) {
+            const input1 = document.getElementById(id1);
+            const input2 = document.getElementById(id2);
+            const quiz = input1.closest('.quiz');
+            const feedback = quiz.querySelector('.quiz-feedback');
+
+            const val1 = input1.value.trim().toUpperCase();
+            const val2 = input2.value.trim().toLowerCase();
+
+            const isCorrect1 = val1 === answer1 || val1 === 'TERM' || val1 === 'SIGTERM SIGNAL';
+            const isCorrect2 = answers2.some(a => val2.includes(a));
+
+            input1.className = isCorrect1 ? 'correct' : 'incorrect';
+            input2.className = isCorrect2 ? 'correct' : 'incorrect';
+
+            if (isCorrect1 && isCorrect2) {
+                feedback.textContent = 'Correct! Graceful shutdown prevents data loss and dropped requests.';
+                feedback.className = 'quiz-feedback show correct';
+                markQuizComplete(quiz);
+            } else {
+                feedback.textContent = 'Hint: SIGTERM is the standard termination signal. What should happen to current work?';
+                feedback.className = 'quiz-feedback show incorrect';
+            }
+        }
+
+        function markQuizComplete(quiz) {
+            const factorEl = quiz.closest('.factor');
+            const factorNum = factorEl.dataset.factor;
+            completedQuizzes.add(factorNum);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (completedQuizzes.size / 12) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('finalScore').textContent = completedQuizzes.size;
+        }
+
+        // Open first factor by default
+        document.querySelector('.factor').classList.add('open');
+    </script>
+</body>
+</html>

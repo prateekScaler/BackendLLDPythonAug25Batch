@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Basics - Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">☸️</div>
+            <h1>Kubernetes Basics</h1>
+            <p class="subtitle">Container orchestration for production</p>
+        </header>
+
+        <div class="section">
+            <h2>Why Kubernetes?</h2>
+
+            <p class="story">
+                Docker is great for running containers. But what happens when you have 50 containers across
+                10 servers? How do you handle:
+            </p>
+
+            <ul>
+                <li>A container crashes at 3am — who restarts it?</li>
+                <li>Traffic spikes — who spins up more containers?</li>
+                <li>Deploying a new version — how to do it without downtime?</li>
+                <li>Service discovery — how does service A find service B?</li>
+            </ul>
+
+            <div class="meme-box">
+                <div class="top-text">Me manually managing containers</div>
+                <div class="meme-image">🧑‍💻🔥🔥🔥</div>
+                <div class="bottom-text">"I'll just automate this tomorrow"</div>
+            </div>
+
+            <p class="story">
+                <strong>Kubernetes (K8s)</strong> solves all of this. It's a container orchestration platform that:
+            </p>
+
+            <ul>
+                <li><strong>Self-heals:</strong> Crashed container? Auto-restarted.</li>
+                <li><strong>Auto-scales:</strong> High CPU? Spins up more pods.</li>
+                <li><strong>Rolling updates:</strong> Deploy without downtime.</li>
+                <li><strong>Service discovery:</strong> Built-in DNS for services.</li>
+                <li><strong>Load balancing:</strong> Traffic distributed across pods.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>The Architecture</h2>
+
+            <p class="story">
+                A Kubernetes cluster has two types of machines: the <strong>control plane</strong> (the brain)
+                and <strong>worker nodes</strong> (where your containers run).
+            </p>
+
+            <div class="diagram">
+<pre>
+                    CONTROL PLANE (Master)
+┌────────────────────────────────────────────────────────────┐
+│  API Server  │   etcd    │  Scheduler  │  Controller Mgr   │
+└────────────────────────────────────────────────────────────┘
+                            │
+          ┌─────────────────┼─────────────────┐
+          ▼                 ▼                 ▼
+   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+   │ WORKER NODE │   │ WORKER NODE │   │ WORKER NODE │
+   │  kubelet    │   │  kubelet    │   │  kubelet    │
+   │  kube-proxy │   │  kube-proxy │   │  kube-proxy │
+   │ ┌───┐ ┌───┐ │   │ ┌───┐ ┌───┐ │   │ ┌───┐       │
+   │ │Pod│ │Pod│ │   │ │Pod│ │Pod│ │   │ │Pod│       │
+   │ └───┘ └───┘ │   │ └───┘ └───┘ │   │ └───┘       │
+   └─────────────┘   └─────────────┘   └─────────────┘
+</pre>
+            </div>
+
+            <h3>Control Plane Components</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Role</th>
+                </tr>
+                <tr>
+                    <td><strong>API Server</strong></td>
+                    <td>Frontend for K8s. All <code>kubectl</code> commands go here.</td>
+                </tr>
+                <tr>
+                    <td><strong>etcd</strong></td>
+                    <td>Key-value database storing all cluster state.</td>
+                </tr>
+                <tr>
+                    <td><strong>Scheduler</strong></td>
+                    <td>Decides which node should run new pods.</td>
+                </tr>
+                <tr>
+                    <td><strong>Controller Manager</strong></td>
+                    <td>Runs control loops (ensures desired state = actual state).</td>
+                </tr>
+            </table>
+
+            <h3>Worker Node Components</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Role</th>
+                </tr>
+                <tr>
+                    <td><strong>kubelet</strong></td>
+                    <td>Agent on each node. Manages pods, reports to control plane.</td>
+                </tr>
+                <tr>
+                    <td><strong>kube-proxy</strong></td>
+                    <td>Network proxy. Handles routing to pods.</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Core Concepts</h2>
+
+            <p class="story">
+                Kubernetes has its own vocabulary. Here are the key objects you'll work with:
+            </p>
+
+            <table>
+                <tr>
+                    <th>Object</th>
+                    <th>What It Is</th>
+                    <th>Analogy</th>
+                </tr>
+                <tr>
+                    <td><strong>Pod</strong></td>
+                    <td>Smallest deployable unit. 1+ containers sharing network/storage.</td>
+                    <td>Wrapper around your container(s)</td>
+                </tr>
+                <tr>
+                    <td><strong>Deployment</strong></td>
+                    <td>Manages pods. Handles replicas, updates, rollbacks.</td>
+                    <td>"Keep 3 copies running"</td>
+                </tr>
+                <tr>
+                    <td><strong>Service</strong></td>
+                    <td>Stable network endpoint for pods. Pods come/go, Service stays.</td>
+                    <td>Load balancer + DNS name</td>
+                </tr>
+                <tr>
+                    <td><strong>ConfigMap</strong></td>
+                    <td>Configuration data (non-sensitive).</td>
+                    <td>Environment variables file</td>
+                </tr>
+                <tr>
+                    <td><strong>Secret</strong></td>
+                    <td>Sensitive configuration (passwords, keys).</td>
+                    <td>Encrypted env vars</td>
+                </tr>
+                <tr>
+                    <td><strong>Ingress</strong></td>
+                    <td>HTTP routing rules. Maps URLs to services.</td>
+                    <td>nginx/load balancer config</td>
+                </tr>
+            </table>
+
+            <div class="analogy-box">
+                <div class="title">🎯 The Declarative Approach</div>
+                <p>
+                    Kubernetes is <strong>declarative</strong>. You don't say "run 3 containers." You say
+                    "I want 3 replicas." K8s figures out how to make that happen. If one crashes, K8s
+                    notices the actual state (2) doesn't match desired (3) and creates a new one.
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>A Simple Example</h2>
+
+            <p class="story">
+                Let's deploy our Flask app to Kubernetes. You need two YAML files: a Deployment and a Service.
+            </p>
+
+            <h3>deployment.yaml</h3>
+            <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+spec:
+  replicas: 3                    # Run 3 copies
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+      - name: flask-app
+        image: flask-demo:1.0
+        ports:
+        - containerPort: 5000
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"</code></pre>
+
+            <h3>service.yaml</h3>
+            <pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app-service
+spec:
+  selector:
+    app: flask-app              # Routes to pods with this label
+  ports:
+    - port: 80                  # Service port
+      targetPort: 5000          # Container port
+  type: LoadBalancer            # Expose externally</code></pre>
+
+            <h3>Deploy It</h3>
+            <div class="terminal">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                </div>
+                <div class="terminal-body"><span class="prompt">$</span> kubectl apply -f deployment.yaml
+<span class="output">deployment.apps/flask-app created</span>
+
+<span class="prompt">$</span> kubectl apply -f service.yaml
+<span class="output">service/flask-app-service created</span>
+
+<span class="prompt">$</span> kubectl get pods
+<span class="output">NAME                         READY   STATUS    RESTARTS   AGE</span>
+<span class="output">flask-app-7d9b8c6f5d-abc12   1/1     Running   0          30s</span>
+<span class="output">flask-app-7d9b8c6f5d-def34   1/1     Running   0          30s</span>
+<span class="output">flask-app-7d9b8c6f5d-ghi56   1/1     Running   0          30s</span></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Essential kubectl Commands</h2>
+
+            <pre><code># Get resources
+kubectl get pods                    # List pods
+kubectl get all                     # List everything
+kubectl get pods -o wide            # More details (node, IP)
+
+# Describe (detailed info + events)
+kubectl describe pod pod-name
+
+# Logs
+kubectl logs pod-name
+kubectl logs -f pod-name            # Follow
+
+# Shell into pod
+kubectl exec -it pod-name -- bash
+
+# Apply configuration
+kubectl apply -f file.yaml
+
+# Delete
+kubectl delete -f file.yaml
+kubectl delete pod pod-name
+
+# Scaling
+kubectl scale deployment/flask-app --replicas=5
+
+# Rollout
+kubectl rollout status deployment/flask-app
+kubectl rollout undo deployment/flask-app   # Rollback</code></pre>
+        </div>
+
+        <div class="section">
+            <h2>Running Kubernetes Locally</h2>
+
+            <p class="story">
+                For learning and development, you can run K8s on your laptop:
+            </p>
+
+            <table>
+                <tr>
+                    <th>Tool</th>
+                    <th>Best For</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td><strong>Rancher Desktop</strong></td>
+                    <td>You already have it!</td>
+                    <td>Enable K8s in preferences. Uses K3s.</td>
+                </tr>
+                <tr>
+                    <td><strong>Minikube</strong></td>
+                    <td>Full K8s experience</td>
+                    <td><code>brew install minikube && minikube start</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Kind</strong></td>
+                    <td>CI/CD testing</td>
+                    <td>K8s in Docker. Very fast.</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>When (Not) to Use Kubernetes</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-item good">
+                    <h4>Good Fit</h4>
+                    <ul>
+                        <li>Multiple microservices</li>
+                        <li>High availability required</li>
+                        <li>Auto-scaling needed</li>
+                        <li>Team has K8s experience</li>
+                        <li>Cloud-native architecture</li>
+                    </ul>
+                </div>
+                <div class="comparison-item bad">
+                    <h4>Probably Overkill</h4>
+                    <ul>
+                        <li>Single monolithic app</li>
+                        <li>Small team / MVP stage</li>
+                        <li>Simple deployments</li>
+                        <li>No dedicated DevOps</li>
+                        <li>Tight budget</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <strong>Don't use K8s just because it's popular.</strong> For simple apps, Docker Compose or
+                managed platforms (Railway, Fly.io, Cloud Run) are often better choices.
+                Use K8s when you actually need its features.
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🎯 K8s Quick Check</div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">1. What ensures crashed pods are automatically replaced?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Docker daemon</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Deployment controller (reconciliation loop)</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Manual restart required</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+
+            <div class="quiz-question">
+                <p class="quiz-question-text">2. What's a Kubernetes Service for?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">A) Building images</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q2')">B) Providing a stable network endpoint for pods</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q2')">C) Storing secrets</div>
+                </div>
+                <div class="quiz-feedback" id="q2-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <a href="05_hands_on.html">← Hands-On Lab</a>
+            <a href="07_cheatsheet.html">Cheat Sheet →</a>
+        </div>
+
+        <footer>
+            <p>Page 6 of 7 — Containerization Guide</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect ? 'Correct!' : 'Review the sections above.';
+        }
+    </script>
+</body>
+</html>

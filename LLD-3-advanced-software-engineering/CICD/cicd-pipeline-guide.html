@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD Pipeline - Interactive Guide</title>
+    <style>
+        :root {
+            --primary: #2d3748;
+            --accent: #5a67d8;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #e53e3e;
+            --info: #4299e1;
+            --bg: #f7fafc;
+            --card: #ffffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--primary);
+            line-height: 1.8;
+            padding: 24px;
+            font-size: 1.1rem;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 2.5em;
+        }
+        h2 {
+            margin: 50px 0 24px;
+            font-size: 1.7em;
+            color: var(--primary);
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--accent);
+        }
+        h3 {
+            margin: 28px 0 14px;
+            font-size: 1.25em;
+            color: var(--accent);
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 1.15em;
+        }
+        p { margin-bottom: 14px; }
+
+        /* Info boxes */
+        .concept {
+            background: linear-gradient(135deg, #ebf4ff 0%, #e6f0ff 100%);
+            border-left: 5px solid var(--accent);
+            padding: 22px 26px;
+            margin: 24px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .concept-title {
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+        .warning-box {
+            background: linear-gradient(135deg, #fffaf0 0%, #fff5eb 100%);
+            border-left: 5px solid var(--warning);
+            padding: 22px 26px;
+            margin: 24px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .warning-title {
+            font-weight: 700;
+            color: var(--warning);
+            margin-bottom: 10px;
+        }
+        .success-box {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%);
+            border-left: 5px solid var(--success);
+            padding: 22px 26px;
+            margin: 24px 0;
+            border-radius: 0 12px 12px 0;
+        }
+        .success-title {
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+
+        /* Key point */
+        .key-point {
+            display: inline-block;
+            background: #fef3c7;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* Main Pipeline Visualization */
+        .pipeline-visual {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin: 32px 0;
+            overflow-x: auto;
+        }
+        .pipeline-flow {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            min-width: max-content;
+        }
+        .pipeline-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 12px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            min-width: 90px;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            opacity: 0.4;
+        }
+        .pipeline-stage.active {
+            opacity: 1;
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-4px);
+        }
+        .pipeline-stage.completed {
+            opacity: 1;
+        }
+        .stage-icon {
+            font-size: 1.8em;
+            margin-bottom: 8px;
+        }
+        .stage-label {
+            color: white;
+            font-size: 0.75em;
+            text-align: center;
+            font-weight: 500;
+        }
+        .pipeline-arrow {
+            color: #4a5568;
+            font-size: 1.4em;
+            transition: color 0.4s;
+        }
+        .pipeline-arrow.active {
+            color: var(--success);
+        }
+        .pipeline-divider {
+            width: 2px;
+            height: 50px;
+            background: #4a5568;
+            margin: 0 8px;
+            position: relative;
+        }
+        .pipeline-divider::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65em;
+            color: #a0aec0;
+            white-space: nowrap;
+        }
+
+        /* Pipeline Stage Cards */
+        .stage-card {
+            background: var(--card);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border-left: 5px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .stage-card.active {
+            border-left-color: var(--accent);
+        }
+        .stage-card.completed {
+            border-left-color: var(--success);
+        }
+        .stage-card.locked {
+            opacity: 0.5;
+        }
+        .stage-header {
+            padding: 20px 26px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: background 0.2s;
+        }
+        .stage-header:hover {
+            background: #f8fafc;
+        }
+        .stage-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #718096;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1em;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        .stage-card.active .stage-number,
+        .stage-card.completed .stage-number {
+            background: var(--accent);
+            color: white;
+        }
+        .stage-card.completed .stage-number {
+            background: var(--success);
+        }
+        .stage-info { flex-grow: 1; }
+        .stage-title {
+            font-weight: 600;
+            font-size: 1.15em;
+            margin-bottom: 4px;
+        }
+        .stage-subtitle {
+            font-size: 0.9em;
+            color: #718096;
+        }
+        .stage-badge {
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-ci { background: #bee3f8; color: #2b6cb0; }
+        .badge-cd { background: #c6f6d5; color: #276749; }
+        .badge-test { background: #fef3c7; color: #975a16; }
+        .badge-deploy { background: #e9d8fd; color: #6b46c1; }
+        .stage-toggle {
+            font-size: 1.3em;
+            color: #a0aec0;
+            transition: transform 0.3s;
+        }
+        .stage-card.open .stage-toggle {
+            transform: rotate(180deg);
+        }
+        .stage-content {
+            display: none;
+            padding: 0 26px 26px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .stage-card.open .stage-content {
+            display: block;
+        }
+
+        /* Code blocks */
+        pre.code {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 22px 26px;
+            border-radius: 10px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.88em;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+            margin: 18px 0;
+        }
+        pre.code .comment { color: #68d391; }
+        pre.code .keyword { color: #63b3ed; }
+        pre.code .string { color: #f6ad55; }
+        pre.code .highlight {
+            background: rgba(99, 179, 237, 0.2);
+            display: block;
+            margin: 0 -26px;
+            padding: 0 26px;
+        }
+
+        /* Environment diagram */
+        .env-diagram {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 28px 0;
+        }
+        .env-box {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-top: 4px solid #e2e8f0;
+            opacity: 0.5;
+            transition: all 0.4s ease;
+        }
+        .env-box.active {
+            opacity: 1;
+            transform: translateY(-4px);
+        }
+        .env-box.dev { border-top-color: var(--info); }
+        .env-box.staging { border-top-color: var(--warning); }
+        .env-box.prod { border-top-color: var(--success); }
+        .env-icon { font-size: 2.2em; margin-bottom: 12px; }
+        .env-name { font-weight: 700; font-size: 1.1em; margin-bottom: 8px; }
+        .env-desc { font-size: 0.85em; color: #718096; }
+        @media (max-width: 768px) {
+            .env-diagram { grid-template-columns: 1fr; }
+        }
+
+        /* Config flow */
+        .config-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 28px 0;
+            padding: 24px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        .config-source {
+            padding: 16px 24px;
+            background: var(--card);
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            min-width: 140px;
+        }
+        .config-icon { font-size: 1.8em; margin-bottom: 8px; }
+        .config-label { font-weight: 600; font-size: 0.9em; }
+        .config-arrow { font-size: 1.5em; color: #a0aec0; }
+
+        /* Progress tracker */
+        .progress-tracker {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #cbd5e0;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-dot:hover,
+        .progress-dot.active {
+            background: var(--accent);
+            transform: scale(1.3);
+        }
+        .progress-dot.completed {
+            background: var(--success);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 28px 0;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            padding: 12px 24px;
+            border: 2px solid var(--accent);
+            background: white;
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+        .control-btn.primary {
+            background: var(--accent);
+            color: white;
+        }
+        .control-btn.primary:hover {
+            background: #4c51bf;
+        }
+
+        /* Locked message */
+        .locked-msg {
+            display: none;
+            color: #718096;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        .stage-card.locked .locked-msg {
+            display: inline;
+        }
+        .stage-card.locked .stage-subtitle {
+            display: none;
+        }
+
+        /* Lists */
+        ul { margin: 12px 0 12px 24px; }
+        li { margin: 8px 0; }
+
+        /* Comparison table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            font-size: 0.95em;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .comparison-table th {
+            background: #f7fafc;
+            font-weight: 600;
+        }
+        .comparison-table tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { font-size: 1rem; padding: 16px; }
+            .progress-tracker { display: none; }
+            pre.code { padding: 16px; font-size: 0.8em; }
+            .pipeline-visual { padding: 20px; }
+        }
+        @media (min-width: 1200px) {
+            body { font-size: 1.15rem; }
+        }
+
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(90, 103, 216, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(90, 103, 216, 0); }
+        }
+        .stage-card.active {
+            animation: pulse 2s infinite;
+        }
+
+        /* Section divider */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            margin: 40px 0;
+            gap: 20px;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+        }
+        .section-divider span {
+            color: #a0aec0;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CI/CD Pipeline</h1>
+        <p class="subtitle">From Code Commit to Production Deployment</p>
+
+        <!-- Big Picture -->
+        <div class="concept">
+            <div class="concept-title">The Big Picture</div>
+            <p><strong>CI (Continuous Integration)</strong> = Automatically build and test code on every commit</p>
+            <p><strong>CD (Continuous Delivery/Deployment)</strong> = Automatically deploy tested code to environments</p>
+            <p style="margin-top: 12px;"><span class="key-point">Goal: Code goes from developer's laptop to production with minimal manual steps.</span></p>
+        </div>
+
+        <!-- Main Pipeline Visualization -->
+        <h2>The Pipeline at a Glance</h2>
+        <p>Click each stage below to walk through the pipeline step by step:</p>
+
+        <div class="pipeline-visual">
+            <div class="pipeline-flow" id="pipelineFlow">
+                <div class="pipeline-stage" data-stage="1">
+                    <div class="stage-icon">👨‍💻</div>
+                    <div class="stage-label">Commit</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="2">
+                    <div class="stage-icon">📥</div>
+                    <div class="stage-label">Checkout</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="3">
+                    <div class="stage-icon">🔍</div>
+                    <div class="stage-label">Lint</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="4">
+                    <div class="stage-icon">🧪</div>
+                    <div class="stage-label">Test</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="5">
+                    <div class="stage-icon">🐳</div>
+                    <div class="stage-label">Build</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="6">
+                    <div class="stage-icon">📦</div>
+                    <div class="stage-label">Push</div>
+                </div>
+                <div class="pipeline-divider" data-label="CI → CD"></div>
+                <div class="pipeline-stage" data-stage="7">
+                    <div class="stage-icon">🚀</div>
+                    <div class="stage-label">Dev</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="8">
+                    <div class="stage-icon">🎭</div>
+                    <div class="stage-label">Staging</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="9">
+                    <div class="stage-icon">✅</div>
+                    <div class="stage-label">Approval</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-stage" data-stage="10">
+                    <div class="stage-icon">🌍</div>
+                    <div class="stage-label">Prod</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn primary" onclick="nextStage()">Next Stage →</button>
+            <button class="control-btn" onclick="resetPipeline()">Reset Pipeline</button>
+            <button class="control-btn" onclick="revealAll()">Reveal All</button>
+        </div>
+
+        <!-- Environment Status -->
+        <div class="env-diagram" id="envDiagram">
+            <div class="env-box dev" data-env="dev">
+                <div class="env-icon">🔧</div>
+                <div class="env-name">Development</div>
+                <div class="env-desc">Latest code, experimental features</div>
+            </div>
+            <div class="env-box staging" data-env="staging">
+                <div class="env-icon">🎭</div>
+                <div class="env-name">Staging</div>
+                <div class="env-desc">Production mirror, final testing</div>
+            </div>
+            <div class="env-box prod" data-env="prod">
+                <div class="env-icon">🌍</div>
+                <div class="env-name">Production</div>
+                <div class="env-desc">Real users, real traffic</div>
+            </div>
+        </div>
+
+        <div class="section-divider"><span>Pipeline Stages</span></div>
+
+        <!-- Stage Cards -->
+        <div id="stageCards">
+
+            <!-- Stage 1: Code Commit -->
+            <div class="stage-card" data-stage="1">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">1</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Developer Commits Code</div>
+                        <div class="stage-subtitle">The pipeline trigger point</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-ci">Trigger</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>Everything starts when a developer pushes code to the repository. This triggers the CI/CD pipeline automatically.</p>
+
+                    <h3>What Triggers a Pipeline?</h3>
+                    <ul>
+                        <li><strong>Push to branch</strong> — Any commit to main, develop, or feature branches</li>
+                        <li><strong>Pull Request</strong> — When PR is opened or updated</li>
+                        <li><strong>Merge to main</strong> — When code is merged (triggers deployment)</li>
+                        <li><strong>Tag/Release</strong> — When a version tag is created</li>
+                    </ul>
+
+<pre class="code"><span class="comment"># .github/workflows/ci-cd.yml</span>
+<span class="keyword">name:</span> CI/CD Pipeline
+
+<span class="keyword">on:</span>
+  <span class="highlight"><span class="keyword">push:</span>
+    <span class="keyword">branches:</span> [main, develop]</span>
+  <span class="highlight"><span class="keyword">pull_request:</span>
+    <span class="keyword">branches:</span> [main]</span>
+
+<span class="keyword">jobs:</span>
+  <span class="comment"># Jobs will be defined in following stages...</span></pre>
+
+                    <div class="concept">
+                        <div class="concept-title">Best Practice: Branch Strategy</div>
+                        <p><code>main</code> → Production deployments<br>
+                        <code>develop</code> → Development/Staging deployments<br>
+                        <code>feature/*</code> → Run tests only, no deployment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 2: Checkout -->
+            <div class="stage-card locked" data-stage="2">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">2</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Code Checkout</div>
+                        <div class="stage-subtitle">Pipeline fetches your code</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-ci">CI</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>The CI runner (GitHub Actions, GitLab CI, Jenkins) spins up a fresh container and clones your repository.</p>
+
+                    <h3>What Happens Here?</h3>
+                    <ul>
+                        <li>Fresh VM/container is provisioned</li>
+                        <li>Repository is cloned at the specific commit</li>
+                        <li>Working directory is set up</li>
+                    </ul>
+
+<pre class="code"><span class="keyword">jobs:</span>
+  <span class="keyword">build:</span>
+    <span class="keyword">runs-on:</span> ubuntu-latest   <span class="comment"># Fresh Ubuntu container</span>
+
+    <span class="keyword">steps:</span>
+      <span class="highlight">- <span class="keyword">name:</span> Checkout code
+        <span class="keyword">uses:</span> actions/checkout@v4
+        <span class="keyword">with:</span>
+          <span class="keyword">fetch-depth:</span> 0   <span class="comment"># Full history for versioning</span></span></pre>
+
+                    <div class="warning-box">
+                        <div class="warning-title">Why Fresh Container Every Time?</div>
+                        <p>Each pipeline run starts clean — no leftover files, no cached state from previous runs. This ensures <strong>reproducible builds</strong>. If it works in CI, it works everywhere.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 3: Lint & Static Analysis -->
+            <div class="stage-card locked" data-stage="3">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">3</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Lint & Static Analysis</div>
+                        <div class="stage-subtitle">Code quality checks</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-test">Quality</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>Before running tests, we check code quality. This catches issues early and fast.</p>
+
+                    <h3>What Gets Checked?</h3>
+                    <ul>
+                        <li><strong>Linting</strong> — Code style, formatting (flake8, eslint, prettier)</li>
+                        <li><strong>Type checking</strong> — Static type analysis (mypy, TypeScript)</li>
+                        <li><strong>Security scanning</strong> — Known vulnerabilities (bandit, npm audit)</li>
+                        <li><strong>Code complexity</strong> — Cyclomatic complexity, maintainability</li>
+                    </ul>
+
+<pre class="code">      - <span class="keyword">name:</span> Set up Python
+        <span class="keyword">uses:</span> actions/setup-python@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">python-version:</span> '3.11'
+
+      - <span class="keyword">name:</span> Install dependencies
+        <span class="keyword">run:</span> |
+          pip install -r requirements.txt
+          pip install flake8 mypy bandit
+
+      <span class="highlight">- <span class="keyword">name:</span> Run linter
+        <span class="keyword">run:</span> flake8 src/ --max-line-length=100</span>
+
+      <span class="highlight">- <span class="keyword">name:</span> Run type checker
+        <span class="keyword">run:</span> mypy src/ --ignore-missing-imports</span>
+
+      <span class="highlight">- <span class="keyword">name:</span> Security scan
+        <span class="keyword">run:</span> bandit -r src/ -ll</span></pre>
+
+                    <div class="concept">
+                        <div class="concept-title">Fail Fast Principle</div>
+                        <p>Linting is fast (seconds). If code style is wrong, fail immediately. Don't waste time running 10-minute test suites on poorly formatted code.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 4: Run Tests -->
+            <div class="stage-card locked" data-stage="4">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">4</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Run Tests</div>
+                        <div class="stage-subtitle">Unit, integration, and E2E tests</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-test">Test</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>The heart of CI. If tests fail, the pipeline stops here. No broken code gets deployed.</p>
+
+                    <h3>Test Pyramid</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Test Type</th>
+                            <th>Speed</th>
+                            <th>Coverage</th>
+                            <th>When Run</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Unit Tests</strong></td>
+                            <td>Fast (ms)</td>
+                            <td>Single function</td>
+                            <td>Every commit</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Integration Tests</strong></td>
+                            <td>Medium (s)</td>
+                            <td>Multiple components</td>
+                            <td>Every commit</td>
+                        </tr>
+                        <tr>
+                            <td><strong>E2E Tests</strong></td>
+                            <td>Slow (min)</td>
+                            <td>Full user flows</td>
+                            <td>Before deploy</td>
+                        </tr>
+                    </table>
+
+<pre class="code">      <span class="highlight">- <span class="keyword">name:</span> Run unit tests
+        <span class="keyword">run:</span> pytest tests/unit/ -v --cov=src --cov-report=xml</span>
+
+      - <span class="keyword">name:</span> Run integration tests
+        <span class="keyword">run:</span> pytest tests/integration/ -v
+        <span class="keyword">env:</span>
+          DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+
+      - <span class="keyword">name:</span> Upload coverage report
+        <span class="keyword">uses:</span> codecov/codecov-action@v3
+        <span class="keyword">with:</span>
+          <span class="keyword">file:</span> coverage.xml</pre>
+
+                    <div class="warning-box">
+                        <div class="warning-title">Test Databases in CI</div>
+                        <p>Use <strong>service containers</strong> for databases. GitHub Actions can spin up PostgreSQL, Redis, etc. alongside your tests:</p>
+                    </div>
+
+<pre class="code">    <span class="keyword">services:</span>
+      <span class="keyword">postgres:</span>
+        <span class="keyword">image:</span> postgres:15
+        <span class="keyword">env:</span>
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        <span class="keyword">ports:</span>
+          - 5432:5432</pre>
+                </div>
+            </div>
+
+            <!-- Stage 5: Build Docker Image -->
+            <div class="stage-card locked" data-stage="5">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">5</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Build Docker Image</div>
+                        <div class="stage-subtitle">Package the application</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-ci">Build</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>Tests passed! Now we package the application into a Docker image. This image is the <strong>deployable artifact</strong>.</p>
+
+                    <h3>Why Docker in CI/CD?</h3>
+                    <ul>
+                        <li><strong>Consistency</strong> — Same image runs in dev, staging, and production</li>
+                        <li><strong>Immutability</strong> — Once built, the image never changes</li>
+                        <li><strong>Versioning</strong> — Tag images with git SHA or semantic version</li>
+                        <li><strong>Rollback</strong> — Previous images are always available</li>
+                    </ul>
+
+<pre class="code">      - <span class="keyword">name:</span> Set up Docker Buildx
+        <span class="keyword">uses:</span> docker/setup-buildx-action@v3
+
+      - <span class="keyword">name:</span> Login to Container Registry
+        <span class="keyword">uses:</span> docker/login-action@v3
+        <span class="keyword">with:</span>
+          <span class="keyword">registry:</span> ghcr.io
+          <span class="keyword">username:</span> ${{ github.actor }}
+          <span class="keyword">password:</span> ${{ secrets.GITHUB_TOKEN }}
+
+      <span class="highlight">- <span class="keyword">name:</span> Build Docker image
+        <span class="keyword">uses:</span> docker/build-push-action@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">context:</span> .
+          <span class="keyword">push:</span> false
+          <span class="keyword">tags:</span> |
+            ghcr.io/myorg/myapp:${{ github.sha }}
+            ghcr.io/myorg/myapp:latest
+          <span class="keyword">cache-from:</span> type=gha
+          <span class="keyword">cache-to:</span> type=gha,mode=max</span></pre>
+
+                    <div class="concept">
+                        <div class="concept-title">Image Tagging Strategy</div>
+                        <p><code>:latest</code> — Always points to most recent build<br>
+                        <code>:&lt;git-sha&gt;</code> — Specific commit (e.g., <code>:a1b2c3d</code>)<br>
+                        <code>:&lt;version&gt;</code> — Semantic version (e.g., <code>:v1.2.3</code>)<br>
+                        <code>:&lt;branch&gt;</code> — Branch name (e.g., <code>:develop</code>)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 6: Push to Registry -->
+            <div class="stage-card locked" data-stage="6">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">6</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Push to Registry</div>
+                        <div class="stage-subtitle">Store the artifact</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-ci">CI</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>The built image is pushed to a container registry. This is the <strong>handoff point between CI and CD</strong>.</p>
+
+                    <h3>Common Registries</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Registry</th>
+                            <th>Use Case</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Docker Hub</strong></td>
+                            <td>Public images, open source</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GitHub Container Registry</strong></td>
+                            <td>Private images, GitHub integration</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AWS ECR</strong></td>
+                            <td>AWS deployments (ECS, EKS)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Google Artifact Registry</strong></td>
+                            <td>GCP deployments (GKE, Cloud Run)</td>
+                        </tr>
+                    </table>
+
+<pre class="code">      - <span class="keyword">name:</span> Push to registry
+        <span class="keyword">uses:</span> docker/build-push-action@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">context:</span> .
+          <span class="highlight"><span class="keyword">push:</span> true   <span class="comment"># Now we push!</span></span>
+          <span class="keyword">tags:</span> |
+            ghcr.io/myorg/myapp:${{ github.sha }}
+            ghcr.io/myorg/myapp:latest</pre>
+
+                    <div class="success-box">
+                        <div class="success-title">CI Complete!</div>
+                        <p>At this point, we have a tested, versioned, immutable Docker image stored in a registry. The <strong>same image</strong> will be deployed to all environments.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider"><span>Continuous Deployment</span></div>
+
+            <!-- Stage 7: Deploy to Dev -->
+            <div class="stage-card locked" data-stage="7">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">7</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Deploy to Development</div>
+                        <div class="stage-subtitle">First deployment environment</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-deploy">Deploy</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>CD begins. The image is deployed to the development environment for initial verification.</p>
+
+                    <h3>How Config is Injected</h3>
+                    <p>The <strong>same Docker image</strong> runs in all environments. What changes is the <strong>configuration</strong>:</p>
+
+                    <div class="config-flow">
+                        <div class="config-source">
+                            <div class="config-icon">🐳</div>
+                            <div class="config-label">Docker Image</div>
+                        </div>
+                        <div class="config-arrow">+</div>
+                        <div class="config-source">
+                            <div class="config-icon">⚙️</div>
+                            <div class="config-label">Environment Vars</div>
+                        </div>
+                        <div class="config-arrow">+</div>
+                        <div class="config-source">
+                            <div class="config-icon">🔐</div>
+                            <div class="config-label">Secrets</div>
+                        </div>
+                        <div class="config-arrow">=</div>
+                        <div class="config-source" style="background: var(--success); color: white;">
+                            <div class="config-icon">🚀</div>
+                            <div class="config-label">Running App</div>
+                        </div>
+                    </div>
+
+<pre class="code">  <span class="keyword">deploy-dev:</span>
+    <span class="keyword">needs:</span> build   <span class="comment"># Wait for CI to complete</span>
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">environment:</span> development   <span class="comment"># GitHub environment</span>
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Deploy to Kubernetes
+        <span class="keyword">run:</span> |
+          kubectl set image deployment/myapp \
+            myapp=ghcr.io/myorg/myapp:${{ github.sha }}
+        <span class="keyword">env:</span>
+          <span class="highlight">KUBECONFIG: ${{ secrets.DEV_KUBECONFIG }}</span>   <span class="comment"># Dev cluster config</span></pre>
+
+                    <div class="concept">
+                        <div class="concept-title">Where Do Secrets Come From?</div>
+                        <ul>
+                            <li><strong>GitHub Secrets</strong> — Encrypted in repo settings</li>
+                            <li><strong>AWS Secrets Manager / Parameter Store</strong></li>
+                            <li><strong>HashiCorp Vault</strong></li>
+                            <li><strong>Kubernetes Secrets</strong> — Mounted into pods</li>
+                        </ul>
+                        <p style="margin-top: 10px;">Secrets are <strong>never</strong> stored in code or Docker images!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 8: Deploy to Staging -->
+            <div class="stage-card locked" data-stage="8">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">8</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Deploy to Staging</div>
+                        <div class="stage-subtitle">Production-like environment</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-deploy">Deploy</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>Staging is a <strong>mirror of production</strong>. Same infrastructure, same scale (or smaller), same config structure.</p>
+
+                    <h3>Why Staging Matters</h3>
+                    <ul>
+                        <li>Catch environment-specific bugs before production</li>
+                        <li>Test with production-like data (anonymized)</li>
+                        <li>Run E2E tests against real infrastructure</li>
+                        <li>Performance testing and load testing</li>
+                    </ul>
+
+<pre class="code">  <span class="keyword">deploy-staging:</span>
+    <span class="keyword">needs:</span> deploy-dev
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">environment:</span> staging
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Deploy to Staging
+        <span class="keyword">run:</span> |
+          kubectl set image deployment/myapp \
+            myapp=ghcr.io/myorg/myapp:${{ github.sha }}
+        <span class="keyword">env:</span>
+          <span class="highlight">KUBECONFIG: ${{ secrets.STAGING_KUBECONFIG }}</span>   <span class="comment"># Different cluster!</span>
+
+      <span class="highlight">- <span class="keyword">name:</span> Run E2E tests
+        <span class="keyword">run:</span> |
+          npm run test:e2e
+        <span class="keyword">env:</span>
+          BASE_URL: https://staging.myapp.com</span>
+
+      - <span class="keyword">name:</span> Run smoke tests
+        <span class="keyword">run:</span> |
+          curl -f https://staging.myapp.com/health || exit 1</pre>
+
+                    <div class="warning-box">
+                        <div class="warning-title">Staging vs Production Config</div>
+                        <p>Different values, same structure:</p>
+                    </div>
+
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Variable</th>
+                            <th>Staging</th>
+                            <th>Production</th>
+                        </tr>
+                        <tr>
+                            <td>DATABASE_URL</td>
+                            <td>postgres://staging-db.internal</td>
+                            <td>postgres://prod-db.internal</td>
+                        </tr>
+                        <tr>
+                            <td>API_URL</td>
+                            <td>https://staging-api.myapp.com</td>
+                            <td>https://api.myapp.com</td>
+                        </tr>
+                        <tr>
+                            <td>LOG_LEVEL</td>
+                            <td>debug</td>
+                            <td>info</td>
+                        </tr>
+                        <tr>
+                            <td>REPLICAS</td>
+                            <td>2</td>
+                            <td>10</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stage 9: Manual Approval -->
+            <div class="stage-card locked" data-stage="9">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">9</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Manual Approval</div>
+                        <div class="stage-subtitle">Human gate before production</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-cd">Gate</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>For critical systems, add a manual approval step before production deployment. A human reviews and approves.</p>
+
+                    <h3>When to Use Manual Approval?</h3>
+                    <ul>
+                        <li><strong>Financial systems</strong> — Payments, transactions</li>
+                        <li><strong>Healthcare</strong> — Patient data, compliance</li>
+                        <li><strong>Major releases</strong> — Breaking changes, migrations</li>
+                        <li><strong>Regulatory requirements</strong> — SOC2, HIPAA, PCI</li>
+                    </ul>
+
+<pre class="code">  <span class="keyword">approve-production:</span>
+    <span class="keyword">needs:</span> deploy-staging
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="highlight"><span class="keyword">environment:</span>
+      <span class="keyword">name:</span> production
+      <span class="keyword">url:</span> https://myapp.com</span>   <span class="comment"># Requires manual approval in GitHub!</span>
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Approval received
+        <span class="keyword">run:</span> echo "Deployment approved by ${{ github.actor }}"</pre>
+
+                    <div class="concept">
+                        <div class="concept-title">GitHub Environment Protection</div>
+                        <p>In repository settings, configure the "production" environment with:</p>
+                        <ul>
+                            <li><strong>Required reviewers</strong> — Specific people must approve</li>
+                            <li><strong>Wait timer</strong> — Delay before deployment (e.g., 30 min)</li>
+                            <li><strong>Branch restrictions</strong> — Only main branch can deploy</li>
+                        </ul>
+                    </div>
+
+                    <div class="success-box">
+                        <div class="success-title">Continuous Delivery vs Deployment</div>
+                        <p><strong>Continuous Delivery</strong> = Deploy automatically to staging, manual approval for production<br>
+                        <strong>Continuous Deployment</strong> = Deploy automatically all the way to production (if tests pass)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 10: Deploy to Production -->
+            <div class="stage-card locked" data-stage="10">
+                <div class="stage-header" onclick="toggleStage(this)">
+                    <div class="stage-number">10</div>
+                    <div class="stage-info">
+                        <div class="stage-title">Deploy to Production</div>
+                        <div class="stage-subtitle">Ship it to users!</div>
+                        <div class="locked-msg">Complete previous stage first</div>
+                    </div>
+                    <span class="stage-badge badge-deploy">Deploy</span>
+                    <span class="stage-toggle">▼</span>
+                </div>
+                <div class="stage-content">
+                    <p>The final step. The same Docker image that passed all tests is now serving real users.</p>
+
+                    <h3>Deployment Strategies</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <th>Strategy</th>
+                            <th>How It Works</th>
+                            <th>Rollback</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Rolling Update</strong></td>
+                            <td>Replace pods one by one</td>
+                            <td>Automatic if health check fails</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Blue-Green</strong></td>
+                            <td>Run two identical environments, switch traffic</td>
+                            <td>Instant (switch back)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Canary</strong></td>
+                            <td>Route 5% traffic to new version first</td>
+                            <td>Route 100% back to old</td>
+                        </tr>
+                    </table>
+
+<pre class="code">  <span class="keyword">deploy-production:</span>
+    <span class="keyword">needs:</span> approve-production
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">environment:</span>
+      <span class="keyword">name:</span> production
+      <span class="keyword">url:</span> https://myapp.com
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Deploy to Production
+        <span class="keyword">run:</span> |
+          kubectl set image deployment/myapp \
+            myapp=ghcr.io/myorg/myapp:${{ github.sha }} \
+            --record   <span class="comment"># Record for rollback</span>
+        <span class="keyword">env:</span>
+          KUBECONFIG: ${{ secrets.PROD_KUBECONFIG }}
+
+      <span class="highlight">- <span class="keyword">name:</span> Verify deployment
+        <span class="keyword">run:</span> |
+          kubectl rollout status deployment/myapp --timeout=300s</span>
+
+      - <span class="keyword">name:</span> Health check
+        <span class="keyword">run:</span> |
+          for i in {1..5}; do
+            curl -f https://myapp.com/health && exit 0
+            sleep 10
+          done
+          exit 1
+
+      <span class="highlight">- <span class="keyword">name:</span> Notify team
+        <span class="keyword">if:</span> success()
+        <span class="keyword">uses:</span> slackapi/slack-github-action@v1
+        <span class="keyword">with:</span>
+          <span class="keyword">payload:</span> |
+            {"text": "✅ Deployed ${{ github.sha }} to production"}</span></pre>
+
+                    <div class="success-box">
+                        <div class="success-title">Pipeline Complete!</div>
+                        <p>Code went from developer's laptop → tests → Docker image → dev → staging → approval → production. All automated, all tracked, all reproducible.</p>
+                    </div>
+
+                    <h3>Rollback if Something Goes Wrong</h3>
+<pre class="code"><span class="comment"># Manual rollback command</span>
+kubectl rollout undo deployment/myapp
+
+<span class="comment"># Or rollback to specific version</span>
+kubectl rollout undo deployment/myapp --to-revision=3
+
+<span class="comment"># View rollout history</span>
+kubectl rollout history deployment/myapp</pre>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Full YAML Example -->
+        <h2>Complete GitHub Actions Workflow</h2>
+        <p>Here's the full pipeline in one file:</p>
+
+<pre class="code"><span class="comment"># .github/workflows/ci-cd.yml</span>
+<span class="keyword">name:</span> CI/CD Pipeline
+
+<span class="keyword">on:</span>
+  <span class="keyword">push:</span>
+    <span class="keyword">branches:</span> [main, develop]
+  <span class="keyword">pull_request:</span>
+    <span class="keyword">branches:</span> [main]
+
+<span class="keyword">env:</span>
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+<span class="keyword">jobs:</span>
+  <span class="comment"># ==================== CI ====================</span>
+  <span class="keyword">test:</span>
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">services:</span>
+      <span class="keyword">postgres:</span>
+        <span class="keyword">image:</span> postgres:15
+        <span class="keyword">env:</span>
+          POSTGRES_PASSWORD: test
+        <span class="keyword">ports:</span> ['5432:5432']
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">uses:</span> actions/checkout@v4
+
+      - <span class="keyword">name:</span> Set up Python
+        <span class="keyword">uses:</span> actions/setup-python@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">python-version:</span> '3.11'
+          <span class="keyword">cache:</span> 'pip'
+
+      - <span class="keyword">name:</span> Install dependencies
+        <span class="keyword">run:</span> pip install -r requirements.txt
+
+      - <span class="keyword">name:</span> Lint
+        <span class="keyword">run:</span> flake8 src/
+
+      - <span class="keyword">name:</span> Test
+        <span class="keyword">run:</span> pytest --cov=src
+        <span class="keyword">env:</span>
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/postgres
+
+  <span class="keyword">build:</span>
+    <span class="keyword">needs:</span> test
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">permissions:</span>
+      <span class="keyword">contents:</span> read
+      <span class="keyword">packages:</span> write
+
+    <span class="keyword">outputs:</span>
+      <span class="keyword">image-tag:</span> ${{ steps.meta.outputs.tags }}
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">uses:</span> actions/checkout@v4
+
+      - <span class="keyword">name:</span> Log in to registry
+        <span class="keyword">uses:</span> docker/login-action@v3
+        <span class="keyword">with:</span>
+          <span class="keyword">registry:</span> ${{ env.REGISTRY }}
+          <span class="keyword">username:</span> ${{ github.actor }}
+          <span class="keyword">password:</span> ${{ secrets.GITHUB_TOKEN }}
+
+      - <span class="keyword">name:</span> Extract metadata
+        <span class="keyword">id:</span> meta
+        <span class="keyword">uses:</span> docker/metadata-action@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">images:</span> ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - <span class="keyword">name:</span> Build and push
+        <span class="keyword">uses:</span> docker/build-push-action@v5
+        <span class="keyword">with:</span>
+          <span class="keyword">context:</span> .
+          <span class="keyword">push:</span> ${{ github.event_name != 'pull_request' }}
+          <span class="keyword">tags:</span> ${{ steps.meta.outputs.tags }}
+          <span class="keyword">labels:</span> ${{ steps.meta.outputs.labels }}
+
+  <span class="comment"># ==================== CD ====================</span>
+  <span class="keyword">deploy-staging:</span>
+    <span class="keyword">needs:</span> build
+    <span class="keyword">if:</span> github.ref == 'refs/heads/main'
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">environment:</span> staging
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Deploy to staging
+        <span class="keyword">run:</span> |
+          echo "Deploying to staging..."
+          <span class="comment"># kubectl, helm, or cloud CLI commands here</span>
+
+  <span class="keyword">deploy-production:</span>
+    <span class="keyword">needs:</span> deploy-staging
+    <span class="keyword">if:</span> github.ref == 'refs/heads/main'
+    <span class="keyword">runs-on:</span> ubuntu-latest
+    <span class="keyword">environment:</span>
+      <span class="keyword">name:</span> production
+      <span class="keyword">url:</span> https://myapp.com
+
+    <span class="keyword">steps:</span>
+      - <span class="keyword">name:</span> Deploy to production
+        <span class="keyword">run:</span> |
+          echo "Deploying to production..."
+</pre>
+
+        <!-- Summary -->
+        <div class="success-box" style="margin-top: 40px;">
+            <div class="success-title">Key Takeaways</div>
+            <ul>
+                <li><strong>CI</strong> = Build and test on every commit (fast feedback)</li>
+                <li><strong>CD</strong> = Deploy tested artifacts to environments</li>
+                <li><strong>Docker</strong> = Same image everywhere (build once, deploy anywhere)</li>
+                <li><strong>Config</strong> = Environment variables + secrets (never in code)</li>
+                <li><strong>Environments</strong> = Dev → Staging → Production (same image, different config)</li>
+                <li><strong>Approval gates</strong> = Human review for critical deployments</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        let currentStage = 0;
+        const totalStages = 10;
+
+        function updateUI() {
+            // Update pipeline visualization
+            document.querySelectorAll('.pipeline-stage').forEach(stage => {
+                const stageNum = parseInt(stage.dataset.stage);
+                stage.classList.remove('active', 'completed');
+                if (stageNum === currentStage) {
+                    stage.classList.add('active');
+                } else if (stageNum < currentStage) {
+                    stage.classList.add('completed');
+                }
+            });
+
+            // Update arrows
+            document.querySelectorAll('.pipeline-arrow').forEach((arrow, index) => {
+                arrow.classList.toggle('active', index < currentStage - 1);
+            });
+
+            // Update stage cards
+            document.querySelectorAll('.stage-card').forEach(card => {
+                const stageNum = parseInt(card.dataset.stage);
+                card.classList.remove('active', 'completed', 'locked', 'open');
+
+                if (stageNum === currentStage) {
+                    card.classList.add('active', 'open');
+                } else if (stageNum < currentStage) {
+                    card.classList.add('completed');
+                } else {
+                    card.classList.add('locked');
+                }
+            });
+
+            // Update environment boxes
+            const envs = document.querySelectorAll('.env-box');
+            envs.forEach(env => env.classList.remove('active'));
+
+            if (currentStage >= 7) document.querySelector('.env-box.dev').classList.add('active');
+            if (currentStage >= 8) document.querySelector('.env-box.staging').classList.add('active');
+            if (currentStage >= 10) document.querySelector('.env-box.prod').classList.add('active');
+
+            // Scroll to active card
+            if (currentStage > 0) {
+                const activeCard = document.querySelector(`.stage-card[data-stage="${currentStage}"]`);
+                if (activeCard) {
+                    setTimeout(() => {
+                        activeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            }
+        }
+
+        function nextStage() {
+            if (currentStage < totalStages) {
+                currentStage++;
+                updateUI();
+            }
+        }
+
+        function goToStage(stageNum) {
+            if (stageNum <= currentStage + 1 && stageNum >= 1) {
+                currentStage = stageNum;
+                updateUI();
+            }
+        }
+
+        function resetPipeline() {
+            currentStage = 0;
+            updateUI();
+        }
+
+        function revealAll() {
+            currentStage = totalStages;
+            document.querySelectorAll('.stage-card').forEach(card => {
+                card.classList.remove('locked');
+                card.classList.add('completed');
+            });
+            updateUI();
+        }
+
+        function toggleStage(header) {
+            const card = header.parentElement;
+            if (card.classList.contains('locked')) return;
+            card.classList.toggle('open');
+        }
+
+        // Click on pipeline stages
+        document.querySelectorAll('.pipeline-stage').forEach(stage => {
+            stage.addEventListener('click', () => {
+                const stageNum = parseInt(stage.dataset.stage);
+                goToStage(stageNum);
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                nextStage();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (currentStage > 1) {
+                    currentStage--;
+                    updateUI();
+                }
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                resetPipeline();
+            }
+        });
+
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>

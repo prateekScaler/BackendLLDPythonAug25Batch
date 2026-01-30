@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Containerization Guide</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Progressive Reveal Comparison Table */
+        .comparison-instructions {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f9ff 100%);
+            border-radius: 12px;
+            border: 2px dashed #3b82f6;
+        }
+
+        .comparison-instructions p {
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            color: #1e40af;
+        }
+
+        .progress-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .progress-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.revealed {
+            background: #22c55e;
+            transform: scale(1.2);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table thead th {
+            padding: 1.25rem 1rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .comparison-table thead th:first-child {
+            background: #334155;
+            color: white;
+            text-align: left;
+        }
+
+        .comparison-table .vm-col {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+        }
+
+        .comparison-table .container-col {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #166534;
+        }
+
+        .reveal-row {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reveal-row:hover {
+            background: #f8fafc;
+        }
+
+        .reveal-row.revealed {
+            cursor: default;
+        }
+
+        .reveal-row.revealed:hover {
+            background: transparent;
+        }
+
+        .aspect-cell {
+            padding: 1.25rem 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        .aspect-cell strong {
+            display: block;
+            font-size: 1.1rem;
+            color: #1e293b;
+        }
+
+        .aspect-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .click-hint {
+            display: block;
+            font-size: 0.8rem;
+            color: #64748b;
+            font-style: italic;
+            margin-top: 0.25rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .reveal-row.revealed .click-hint {
+            opacity: 0;
+            height: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .vm-cell, .container-cell {
+            padding: 0;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .hidden-cell .cell-content {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+            padding: 0 1rem;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .revealed .hidden-cell .cell-content {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 200px;
+            padding: 1.25rem 1rem;
+        }
+
+        .hidden-cell::before {
+            content: '?';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #94a3b8;
+            height: 80px;
+            transition: all 0.3s ease;
+        }
+
+        .revealed .hidden-cell::before {
+            display: none;
+        }
+
+        .cell-content strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .cell-content .detail {
+            display: block;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .bad-highlight {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .bad-highlight strong {
+            color: #dc2626;
+        }
+
+        .good-highlight {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .good-highlight strong {
+            color: #16a34a;
+        }
+
+        .neutral-highlight {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .neutral-highlight strong {
+            color: #d97706;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .reveal-all-btn, .reset-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reveal-all-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .reveal-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .reset-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+        }
+
+        .reset-btn:hover {
+            background: #e2e8f0;
+        }
+
+        /* Animation for row reveal */
+        @keyframes revealPulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .reveal-row.just-revealed {
+            animation: revealPulse 0.6s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .comparison-table {
+                font-size: 0.9rem;
+            }
+
+            .comparison-table thead th {
+                padding: 1rem 0.5rem;
+                font-size: 0.95rem;
+            }
+
+            .aspect-icon {
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+            .cell-content strong {
+                font-size: 1rem;
+            }
+        }
+
+        /* Large screen / projector mode */
+        @media (min-width: 1400px) {
+            .comparison-table {
+                font-size: 1.15rem;
+            }
+
+            .comparison-table thead th {
+                padding: 1.5rem 1.25rem;
+                font-size: 1.25rem;
+            }
+
+            .cell-content strong {
+                font-size: 1.4rem;
+            }
+
+            .aspect-cell strong {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">Containerization Guide</a>
+            <div class="navbar-nav">
+                <a href="index.html" class="nav-btn nav-btn-active">Home</a>
+                <a href="07_cheatsheet.html" class="nav-btn">Cheat Sheet</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div class="page-icon">🐳</div>
+            <h1>Containerization Guide</h1>
+            <p class="subtitle">From "It works on my machine" to "It works everywhere"</p>
+        </header>
+
+        <div class="section">
+            <h2>The Problem We're Solving</h2>
+
+            <div class="meme-box">
+                <div class="top-text">"It works on my machine"</div>
+                <div class="meme-image">🤷‍♂️💻🔥</div>
+                <div class="bottom-text">"Then we'll ship your machine"</div>
+                <p class="meme-caption">— Every DevOps engineer, probably</p>
+            </div>
+
+            <p class="story">
+                You've written beautiful code. It runs perfectly on your laptop. You push it, and... <strong>chaos</strong>.
+                Different Python version on the server. Missing system libraries. Environment variables not set.
+                The classic developer nightmare.
+            </p>
+
+            <p class="story"><strong>Common problems developers face:</strong></p>
+            <ul>
+                <li><strong>Version mismatch:</strong> Your code uses Python 3.11, but server has Python 3.8</li>
+                <li><strong>Missing dependencies:</strong> You installed <code>libpq-dev</code> on your machine, but forgot it's needed for PostgreSQL</li>
+                <li><strong>OS differences:</strong> Code works on macOS but fails on Ubuntu server due to path differences or missing packages</li>
+                <li><strong>Environment variables:</strong> <code>DATABASE_URL</code> is set locally but not on the server</li>
+                <li><strong>"Snowflake" servers:</strong> Each server is configured slightly differently over time — impossible to reproduce</li>
+                <li><strong>Onboarding pain:</strong> New developer joins, spends 2 days setting up their environment</li>
+                <li><strong>Dependency conflicts:</strong> App A needs library v1.0, App B needs v2.0 — both on same server</li>
+            </ul>
+
+            <p class="story">
+                <strong>Containers solve this</strong> by packaging your application along with everything it needs to run —
+                the runtime, libraries, dependencies, and configuration. The container runs identically whether it's
+                on your laptop, your colleague's Mac, or a production server in AWS.
+            </p>
+
+            <h3>What Goes Inside a Container? (Python/Django Example)</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>What It Means</th>
+                    <th>Django Example</th>
+                </tr>
+                <tr>
+                    <td><strong>Runtime</strong></td>
+                    <td>The program that executes your code</td>
+                    <td>Python 3.11 interpreter itself — the <code>python</code> binary</td>
+                </tr>
+                <tr>
+                    <td><strong>Libraries</strong></td>
+                    <td>System-level packages the OS provides</td>
+                    <td><code>libpq</code> (PostgreSQL client library), <code>libjpeg</code> (for Pillow image processing)</td>
+                </tr>
+                <tr>
+                    <td><strong>Dependencies</strong></td>
+                    <td>Python packages your app imports</td>
+                    <td><code>django==4.2</code>, <code>psycopg2</code>, <code>celery</code>, <code>redis</code> — everything in <code>requirements.txt</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Configuration</strong></td>
+                    <td>Environment-specific settings</td>
+                    <td><code>DATABASE_URL</code>, <code>SECRET_KEY</code>, <code>DEBUG=False</code>, <code>ALLOWED_HOSTS</code></td>
+                </tr>
+            </table>
+
+            <div class="info-box">
+                <strong>The container packages ALL of this together.</strong> When you ship your container, Python 3.11,
+                all system libraries, all pip packages, and the configuration template come with it.
+                No more "but did you install libpq-dev?"
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>The Big Picture</h2>
+
+            <p class="story">Think of it like shipping goods:</p>
+
+            <div class="analogy-box">
+                <div class="title">📦 The Shipping Container Analogy</div>
+                <p>
+                    Before shipping containers (the physical ones), moving goods internationally was chaos —
+                    different sizes, manual handling, damage, theft. Then came <strong>standardized shipping containers</strong>.
+                    Pack once, ship anywhere. Cranes, trucks, and ships all work with the same format.
+                </p>
+                <p>
+                    <strong>Software containers do the same thing.</strong> Package your app once, run it anywhere.
+                    Same format works on dev machines, CI/CD pipelines, and production servers.
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Operating Systems: A Quick Primer</h2>
+
+            <p class="story">
+                Before diving into containers, let's understand operating systems — because containers rely heavily on OS concepts.
+            </p>
+
+            <h3>What Consumers Know vs What Developers Need to Know</h3>
+            <table>
+                <tr>
+                    <th>OS</th>
+                    <th>Consumer View</th>
+                    <th>Developer View</th>
+                    <th>Why Use It?</th>
+                </tr>
+                <tr>
+                    <td><strong>Windows</strong></td>
+                    <td>Gaming, Office, familiar desktop</td>
+                    <td>Different file paths (<code>C:\</code>), different shell (PowerShell/CMD), some tools harder to install</td>
+                    <td>Enterprise environments, .NET development, gaming</td>
+                </tr>
+                <tr>
+                    <td><strong>macOS</strong></td>
+                    <td>Apple ecosystem, creative work</td>
+                    <td>Unix-based (similar to Linux!), has Homebrew, great for development but not used in servers</td>
+                    <td>iOS/Mac development, Unix-like dev experience with polished UI</td>
+                </tr>
+                <tr>
+                    <td><strong>Linux</strong></td>
+                    <td>"Hacker OS", technical users</td>
+                    <td><strong>This is what runs your servers.</strong> Ubuntu, CentOS, Debian — all Linux. Containers are Linux-native.</td>
+                    <td>Servers, cloud, containers, open source, performance</td>
+                </tr>
+            </table>
+
+            <div class="key-point">
+                <strong>Key Insight:</strong> 95%+ of servers run Linux. When you deploy your Django app to AWS, Azure, or GCP —
+                it runs on Linux. This is why containers exist: they let you develop on Mac/Windows but run the
+                <em>exact same Linux environment</em> locally that will run in production.
+            </div>
+
+            <h3>Linux Distributions (Distros)</h3>
+            <p class="story">Linux isn't one OS — it's a family. The "kernel" (core) is the same, but different "distros" package it differently:</p>
+            <ul>
+                <li><strong>Ubuntu:</strong> Most popular, beginner-friendly, great community. Used in most tutorials.</li>
+                <li><strong>Debian:</strong> Ubuntu's parent. Super stable, used in servers. "Boring" = good for production.</li>
+                <li><strong>Alpine:</strong> Tiny (5MB!), used for minimal container images. Less features, smaller attack surface.</li>
+                <li><strong>CentOS/RHEL:</strong> Enterprise-focused. Used by banks and large corporations.</li>
+            </ul>
+
+            <div class="info-box">
+                When you see Docker images like <code>python:3.11-slim</code> or <code>python:3.11-alpine</code>,
+                the suffix refers to which Linux distro the image is based on. <code>slim</code> = Debian minimal,
+                <code>alpine</code> = Alpine Linux.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>VM vs Container: Key Concepts</h2>
+
+            <p class="story">
+                Before comparing VMs and containers, let's understand two critical terms:
+            </p>
+
+            <h3>What is a Kernel?</h3>
+            <div class="analogy-box">
+                <div class="title">🧠 The Kernel = The OS Brain</div>
+                <p>
+                    The <strong>kernel</strong> is the core of an operating system. It's the software that talks directly
+                    to your hardware — CPU, memory, disk, network. When your Python code writes to a file,
+                    it asks the kernel to do it. When your app opens a network connection, the kernel handles it.
+                </p>
+                <p>
+                    <strong>Linux kernel</strong> is what makes Linux, Linux. Ubuntu, Debian, Alpine — all use the same
+                    Linux kernel underneath, just with different packages and configurations on top.
+                </p>
+            </div>
+
+            <h3>What is a Hypervisor?</h3>
+            <div class="analogy-box">
+                <div class="title">🏗️ The Hypervisor = Virtual Machine Manager</div>
+                <p>
+                    A <strong>hypervisor</strong> is software that creates and runs virtual machines. It sits between
+                    the hardware and VMs, allocating CPU, memory, and disk to each VM. Each VM thinks it has its
+                    own physical computer.
+                </p>
+                <p>
+                    <strong>Examples:</strong> VMware, VirtualBox, Hyper-V, KVM. When you run a VM, the hypervisor
+                    "tricks" the guest OS into thinking it's running on real hardware.
+                </p>
+            </div>
+
+            <h3>The Architecture Difference</h3>
+
+            <div class="diagram">
+<pre>
+VM Architecture                   Container Architecture
+═══════════════════              ═══════════════════════
+
+┌─────┐ ┌─────┐ ┌─────┐          ┌─────┐ ┌─────┐ ┌─────┐
+│App A│ │App B│ │App C│          │App A│ │App B│ │App C│
+├─────┤ ├─────┤ ├─────┤          ├─────┤ ├─────┤ ├─────┤
+│Libs │ │Libs │ │Libs │          │Libs │ │Libs │ │Libs │
+├─────┤ ├─────┤ ├─────┤          └──┬──┘ └──┬──┘ └──┬──┘
+│Guest│ │Guest│ │Guest│             │      │      │
+│ OS  │ │ OS  │ │ OS  │          ┌──┴──────┴──────┴──┐
+│(GB) │ │(GB) │ │(GB) │          │  Container Engine │
+└──┬──┘ └──┬──┘ └──┬──┘          │     (Docker)      │
+   │      │      │               ├────────────────────┤
+┌──┴──────┴──────┴──┐            │    Host OS Kernel  │ ← Shared!
+│     Hypervisor    │            └────────────────────┘
+│  (VMware, KVM)    │
+├────────────────────┤            No guest OS overhead
+│     Host OS        │            = Fast & Light
+└────────────────────┘
+</pre>
+            </div>
+
+            <div class="comparison-instructions">
+                <p>👆 <strong>Click each row to reveal the comparison</strong> — think about what you'd expect before clicking!</p>
+                <div class="progress-indicator">
+                    <span class="progress-dot" data-row="1"></span>
+                    <span class="progress-dot" data-row="2"></span>
+                    <span class="progress-dot" data-row="3"></span>
+                    <span class="progress-dot" data-row="4"></span>
+                    <span class="progress-dot" data-row="5"></span>
+                </div>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th class="vm-col">🖥️ Virtual Machines</th>
+                        <th class="container-col">🐳 Containers</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="reveal-row" data-row="1" onclick="revealRow(this)">
+                        <td class="aspect-cell">
+                            <span class="aspect-icon">💾</span>
+                            <strong>Size</strong>
+                            <span class="click-hint">click to reveal</span>
+                        </td>
+                        <td class="vm-cell hidden-cell">
+                            <div class="cell-content bad-highlight">
+                                <strong>2-4 GB each</strong>
+                                <span class="detail">Full OS included!</span>
+                            </div>
+                        </td>
+                        <td class="container-cell hidden-cell">
+                            <div class="cell-content good-highlight">
+                                <strong>50-500 MB</strong>
+                                <span class="detail">No OS, just app + deps</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="reveal-row" data-row="2" onclick="revealRow(this)">
+                        <td class="aspect-cell">
+                            <span class="aspect-icon">⚡</span>
+                            <strong>Startup Time</strong>
+                            <span class="click-hint">click to reveal</span>
+                        </td>
+                        <td class="vm-cell hidden-cell">
+                            <div class="cell-content bad-highlight">
+                                <strong>Minutes</strong>
+                                <span class="detail">Must boot entire OS</span>
+                            </div>
+                        </td>
+                        <td class="container-cell hidden-cell">
+                            <div class="cell-content good-highlight">
+                                <strong>Seconds</strong>
+                                <span class="detail">Just starts a process</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="reveal-row" data-row="3" onclick="revealRow(this)">
+                        <td class="aspect-cell">
+                            <span class="aspect-icon">📊</span>
+                            <strong>Density</strong>
+                            <span class="click-hint">click to reveal</span>
+                        </td>
+                        <td class="vm-cell hidden-cell">
+                            <div class="cell-content bad-highlight">
+                                <strong>~10 per host</strong>
+                                <span class="detail">Each needs RAM for OS</span>
+                            </div>
+                        </td>
+                        <td class="container-cell hidden-cell">
+                            <div class="cell-content good-highlight">
+                                <strong>100s per host</strong>
+                                <span class="detail">Shared kernel = efficient</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="reveal-row" data-row="4" onclick="revealRow(this)">
+                        <td class="aspect-cell">
+                            <span class="aspect-icon">🔒</span>
+                            <strong>Isolation</strong>
+                            <span class="click-hint">click to reveal</span>
+                        </td>
+                        <td class="vm-cell hidden-cell">
+                            <div class="cell-content neutral-highlight">
+                                <strong>Strong</strong>
+                                <span class="detail">Separate kernel per VM</span>
+                            </div>
+                        </td>
+                        <td class="container-cell hidden-cell">
+                            <div class="cell-content neutral-highlight">
+                                <strong>Good</strong>
+                                <span class="detail">Shared kernel (namespaces)</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="reveal-row" data-row="5" onclick="revealRow(this)">
+                        <td class="aspect-cell">
+                            <span class="aspect-icon">🎯</span>
+                            <strong>Best For</strong>
+                            <span class="click-hint">click to reveal</span>
+                        </td>
+                        <td class="vm-cell hidden-cell">
+                            <div class="cell-content">
+                                <strong>Different OS needs</strong>
+                                <span class="detail">Strong security isolation, running Windows on Linux</span>
+                            </div>
+                        </td>
+                        <td class="container-cell hidden-cell">
+                            <div class="cell-content">
+                                <strong>Microservices & CI/CD</strong>
+                                <span class="detail">Dev environments, rapid deployment, scaling</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="table-controls">
+                <button class="reveal-all-btn" onclick="revealAllRows()">Reveal All</button>
+                <button class="reset-btn" onclick="resetTable()">Reset</button>
+            </div>
+
+            <div class="meme-box">
+                <div class="top-text">Containers vs VMs</div>
+                <div class="meme-image">🏃‍♂️💨 vs 🐌</div>
+                <div class="bottom-text">It's not even close</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Terminology</h2>
+
+            <p class="story">Now that you understand the architecture, here's the vocabulary you'll use daily:</p>
+
+            <table>
+                <tr>
+                    <th>Term</th>
+                    <th>What It Is</th>
+                    <th>Analogy</th>
+                </tr>
+                <tr>
+                    <td><strong>Dockerfile</strong></td>
+                    <td>Text file with step-by-step build instructions</td>
+                    <td>Recipe — "First add Python, then copy code, then install packages..."</td>
+                </tr>
+                <tr>
+                    <td><strong>Image</strong></td>
+                    <td>Read-only template built from Dockerfile. Immutable.</td>
+                    <td>Class (in OOP) / Blueprint / Compiled recipe</td>
+                </tr>
+                <tr>
+                    <td><strong>Container</strong></td>
+                    <td>Running instance of an image. You can have many containers from one image.</td>
+                    <td>Object (in OOP) / The actual running thing</td>
+                </tr>
+                <tr>
+                    <td><strong>Registry</strong></td>
+                    <td>Storage for images (Docker Hub, AWS ECR, etc.)</td>
+                    <td>GitHub but for container images</td>
+                </tr>
+                <tr>
+                    <td><strong>Tag</strong></td>
+                    <td>Version label for images (e.g., <code>python:3.11-slim</code>)</td>
+                    <td>Git tag / Version number</td>
+                </tr>
+                <tr>
+                    <td><strong>Layer</strong></td>
+                    <td>Each instruction in Dockerfile creates a cached layer</td>
+                    <td>Transparent sheets stacked on each other</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>A Brief History</h2>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="year">1990s — Bare Metal</div>
+                    <div class="event">One application = One physical server. Wasteful (10-15% utilization), slow to provision (weeks!), each server becomes a unique "snowflake."</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="year">2000s — Virtual Machines</div>
+                    <div class="event">VMware, Xen revolutionize servers. Multiple VMs per machine. But each VM needs a full OS (2-4GB), takes minutes to boot.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="year">2013 — Docker Changes Everything</div>
+                    <div class="event">Containers made simple. Lightweight (MBs not GBs), starts in seconds, shares the host kernel. Docker Hub makes sharing easy.</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="year">2015+ — Kubernetes Era</div>
+                    <div class="event">Google open-sources Kubernetes. Container orchestration at scale — auto-scaling, self-healing, rolling deployments.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What You'll Learn</h2>
+
+            <div class="card-grid">
+                <a href="04_dockerfile.html" class="card">
+                    <div class="card-icon">📝</div>
+                    <h3>1. Writing Dockerfiles</h3>
+                    <p>Start here! Learn Dockerfile syntax, instructions, and best practices</p>
+                </a>
+
+                <a href="01_history.html" class="card">
+                    <div class="card-icon">📜</div>
+                    <h3>2. How Containers Work</h3>
+                    <p>Linux kernel magic: namespaces, cgroups, and the internals</p>
+                </a>
+
+                <a href="02_docker_basics.html" class="card">
+                    <div class="card-icon">🐳</div>
+                    <h3>3. Docker Fundamentals</h3>
+                    <p>Images, containers, volumes, networks, and essential commands</p>
+                </a>
+
+                <a href="03_docker_desktop.html" class="card">
+                    <div class="card-icon">🖥️</div>
+                    <h3>4. Desktop vs Engine</h3>
+                    <p>Why Docker Desktop is banned and what to use instead (Rancher, Colima)</p>
+                </a>
+
+                <a href="05_hands_on.html" class="card">
+                    <div class="card-icon">🔧</div>
+                    <h3>5. Hands-On Lab</h3>
+                    <p>Build and run your first containerized Flask app</p>
+                </a>
+
+                <a href="06_kubernetes.html" class="card">
+                    <div class="card-icon">☸️</div>
+                    <h3>6. Kubernetes Basics</h3>
+                    <p>Container orchestration for production workloads</p>
+                </a>
+
+                <a href="07_cheatsheet.html" class="card">
+                    <div class="card-icon">📋</div>
+                    <h3>7. Cheat Sheet & Quiz</h3>
+                    <p>Quick reference and test your knowledge</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-title">🎯 Quick Check</div>
+            <div class="quiz-question">
+                <p class="quiz-question-text">Why are containers faster to start than VMs?</p>
+                <div class="quiz-options">
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">A) Containers use faster CPUs</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, true, 'q1')">B) Containers share the host kernel — no OS to boot</div>
+                    <div class="quiz-option" onclick="checkAnswer(this, false, 'q1')">C) Containers skip security checks</div>
+                </div>
+                <div class="quiz-feedback" id="q1-feedback"></div>
+            </div>
+        </div>
+
+        <div class="page-nav">
+            <span></span>
+            <a href="04_dockerfile.html">Start Learning →</a>
+        </div>
+
+        <footer>
+            <p>Containerization Guide — Backend Engineering Series</p>
+        </footer>
+    </div>
+
+    <script>
+        function checkAnswer(element, isCorrect, questionId) {
+            const container = element.closest('.quiz-question');
+            const options = container.querySelectorAll('.quiz-option');
+            const feedback = document.getElementById(questionId + '-feedback');
+
+            options.forEach(opt => {
+                opt.classList.add('disabled');
+                if (opt.onclick.toString().includes('true')) opt.classList.add('correct');
+            });
+
+            element.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedback.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'incorrect');
+            feedback.innerHTML = isCorrect
+                ? "Correct! VMs boot an entire OS. Containers just start a process."
+                : "Not quite. The key is that containers share the host kernel.";
+        }
+
+        // Progressive reveal table functions
+        function revealRow(row) {
+            if (row.classList.contains('revealed')) return;
+
+            row.classList.add('revealed', 'just-revealed');
+
+            // Update progress dot
+            const rowNum = row.dataset.row;
+            const dot = document.querySelector(`.progress-dot[data-row="${rowNum}"]`);
+            if (dot) {
+                dot.classList.add('revealed');
+            }
+
+            // Remove animation class after it completes
+            setTimeout(() => {
+                row.classList.remove('just-revealed');
+            }, 600);
+        }
+
+        function revealAllRows() {
+            const rows = document.querySelectorAll('.reveal-row');
+            rows.forEach((row, index) => {
+                setTimeout(() => {
+                    revealRow(row);
+                }, index * 200); // Staggered reveal
+            });
+        }
+
+        function resetTable() {
+            const rows = document.querySelectorAll('.reveal-row');
+            const dots = document.querySelectorAll('.progress-dot');
+
+            rows.forEach(row => {
+                row.classList.remove('revealed', 'just-revealed');
+            });
+
+            dots.forEach(dot => {
+                dot.classList.remove('revealed');
+            });
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            // Press 'r' to reset
+            if (e.key === 'r' || e.key === 'R') {
+                resetTable();
+            }
+            // Press 'a' to reveal all
+            if (e.key === 'a' || e.key === 'A') {
+                revealAllRows();
+            }
+            // Press space or enter to reveal next unrevealed row
+            if (e.key === ' ' || e.key === 'Enter') {
+                const nextRow = document.querySelector('.reveal-row:not(.revealed)');
+                if (nextRow) {
+                    e.preventDefault();
+                    revealRow(nextRow);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
